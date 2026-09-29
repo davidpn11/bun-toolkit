@@ -153,14 +153,15 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     const input = Object.fromEntries(Object.keys(actionArgs).map((key) => [key, parsed.values[key]]));
     reporter.log.debug(`${route.path} ${JSON.stringify(input)}`);
 
-    const result = await action.run(input, ctx);
+    const result = await action.run(input, ctx, { sources: parsed.sources });
+    const exitCode = action.exitCode?.(result, ctx) ?? ExitCode.Ok;
 
     if (environment.mode === "json") {
-      reporter.json({ ok: true, command: route.path, data: result ?? null });
+      reporter.json({ ok: exitCode === ExitCode.Ok, command: route.path, data: result ?? null });
     } else {
       action.render?.(result, reporter.out, ctx);
     }
-    return ExitCode.Ok;
+    return exitCode;
   } catch (error) {
     reporter.spinner.stop();
     reporter.progress.stop();

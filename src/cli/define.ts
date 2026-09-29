@@ -1,7 +1,9 @@
 import type { ComponentType } from "react";
 import type { z } from "zod";
 import type { BtkContext } from "../context.ts";
+import type { ExitCode } from "../errors.ts";
 import type { Output } from "../output/reporter.ts";
+import type { ValueSource } from "./args.ts";
 
 export type FlagOptions = {
   description: string;
@@ -17,10 +19,10 @@ export type FlagOptions = {
   hidden?: boolean;
 };
 
-export interface FlagSpec<S extends z.ZodType = z.ZodType> extends FlagOptions {
+export type FlagSpec<S extends z.ZodType = z.ZodType> = FlagOptions & {
   kind: "flag";
   schema: S;
-}
+};
 
 export type PositionalOptions = {
   description: string;
@@ -28,10 +30,10 @@ export type PositionalOptions = {
   valueHint?: string;
 };
 
-export interface PositionalSpec<S extends z.ZodType = z.ZodType> extends PositionalOptions {
+export type PositionalSpec<S extends z.ZodType = z.ZodType> = PositionalOptions & {
   kind: "positional";
   schema: S;
-}
+};
 
 export type ArgSpec = FlagSpec | PositionalSpec;
 export type ArgsSpec = Record<string, ArgSpec>;
@@ -47,6 +49,11 @@ export function positional<S extends z.ZodType>(schema: S, options: PositionalOp
   return { kind: "positional", schema, ...options };
 }
 
+export type ActionMeta<A extends ArgsSpec = ArgsSpec> = {
+  /** Where each value came from, e.g. to let explicit flags beat a preset but not config. */
+  sources: Record<keyof A, ValueSource>;
+};
+
 export type ActionDef<A extends ArgsSpec = ArgsSpec, R = unknown> = {
   description: string;
   examples?: string[];
@@ -59,9 +66,11 @@ export type ActionDef<A extends ArgsSpec = ArgsSpec, R = unknown> = {
    */
   requiresConfig?: boolean;
   /** Does the work and returns data. In json mode this return value is the output. */
-  run(input: InferArgs<A>, ctx: BtkContext): R | Promise<R>;
+  run(input: InferArgs<A>, ctx: BtkContext, meta: ActionMeta<A>): R | Promise<R>;
   /** Presents the result in human/ci mode. Never called in json mode. */
   render?(result: Awaited<R>, out: Output, ctx: BtkContext): void;
+  /** Exit code for a result that was still worth printing, e.g. a batch where some files failed. */
+  exitCode?(result: Awaited<R>, ctx: BtkContext): ExitCode;
 };
 
 export type ToolScreenProps = {
@@ -73,10 +82,10 @@ export type ToolScreen = ComponentType<ToolScreenProps>;
 export type ToolScreenLoader = () => Promise<{ default: ToolScreen }>;
 
 /** A leaf command with no actions, e.g. `btk info`. */
-export interface CommandDef<A extends ArgsSpec = ArgsSpec, R = unknown> extends ActionDef<A, R> {
+export type CommandDef<A extends ArgsSpec = ArgsSpec, R = unknown> = ActionDef<A, R> & {
   kind: "command";
   name: string;
-}
+};
 
 /** A group of actions sharing a config slice and an optional TUI, e.g. `btk image optimize|info`. */
 export type ToolDef<C extends z.ZodObject = z.ZodObject, N extends string = string> = {

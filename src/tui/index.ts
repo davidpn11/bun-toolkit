@@ -18,4 +18,4 @@ export { useBtk } from "./context.tsx";
 export { type FormField, fieldsFromArgs, initialValues, labelFor } from "./form-fields.ts";
 export { useListCursor } from "./hooks/use-list-cursor.ts";
 export { useTerminalSize } from "./hooks/use-terminal-size.ts";
-export { type Navigation, type ScreenEntry, useNavigation } from "./navigation.tsx";
+export { type Navigation, type ScreenEntry, useNavigation, useScreenActive } from "./navigation.tsx";

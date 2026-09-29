@@ -4,29 +4,29 @@
 
 ### npm package (`bun-toolkit`)
 
-The main distribution channel. Three usage patterns:
+npm is the main channel, and people use it three ways:
 
-- `npm install -g bun-toolkit` for global CLI access
-- `bun add -D bun-toolkit` as a project devDependency (call `btk` from npm scripts)
-- `npx bun-toolkit image optimize` for one-off CI use without installing
+- `npm install -g bun-toolkit` puts `btk` on the PATH.
+- `bun add -D bun-toolkit` adds it to a project, so npm scripts can call `btk`.
+- `npx bun-toolkit image ./assets` runs it once in CI without installing.
 
-The package is a CLI tool, not a library. No programmatic exports.
+The package is a CLI, not a library. Its only export is `defineConfig` and the config types, so `btk.config.ts` gets autocomplete.
 
 ### Homebrew (`homebrew-bun-toolkit` tap)
 
-For developers who prefer `brew install bun-toolkit`. The tap formula points to GitHub Release binaries. Updated automatically by the release pipeline.
+`brew install bun-toolkit` installs from the tap. The formula downloads the binaries from GitHub Releases, and the release pipeline updates it on every release.
 
-The formula registers both `btk` and `bun-toolkit` as commands.
+The formula installs both `btk` and `bun-toolkit` as commands.
 
 ### GitHub Releases
 
-Every tagged release attaches binaries for all platforms. Source for the Homebrew formula. Covers users who want to curl a binary directly.
+Every tagged release attaches binaries for all platforms. The Homebrew formula downloads them, and anyone can fetch one directly with curl.
 
 ### GitHub Action (future)
 
-A `bun-toolkit/setup` action that downloads the binary and adds it to `$PATH`. Different from `oven-sh/setup-bun`, which installs the Bun runtime itself.
+A `bun-toolkit/setup` action would download the binary and add it to `$PATH`. It differs from `oven-sh/setup-bun`, which installs the Bun runtime.
 
-Most useful for workflows that run bun-toolkit on every PR (image optimization, config validation). For occasional use, `npx bun-toolkit` is enough.
+It helps workflows that run bun-toolkit on every PR, such as image optimization or config validation. For occasional use, `npx bun-toolkit` is enough.
 
 ## npm package structure
 
@@ -47,11 +47,11 @@ bun-toolkit                     # Main package
 @btk/windows-x64
 ```
 
-The main package has no library exports. The `bin` field exposes both `btk` and `bun-toolkit`. The `bin.mjs` shim detects the platform and delegates to the compiled binary from the matching `@btk/*` package.
+The `bin` field exposes both `btk` and `bun-toolkit`. The `bin.mjs` shim detects the platform and runs the compiled binary from the matching `@btk/*` package.
 
-npm only downloads the platform package matching the user's OS and architecture (the others fail the `os`/`cpu` check and are optional).
+npm downloads only the platform package that matches the user's OS and architecture. The others are optional and fail the `os` and `cpu` check.
 
-This is the same pattern used by esbuild, Biome, and Turbo.
+esbuild, Biome and Turbo ship the same way.
 
 ## The JS shim (`bin.mjs`)
 
@@ -81,7 +81,7 @@ execFileSync(binPath, process.argv.slice(2), { stdio: "inherit" });
 
 ## Cross-compilation
 
-Bun cross-compiles to 8 targets from a single machine:
+Bun cross-compiles to 8 targets from one machine:
 
 | Target | Description |
 |--------|-------------|
@@ -94,21 +94,23 @@ Bun cross-compiles to 8 targets from a single machine:
 | `bun-windows-x64` | Windows x64 |
 | `bun-windows-arm64` | Windows ARM64 |
 
-Build command (`scripts/build.ts` wraps `Bun.build`):
+`scripts/build.ts` wraps `Bun.build`:
+
 ```bash
 bun run build                                   # current platform -> dist/btk
 bun scripts/build.ts --target bun-linux-x64     # cross-compile
 ```
 
-Flags: `--minify`, `NODE_ENV=production`, a linked sourcemap, and a plugin that stubs `react-devtools-core`. That package is a dev-only import inside Ink (loaded only when `DEV=true`), and the bundler would otherwise leave it as a missing module.
+The build minifies, sets `NODE_ENV=production`, writes a linked sourcemap, and stubs `react-devtools-core` with a plugin. Ink imports that package only when `DEV=true`, but without the stub the bundler would leave it as a missing module.
 
-**No `--bytecode`.** Ink 6 and yoga-layout use top-level await, which bytecode compilation rejects in both ESM and CJS output (verified with Bun 1.4.0 in the Phase 0 spike). Startup is still ~20ms for plain commands because Ink is imported lazily, only when the TUI opens.
+The build does not use `--bytecode`. Ink 6 and yoga-layout use top-level await, which bytecode compilation rejects in both ESM and CJS output. We confirmed this with Bun 1.4.0 in the Phase 0 spike. Plain commands still start in about 20ms because btk imports Ink only when the TUI opens.
 
 The spike also confirmed that a compiled binary can:
-- `import()` a user's `btk.config.ts` from any directory
-- resolve `import { defineConfig } from "bun-toolkit"` through a runtime `Bun.plugin` virtual module, with no `node_modules`
 
-Binary size: ~63MB (embeds the Bun runtime).
+- `import()` a user's `btk.config.ts` from any directory
+- resolve `import { defineConfig } from "bun-toolkit"` through a runtime `Bun.plugin` virtual module, without `node_modules`
+
+The binary is about 63 MB because it embeds the Bun runtime.
 
 ## Platform package structure
 
@@ -124,4 +126,4 @@ Each `@btk/{platform}-{arch}` package contains:
 }
 ```
 
-Plus the compiled binary (`btk` or `btk.exe`). Nothing else.
+It also holds the compiled binary (`btk` or `btk.exe`) and nothing else.

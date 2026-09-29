@@ -6,6 +6,7 @@ import { formatBytes } from "../../output/format.ts";
 import { colors, icons } from "../../output/palette.ts";
 import { type DirEntry, listDirectory } from "../../shared/fs.ts";
 import { useListCursor } from "../hooks/use-list-cursor.ts";
+import { useScreenActive } from "../navigation.tsx";
 
 export type FileBrowserProps = {
   root: string;
@@ -17,6 +18,8 @@ export type FileBrowserProps = {
   onHighlight?: (entry: DirEntry | undefined) => void;
   limit?: number;
   isFocused?: boolean;
+  /** Change it to re-read the directory and clear the selection, e.g. after files were written. */
+  refreshToken?: number;
 };
 
 export const FILE_BROWSER_HINTS = [
@@ -47,7 +50,9 @@ export function FileBrowser({
   onHighlight,
   limit = 12,
   isFocused = true,
+  refreshToken = 0,
 }: FileBrowserProps) {
+  const screenActive = useScreenActive();
   const [dir, setDir] = useState(root);
   const [showHidden, setShowHidden] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -65,7 +70,11 @@ export function FileBrowser({
     } catch (e) {
       return { rows: [], error: e instanceof Error ? e.message : String(e) };
     }
-  }, [dir, extensionKey, showHidden]);
+  }, [dir, extensionKey, showHidden, refreshToken]);
+
+  useEffect(() => {
+    if (refreshToken > 0) setSelected(new Set());
+  }, [refreshToken]);
 
   const cursor = useListCursor(rows.length, limit);
   const current = rows[cursor.index];
@@ -128,7 +137,7 @@ export function FileBrowser({
         else onSubmit(selected.size > 0 ? [...selected] : [current.path]);
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && screenActive },
   );
 
   const visible = rows.slice(cursor.offset, cursor.offset + limit);
@@ -136,9 +145,17 @@ export function FileBrowser({
 
   return (
     <Box flexDirection="column">
-      <Box justifyContent="space-between">
-        <Text bold>{tildify(dir)}</Text>
-        {multiple && selected.size > 0 ? <Text color={colors.accent}>{selected.size} selected</Text> : null}
+      <Box columnGap={2}>
+        <Box flexGrow={1} flexShrink={1}>
+          <Text bold wrap="truncate-start">
+            {tildify(dir)}
+          </Text>
+        </Box>
+        {multiple && selected.size > 0 ? (
+          <Box flexShrink={0}>
+            <Text color={colors.accent}>{selected.size} selected</Text>
+          </Box>
+        ) : null}
       </Box>
       {error ? <Text color={colors.error}>{error}</Text> : null}
       {!error && rows.length === 0 ? <Text color={colors.muted}>Empty directory</Text> : null}

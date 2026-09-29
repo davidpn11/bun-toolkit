@@ -1,20 +1,20 @@
 # Configuration
 
-## Overview
-
-bun-toolkit uses TypeScript config files. Bun runs `.ts` natively, so `await import("./btk.config.ts")` works with no jiti, no esbuild, no temp files.
+bun-toolkit reads TypeScript config files. Bun runs `.ts` natively, so `await import("./btk.config.ts")` works without jiti, esbuild or temp files.
 
 ## Two config tiers
 
-### Global config: `~/.bun-toolkit/config.ts`
+### Global config in `~/.bun-toolkit/config.ts`
 
-Personal defaults that follow you across every project: preferred hash algorithm, default image quality, output preferences. Created with `btk init --global` or by hand.
+Personal defaults that apply in every project, such as your usual image quality or output preferences. `btk init --global` creates it, or you can write it by hand.
 
-### Project config: `./btk.config.ts`
+### Project config in `./btk.config.ts`
 
-Project-specific overrides. Image quality for this repo's assets, output format for this project's config files. Committed to git, shared with the team.
+Overrides for one project, such as the image settings for this repo's assets. Commit it so the whole team gets the same results.
 
-## Resolution order (highest priority first)
+## Resolution order
+
+Highest priority first:
 
 1. CLI flags (`--quality 80`)
 2. Environment variables (`BTK_IMAGE_QUALITY=80`)
@@ -22,11 +22,11 @@ Project-specific overrides. Image quality for this repo's assets, output format 
 4. Global config (`~/.bun-toolkit/config.ts`)
 5. Built-in defaults
 
-When bun-toolkit runs as a global CLI with no project config, the global config is the only config. When a project has `btk.config.ts`, that takes priority and the global config fills in anything the project config doesn't set.
+Without a project config, the global config is the only config. With one, the project config wins and the global config fills in any key the project leaves unset.
 
 ## defineConfig
 
-An identity function that gives users autocomplete and type checking:
+`defineConfig` returns its argument unchanged. It exists so your editor can autocomplete and type-check the config:
 
 ```typescript
 // btk.config.ts
@@ -35,69 +35,72 @@ import { defineConfig } from "bun-toolkit";
 export default defineConfig({
   tools: {
     image: {
-      quality: 80,
       format: "webp",
-    },
-    hash: {
-      algorithm: "sha256",
+      quality: 80,
+      maxWidth: 1920,
+      presets: { hero: { maxWidth: 2560, quality: 85 } },
     },
   },
-  plugins: [],
+  output: { verbose: false },
 });
 ```
 
-`defineConfig` does nothing at runtime. Its only job is to carry the type signature. Vite, Nuxt, and tsup all use this pattern.
+Vite, Nuxt and tsup use the same pattern.
 
 ## Config schema
 
-`tools` is not written by hand: each tool contributes its slice from its `defineTool({ config })` zod schema, and `BtkConfig["tools"]` is derived from the registry in `src/tools/index.ts`. Adding a tool adds its key, its types and its validation.
+Nobody writes the `tools` schema by hand. Each tool contributes its slice from the zod schema in `defineTool({ config })`, and `BtkConfig["tools"]` derives from the registry in `src/tools/index.ts`. Adding a tool adds its key, its types and its validation.
 
 ```typescript
 type BtkConfig = {
   // One key per registered tool, typed from the tool's config schema.
-  // Planned: image, hash, convert, password, compress, md.
+  // Shipped: image (docs/tools/image.md). Planned: hash, convert, password, compress, md.
   tools?: ToolsConfig;
 
-  // Global output preferences (flags and env vars still win)
+  // Output preferences. Flags and env vars still win.
   output?: {
-    color?: boolean;              // false = plain text
-    json?: boolean;               // always output JSON
+    color?: boolean;              // false means plain text
+    json?: boolean;               // always print JSON
     verbose?: boolean;            // debug messages and stack traces
   };
 
-  // Plugins (loaded from config only; the loader arrives with Phase 6)
+  // Plugins load from config only. The loader arrives in Phase 6.
   plugins?: BtkPlugin[];
 };
 ```
 
 ## File discovery
 
-- **Project:** starting in the current directory and walking up to the filesystem root, the first `btk.config.ts`, `btk.config.js` or `btk.config.mjs` wins. Commands work from any subdirectory of a project.
-- **Global:** `config.ts`, `config.js` or `config.mjs` inside `~/.bun-toolkit/`. `BTK_CONFIG_DIR` overrides that directory (tests use it to stay isolated).
-- **`--config <path>`** replaces project discovery for one invocation. A missing file is a config error.
+btk looks for the project config in the current directory, then in each parent up to the filesystem root, and uses the first `btk.config.ts`, `btk.config.js` or `btk.config.mjs` it finds. Commands therefore work from any subdirectory of a project.
 
-`btk config path` shows what was found and where it searched.
+The global config is `config.ts`, `config.js` or `config.mjs` inside `~/.bun-toolkit/`. `BTK_CONFIG_DIR` points btk at a different directory, which the tests use to stay isolated.
 
-## Environment variable mapping
+`--config <path>` replaces project discovery for one run. If the file doesn't exist, btk reports a config error.
 
-Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCase keys converted to SNAKE_CASE:
+`btk config path` shows what btk found and where it searched.
 
-- `tools.image.quality` -> `BTK_IMAGE_QUALITY`
-- `tools.image.maxWidth` -> `BTK_IMAGE_MAX_WIDTH`
-- `output.json` -> `BTK_OUTPUT=json`
-- `output.verbose` -> `BTK_VERBOSE=true`
+## Environment variables
 
-Values are coerced (`"80"` -> `80`, `"true"`/`"1"`/`"yes"` -> `true`, comma-separated lists for arrays) and validated with the same schema as the config file. An invalid value is a config error that names the variable.
+Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCase keys in SNAKE_CASE:
+
+| Config key | Environment variable |
+| --- | --- |
+| `tools.image.quality` | `BTK_IMAGE_QUALITY` |
+| `tools.image.maxWidth` | `BTK_IMAGE_MAX_WIDTH` |
+| `output.json` | `BTK_OUTPUT=json` |
+| `output.verbose` | `BTK_VERBOSE=true` |
+
+btk converts the text to the right type (`"80"` becomes `80`, and `"true"`, `"1"` or `"yes"` become `true`; arrays are comma-separated), then validates it with the same schema as the config file. An invalid value is a config error that names the variable.
 
 ## Validation and errors
 
-- Each file is validated on its own with a strict schema, so errors point at the right file and unknown keys are caught.
-- Every problem is reported at once, one line per key path, with what was expected and what was received.
-- Unknown keys get a suggestion (`toolz` -> `tools`, `tools.imgae` -> `image`) or the list of valid keys.
-- Files that cannot be imported (syntax errors, a throw at import time, a non-object default export) are reported with the file and, for syntax errors, the line and column.
-- A broken file does not stop the other tiers from loading: the valid layers still merge.
-- Rules that only fail once the layers are combined (a tool schema with cross-field checks) are reported under "Combined configuration"; that tool falls back to its defaults.
-- Commands that need config fail with exit code **78** (EX_CONFIG). `btk info`, `btk init` and `btk config validate` still run.
+btk validates each file on its own with a strict schema, so an error points at the right file and a misspelled key fails instead of being ignored. It reports every problem at once, one line per key path, with what it expected and what it received. Unknown keys get a suggestion (`toolz` to `tools`, `tools.imgae` to `image`) or the list of valid keys.
+
+When a file can't be imported because of a syntax error, a throw at import time or a default export that isn't an object, btk names the file. For syntax errors it also gives the line and column.
+
+A broken file doesn't stop the other tiers from loading, and the valid layers still merge. If a tool's schema has a rule that only fails once the layers combine, such as a cross-field check, btk reports it under "Combined configuration" and that tool uses its defaults.
+
+Commands that need config exit with code 78 (EX_CONFIG). `btk info`, `btk init` and `btk config validate` still run.
 
 ```
 ✖ Invalid configuration (2 problems)
@@ -109,14 +112,16 @@ Values are coerced (`"80"` -> `80`, `"true"`/`"1"`/`"yes"` -> `true`, comma-sepa
 
 ## Inspecting config
 
-- `btk config` / `btk config show`: every resolved value and the layer that set it (`default`, `global <path>`, `project <path>`, `env BTK_...`). Add `--json` for scripts.
-- `btk config validate`: exit 0 when valid, 78 with the full report when not. Suitable for CI.
-- `btk <tool> <action> --help`: shows each flag's effective default and which config set it.
+`btk config` (or `btk config show`) lists every resolved value and the layer that set it: `default`, `global <path>`, `project <path>` or `env BTK_...`. Add `--json` for scripts.
+
+`btk config validate` exits 0 when every config is valid and 78 with the full report when one isn't, which makes it a good CI check.
+
+`btk <tool> <action> --help` shows each flag's effective default and which config set it.
 
 ## Implementation notes
 
-- Config files are loaded with `await import(path)`. The module's `default` export is used, or the module itself when there is no default.
-- Before the first import, a `Bun.plugin` virtual module registers `bun-toolkit`, so `import { defineConfig } from "bun-toolkit"` resolves even when bun-toolkit is not in the project's `node_modules` (Homebrew install, compiled binary, global config). This works inside `bun build --compile` binaries; `bun run test:dist` covers it.
-- Layers merge from lowest to highest priority: defaults, global, project, env. Objects merge key by key. `plugins` arrays are concatenated across tiers. **Every other array is replaced**, so a project's list (e.g. excluded globs) overrides the global one instead of silently adding to it.
-- Built-in defaults come from the tools' zod `.default()` values and are applied once, after merging, so each value's source can be reported.
-- Config is resolved once per invocation and passed through `BtkContext`. Tools never load config themselves.
+- btk loads config files with `await import(path)` and uses the module's `default` export, or the whole module when there is no default.
+- Before the first import, a `Bun.plugin` virtual module registers `bun-toolkit`. That makes `import { defineConfig } from "bun-toolkit"` resolve even when bun-toolkit isn't in the project's `node_modules`, as with a Homebrew install, the compiled binary or the global config. It works inside `bun build --compile` binaries, and `bun run test:dist` checks it.
+- Layers merge from lowest to highest priority: defaults, global, project, env. Objects merge key by key. `plugins` arrays concatenate across tiers. Every other array is replaced, so a project's list overrides the global one instead of adding to it.
+- btk applies the `.default()` values from each tool's zod schema once, after merging, so it can report where each value came from.
+- btk resolves config once per run and passes it through `BtkContext`. Tools never load config themselves.

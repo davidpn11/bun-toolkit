@@ -26,7 +26,7 @@ export class LiveLine {
       this.#stream.write(HIDE_CURSOR);
       installExitHook(this.#stream);
     }
-    const columns = this.#stream.columns ?? 80;
+    const columns = this.#stream.columns || 80;
     this.#stream.write(CLEAR_LINE + truncate(text, columns - 1));
   }
 

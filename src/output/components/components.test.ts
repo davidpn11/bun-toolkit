@@ -51,6 +51,8 @@ describe("output components", () => {
     expect(renderNotice(s, ["hi"], { plain: true })).toBe("! hi");
     expect(renderSummary(s, { files: 3, saved: "1 MB" })).toBe("✔ Done · 3 files · 1 MB saved");
     expect(renderSummary(s, { files: 3 }, { plain: true })).toBe("summary files=3");
+    expect(renderSummary(s, { files: 3, "": "1 MB → 2 KB" })).toBe("✔ Done · 3 files · 1 MB → 2 KB");
+    expect(renderSummary(s, { failed: 1 }, { title: "Done", tone: "warning" })).toBe("⚠ Done · 1 failed");
   });
 
   test("progress bar shows ratio, counts and eta", () => {

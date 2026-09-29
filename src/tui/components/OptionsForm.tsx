@@ -4,7 +4,7 @@ import { describeExpected, inspectSchema } from "../../cli/schema-info.ts";
 import { formatValue } from "../../output/format.ts";
 import { colors, icons } from "../../output/palette.ts";
 import type { FormField } from "../form-fields.ts";
-import { useNavigation } from "../navigation.tsx";
+import { useNavigation, useScreenActive } from "../navigation.tsx";
 
 export type OptionsFormProps = {
   fields: FormField[];
@@ -39,6 +39,7 @@ export function OptionsForm({
   submitLabel = "Run",
   isFocused = true,
 }: OptionsFormProps) {
+  const screenActive = useScreenActive();
   const nav = useNavigation();
   const [values, setValues] = useState<Record<string, unknown>>(initial);
   const [row, setRow] = useState(0);
@@ -119,7 +120,7 @@ export function OptionsForm({
         setEditing(field.key);
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && screenActive },
   );
 
   const labelWidth = Math.max(0, ...fields.map((f) => f.label.length));

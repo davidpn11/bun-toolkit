@@ -2,7 +2,7 @@
 
 Bun native API straight in your terminal. One CLI (`btk`), one config, one output style, and an interactive dashboard for every tool.
 
-> Status: **Phase 0 (foundation)**. The CLI framework, config system, output layer and TUI are in place. The first tool, `btk image` (`Bun.Image`), is next. See [docs/roadmap.md](docs/roadmap.md).
+> Status: Phase 1 is done. The foundation (CLI framework, config, output layer, TUI) and the first tool, `btk image` (`Bun.Image`), work today. `btk hash` is next. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install (from source)
 
@@ -32,11 +32,24 @@ btk ui                      # interactive dashboard
 btk <tool> --ui             # open a tool's dashboard directly
 ```
 
+### Tools
+
+| Tool | Bun API | Docs |
+| --- | --- | --- |
+| `btk image` | `Bun.Image` | [docs/tools/image.md](docs/tools/image.md) |
+
+```bash
+btk image ./assets -r                      # every image → WebP q80, next to the originals
+btk image ./photos --preset web -o dist    # 1920px wide, q75, into dist/ (mirrored)
+btk image info hero.png                    # format, dimensions, size
+btk image --ui                             # pick files, tweak options, watch it run
+```
+
 Every command takes `--json`, `--verbose`, `--no-color`, `--config <path>` and `--help`.
 
 ### Output modes
 
-The mode is decided once, at startup:
+btk picks the output mode once, at startup:
 
 | Mode | When | Output |
 | --- | --- | --- |
@@ -62,7 +75,7 @@ import { defineConfig } from "bun-toolkit";
 
 export default defineConfig({
   tools: {
-    // image: { quality: 80, format: "webp" },   // once the image tool lands
+    image: { format: "avif", quality: 70, presets: { hero: { maxWidth: 2560 } } },
   },
   output: { verbose: false },
 });
@@ -70,7 +83,7 @@ export default defineConfig({
 
 Precedence, from highest to lowest: CLI flags, `BTK_<TOOL>_<KEY>` env vars, project `btk.config.ts` (found by walking up from the current directory), global `~/.bun-toolkit/config.ts`, built-in defaults.
 
-Configs are validated strictly. Every problem is reported at once, with the file, the key path, what was expected, and a "did you mean" for typos:
+btk validates configs strictly and reports every problem at once, with the file, the key path, what it expected, and a "did you mean" for typos:
 
 ```
 ✖ Invalid configuration (2 problems)
@@ -137,4 +150,4 @@ That single definition gives you:
 - the `BTK_HASH_ALGORITHM` env var
 - JSON output and the `btk ui` home screen entry
 
-Tool dashboards are built from `src/tui/index.ts` (`Screen`, `FileBrowser`, `OptionsForm` generated from the same flag specs, `ProgressList`, `ResultTable`...). See [docs/architecture.md](docs/architecture.md).
+Tool dashboards use the components exported from `src/tui/index.ts`, such as `Screen`, `FileBrowser`, `ProgressList`, `ResultTable`, and `OptionsForm`, which builds a form from the same flag specs. See [docs/architecture.md](docs/architecture.md).

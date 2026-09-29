@@ -3,13 +3,25 @@ import { render } from "ink-testing-library";
 import { createTestContext } from "../../tests/support/context.ts";
 import { demoTool, testRegistry } from "../../tests/support/fake-tool.ts";
 import { keys, tick } from "../../tests/support/tui.tsx";
+import { createRegistry } from "../cli/define.ts";
+import { defaultRegistry } from "../cli/main.ts";
+import { builtins } from "../commands/index.ts";
 import { stripAnsi } from "../output/style.ts";
 import { TuiApp } from "./app.tsx";
 import { homeScreen } from "./screens/Home.tsx";
 import { toolScreen } from "./screens/ToolHost.tsx";
 
-async function renderApp(options: { withDemo?: boolean; initial?: typeof homeScreen } = {}) {
-  const ctx = await createTestContext(options.withDemo ? { registry: testRegistry() } : {});
+type Tools = "none" | "demo" | "shipped";
+
+async function renderApp(options: { tools?: Tools; initial?: typeof homeScreen } = {}) {
+  const tools = options.tools ?? "none";
+  const registry =
+    tools === "demo"
+      ? testRegistry()
+      : tools === "shipped"
+        ? defaultRegistry()
+        : createRegistry(builtins, []);
+  const ctx = await createTestContext({ registry });
   const onQuit = mock();
   const instance = render(<TuiApp ctx={ctx} initial={options.initial ?? homeScreen} onQuit={onQuit} />);
   await tick();
@@ -76,8 +88,15 @@ describe("<TuiApp>", () => {
     app.unmount();
   });
 
+  test("the shipped registry lists the image tool", async () => {
+    const app = await renderApp({ tools: "shipped" });
+    expect(app.frame()).toMatch(/❯\s*image\s+Convert, compress and inspect images/);
+    expect(app.frame()).not.toContain("No tools installed yet");
+    app.unmount();
+  });
+
   test("registered tools are listed and open their lazy dashboard", async () => {
-    const app = await renderApp({ withDemo: true });
+    const app = await renderApp({ tools: "demo" });
     expect(app.frame()).toContain("❯ demo");
     expect(app.frame()).toContain("A fake tool for tests");
     await app.press(keys.enter);
@@ -88,7 +107,7 @@ describe("<TuiApp>", () => {
   });
 
   test("a tool screen can be the initial screen (btk <tool> --ui)", async () => {
-    const app = await renderApp({ withDemo: true, initial: toolScreen(demoTool) });
+    const app = await renderApp({ tools: "demo", initial: toolScreen(demoTool) });
     await tick(100);
     expect(app.frame()).toContain("demo dashboard");
     expect(app.frame()).not.toContain("esc back");

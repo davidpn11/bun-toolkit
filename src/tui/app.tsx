@@ -4,7 +4,7 @@ import type { BtkContext } from "../context.ts";
 import { colors, icons } from "../output/palette.ts";
 import { NAME, VERSION } from "../version.ts";
 import { TuiProviders } from "./context.tsx";
-import { NavigationProvider, type ScreenEntry, useNavigation } from "./navigation.tsx";
+import { NavigationProvider, ScreenActiveProvider, type ScreenEntry, useNavigation } from "./navigation.tsx";
 
 const GLOBAL_KEYS: [string, string][] = [
   ["↑↓ / j k", "Move"],
@@ -50,8 +50,17 @@ function Shell() {
     else if (key.escape && nav.canGoBack) nav.pop();
   });
 
-  if (help) return <HelpOverlay />;
-  return <Box key={nav.current.id}>{nav.current.render()}</Box>;
+  const top = nav.stack.length - 1;
+  return (
+    <Box flexDirection="column">
+      {nav.stack.map((entry, i) => (
+        <ScreenActiveProvider key={`${i}-${entry.id}`} value={i === top && !help}>
+          <Box display={i === top && !help ? "flex" : "none"}>{entry.render()}</Box>
+        </ScreenActiveProvider>
+      ))}
+      {help ? <HelpOverlay /> : null}
+    </Box>
+  );
 }
 
 export type TuiAppProps = {

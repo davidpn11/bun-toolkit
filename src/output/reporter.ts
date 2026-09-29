@@ -16,7 +16,7 @@ import {
   type Spinner,
   silentSpinner,
 } from "./components/spinner.ts";
-import { renderSummary } from "./components/summary.ts";
+import { renderSummary, type SummaryTone } from "./components/summary.ts";
 import { renderTable, type TableOptions } from "./components/table.ts";
 import { icons } from "./palette.ts";
 import type { OutStream } from "./stream.ts";
@@ -33,7 +33,7 @@ export type Output = {
   keyValue(pairs: Record<string, unknown>, title?: string): void;
   list(items: string[], options?: { title?: string; ordered?: boolean }): void;
   notice(lines: string[]): void;
-  summary(stats: Record<string, string | number>, title?: string): void;
+  summary(stats: Record<string, string | number>, title?: string, tone?: SummaryTone): void;
   text(line?: string): void;
   /** Styling for custom text. Colors are off whenever stdout is not a color terminal. */
   style: Styler;
@@ -87,7 +87,8 @@ export function createReporter(options: ReporterOptions): Reporter {
     keyValue: (pairs, title) => silent || writeOut(renderKeyValue(outStyle, pairs, { title, plain })),
     list: (items, opts) => silent || writeOut(renderList(outStyle, items, { ...opts, plain })),
     notice: (lines) => silent || writeOut(renderNotice(outStyle, lines, { plain })),
-    summary: (stats, title) => silent || writeOut(renderSummary(outStyle, stats, { title, plain })),
+    summary: (stats, title, tone) =>
+      silent || writeOut(renderSummary(outStyle, stats, { title, plain, tone })),
     text: (line = "") => silent || writeOut(line),
   };
 

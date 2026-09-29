@@ -1,10 +1,10 @@
 # CI pipeline
 
-Four GitHub Actions workflows. Each has a clear job.
+The plan has four GitHub Actions workflows. None of them exist yet; they arrive with the first release.
 
 ## test.yml (on pull request)
 
-Runs on every PR. Fast feedback loop.
+Runs on every pull request.
 
 Steps:
 1. Checkout
@@ -19,7 +19,7 @@ Steps:
 
 ## release.yml (on tag push `v*`)
 
-Triggered by pushing a version tag. Builds, tests, and publishes everything.
+Pushing a version tag starts it. It builds, tests and publishes everything.
 
 ### Job 1: checks
 - Full test suite (same as test.yml steps 1-7)
@@ -70,7 +70,7 @@ Steps:
 
 ## nightly.yml (scheduled, optional)
 
-Runs on a cron schedule (e.g., daily at 03:00 UTC). Catches upstream Bun breakage early.
+Runs on a schedule, such as daily at 03:00 UTC, against Bun canary so a breaking Bun change shows up before a release.
 
 Steps:
 1. Checkout
@@ -90,7 +90,7 @@ Steps:
 
 ## Build flags
 
-All compiled binaries go through `scripts/build.ts`:
+Every compiled binary goes through `scripts/build.ts`:
 
 ```typescript
 await Bun.build({
@@ -103,4 +103,4 @@ await Bun.build({
 });
 ```
 
-`--bytecode` is not used: Ink and yoga-layout rely on top-level await, which bytecode compilation rejects (see docs/distribution.md). The entrypoint still avoids top-level await, so bytecode can be enabled again if that changes.
+The build skips `--bytecode` because Ink and yoga-layout use top-level await, which bytecode compilation rejects (see docs/distribution.md). The entrypoint still avoids top-level await, so we can turn bytecode back on if that changes.

@@ -2,6 +2,7 @@ import { Box, Text, useInput } from "ink";
 import { useEffect, useRef } from "react";
 import { colors, icons } from "../../output/palette.ts";
 import { useListCursor } from "../hooks/use-list-cursor.ts";
+import { useScreenActive } from "../navigation.tsx";
 
 export type SelectItem<V> = {
   value: V;
@@ -34,6 +35,7 @@ export function SelectList<V>({
   initialIndex = 0,
   emptyText = "Nothing here",
 }: SelectListProps<V>) {
+  const screenActive = useScreenActive();
   const firstEnabled = Math.max(
     0,
     items.findIndex((item) => !item.disabled),
@@ -63,7 +65,7 @@ export function SelectList<V>({
       else if (key.end) cursor.move(items.length);
       else if (key.return && highlighted && !highlighted.disabled) onSelect(highlighted);
     },
-    { isActive: isFocused },
+    { isActive: isFocused && screenActive },
   );
 
   if (items.length === 0) return <Text color={colors.muted}>{emptyText}</Text>;
