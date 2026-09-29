@@ -1,0 +1,176 @@
+import { afterEach, describe, expect, test } from "bun:test";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { spawnBtk } from "../support/cli.ts";
+import { ANSI } from "../support/streams.ts";
+import { createTempProject, type TempProject } from "../support/tmp.ts";
+
+/**
+ * End-to-end tests that spawn btk as a subprocess. `cli.test.ts` runs them against the source
+ * entrypoint and `dist.test.ts` against the compiled binary (BTK_BIN), with identical assertions.
+ */
+export function defineCliSuite(label: string): void {
+  describe(`btk end-to-end (${label})`, () => {
+    let project: TempProject;
+    afterEach(() => project?.cleanup());
+
+    const btk = (args: string[], env: Record<string, string> = {}) => {
+      project ??= createTempProject();
+      return spawnBtk(args, { cwd: project.dir, env: { ...project.env, ...env } as Record<string, string> });
+    };
+    const fresh = () => {
+      project = createTempProject();
+      return project;
+    };
+
+    test("--version prints the version", async () => {
+      fresh();
+      const { code, stdout } = await btk(["--version"]);
+      expect(code).toBe(0);
+      expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    });
+
+    test("--help lists every command", async () => {
+      fresh();
+      const { code, stdout } = await btk(["--help"]);
+      expect(code).toBe(0);
+      for (const command of ["info", "init", "config", "ui"]) expect(stdout).toContain(command);
+      expect(stdout).toContain("Global options");
+    });
+
+    test("<command> --help shows options and examples", async () => {
+      fresh();
+      const { code, stdout } = await btk(["init", "--help"]);
+      expect(code).toBe(0);
+      expect(stdout).toContain("--global");
+      expect(stdout).toContain("Examples");
+    });
+
+    test("info prints environment details", async () => {
+      fresh();
+      const { code, stdout } = await btk(["info"]);
+      expect(code).toBe(0);
+      expect(stdout).toContain("bun-toolkit");
+      expect(stdout).toContain("platform");
+    });
+
+    test("info --json prints one valid JSON envelope", async () => {
+      fresh();
+      const { code, stdout, stderr } = await btk(["info", "--json"]);
+      expect(code).toBe(0);
+      const data = JSON.parse(stdout);
+      expect(data.ok).toBe(true);
+      expect(data.command).toBe("info");
+      expect(data.data).toHaveProperty("version");
+      expect(data.data).toHaveProperty("platform");
+      expect(stderr).toBe("");
+    });
+
+    test("AGENT=true switches to JSON", async () => {
+      fresh();
+      const { stdout } = await btk(["info"], { AGENT: "true" });
+      expect(JSON.parse(stdout).ok).toBe(true);
+    });
+
+    test("CI=true output has no ANSI codes", async () => {
+      fresh();
+      const { stdout, stderr } = await btk(["info"], { CI: "true" });
+      expect(stdout + stderr).not.toMatch(ANSI);
+      expect(stdout).toContain("output: ci (CI=true)");
+    });
+
+    test("unknown commands exit 2 with a suggestion", async () => {
+      fresh();
+      const { code, stderr } = await btk(["ifno"]);
+      expect(code).toBe(2);
+      expect(stderr).toContain('Unknown command "ifno"');
+      expect(stderr).toContain('Did you mean "btk info"?');
+    });
+
+    test("unknown options exit 2; json mode reports the error as JSON", async () => {
+      fresh();
+      const text = await btk(["init", "--forse"]);
+      expect(text.code).toBe(2);
+      expect(text.stderr).toContain("Did you mean --force?");
+
+      const json = await btk(["init", "--forse", "--json"]);
+      expect(json.code).toBe(2);
+      expect(JSON.parse(json.stdout)).toMatchObject({ ok: false, error: { code: "ERR_UNKNOWN_OPTION" } });
+    });
+
+    test("init creates a project config; a second init refuses without --force", async () => {
+      const p = fresh();
+      const first = await btk(["init"]);
+      expect(first.code).toBe(0);
+      const path = join(p.dir, "btk.config.ts");
+      expect(readFileSync(path, "utf8")).toContain('import { defineConfig } from "bun-toolkit"');
+
+      const second = await btk(["init"]);
+      expect(second.code).toBe(1);
+      expect(second.stderr).toContain("--force");
+
+      expect((await btk(["init", "--force"])).code).toBe(0);
+    });
+
+    test("init --global writes to the global dir, and the result validates", async () => {
+      const p = fresh();
+      expect((await btk(["init", "--global"])).code).toBe(0);
+      expect(existsSync(join(p.globalDir, "config.ts"))).toBe(true);
+      const { code, stdout } = await btk(["config", "validate"]);
+      expect(code).toBe(0);
+      expect(stdout).toContain("(global)");
+    });
+
+    test("project config overrides global config, and config show says where values come from", async () => {
+      const p = fresh();
+      p.writeGlobal(`export default { output: { verbose: false, color: false } };`);
+      p.write(
+        "btk.config.ts",
+        `import { defineConfig } from "bun-toolkit";\nexport default defineConfig({ output: { color: true } });`,
+      );
+      const { code, stdout } = await btk(["config", "show", "--json"]);
+      expect(code).toBe(0);
+      const rows = JSON.parse(stdout).data.values as { key: string; value: unknown; source: string }[];
+      expect(rows.find((r) => r.key === "output.color")).toMatchObject({
+        value: true,
+        source: "project",
+      });
+      expect(rows.find((r) => r.key === "output.verbose")).toMatchObject({ value: false, source: "global" });
+    });
+
+    test("invalid config: validate exits 78 and lists every problem with a suggestion", async () => {
+      const p = fresh();
+      p.write("btk.config.ts", `export default { output: { verbose: "yes" }, toolz: {} };`);
+      const { code, stderr } = await btk(["config", "validate"]);
+      expect(code).toBe(78);
+      expect(stderr).toContain("./btk.config.ts (project)");
+      expect(stderr).toContain('output.verbose  Expected boolean, received "yes"');
+      expect(stderr).toContain('Did you mean "tools"?');
+    });
+
+    test("commands that need config fail with the config error; info still runs", async () => {
+      const p = fresh();
+      p.write("btk.config.ts", `export default { output: { verbose: 1 } };`);
+      expect((await btk(["config", "show"])).code).toBe(78);
+      const info = await btk(["info"]);
+      expect(info.code).toBe(0);
+      expect(info.stdout).toContain("invalid");
+    });
+
+    test("a config that fails to load reports the file", async () => {
+      const p = fresh();
+      p.write("btk.config.ts", "export default {");
+      const { code, stderr } = await btk(["config", "validate"]);
+      expect(code).toBe(78);
+      expect(stderr).toContain("Could not load the configuration");
+      expect(stderr).toContain("./btk.config.ts");
+    });
+
+    test("ui without a terminal exits 2 with a hint", async () => {
+      fresh();
+      const { code, stderr } = await btk(["ui"]);
+      expect(code).toBe(2);
+      expect(stderr).toContain("The interactive dashboard needs a terminal");
+    });
+  });
+}

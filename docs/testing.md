@@ -2,120 +2,79 @@
 
 ## Test runner
 
-`bun:test` (Bun's built-in test runner). Same runner used in jet-dev-cli.
+`bun:test`. Run everything with `bun test`; `bun run test:dist` builds the binary and runs the end-to-end suite against it.
 
-## Unit tests
+## Layout
 
-Each tool's core logic is tested in `src/tools/{name}/{name}.test.ts`. Tests call the core function directly, not through the CLI:
-
-```typescript
-import { describe, test, expect } from "bun:test";
-import { hash } from "./core";
-
-describe("hash()", () => {
-  test("computes sha256 of a file", async () => {
-    const result = await hash({
-      file: "tests/support/fixtures/sample.txt",
-      algorithm: "sha256",
-    });
-    expect(result.hex).toBe("expected_hex_value");
-  });
-});
-```
-
-## Output tests
-
-Use PassThrough streams to capture and assert on CLI output:
-
-```typescript
-import { PassThrough } from "node:stream";
-
-function createTestReporter() {
-  const stdout = new PassThrough();
-  const stderr = new PassThrough();
-  const reporter = createReporter({ stdout, stderr, mode: "human" });
-  return { reporter, stdout, stderr };
-}
-
-// Assert on captured output
-const output = await readStream(stdout);
-expect(output).toContain("3 files optimized");
-```
-
-This is the same pattern jet-dev-cli uses in `tests/support/streams.ts`.
-
-## Integration tests
-
-In `tests/integration/cli.test.ts`, invoke the CLI as a subprocess and assert on stdout, stderr, and exit code:
-
-```typescript
-import { describe, test, expect } from "bun:test";
-
-describe("btk info", () => {
-  test("prints version info", async () => {
-    const proc = Bun.spawn(["bun", "bin/btk.ts", "info"]);
-    const stdout = await new Response(proc.stdout).text();
-    const code = await proc.exited;
-    expect(code).toBe(0);
-    expect(stdout).toContain("bun-toolkit");
-  });
-
-  test("outputs JSON when --json is passed", async () => {
-    const proc = Bun.spawn(["bun", "bin/btk.ts", "info", "--json"]);
-    const stdout = await new Response(proc.stdout).text();
-    const data = JSON.parse(stdout);
-    expect(data).toHaveProperty("version");
-    expect(data).toHaveProperty("platform");
-  });
-
-  test("produces no ANSI codes in CI mode", async () => {
-    const proc = Bun.spawn(["bun", "bin/btk.ts", "info"], {
-      env: { ...process.env, CI: "true" },
-    });
-    const stdout = await new Response(proc.stdout).text();
-    expect(stdout).not.toMatch(/\x1b\[/);
-  });
-});
-```
-
-## Production-like testing (dist tests)
-
-`bun run test:dist` builds the binary for the current platform and runs the integration test suite against the compiled binary instead of the source entrypoint.
-
-The script (`scripts/test-dist.ts`):
-1. Runs `bun build --compile --minify --bytecode ./bin/btk.ts --outfile=dist/btk`
-2. Sets `BTK_BIN=./dist/btk` in the environment
-3. Runs `bun test tests/integration/dist.test.ts`
-
-`dist.test.ts` reads `BTK_BIN` from the environment and uses that as the binary path instead of `bun bin/btk.ts`. The test assertions are identical.
-
-This catches issues that only appear in compiled builds:
-- Missing embedded assets
-- Broken bytecode compilation
-- CJS/ESM interop problems in bundled dependencies
-
-The CI pipeline runs `test:dist` for each platform that the runner can execute natively.
+| Where | What |
+|------|---------|
+| `src/**/*.test.ts(x)` | Unit tests next to the code: env detection, formatters, reporter modes, components, arg parser, router, schema introspection, config loader, TUI components and app |
+| `tests/integration/cli-suite.ts` | End-to-end suite that spawns btk. Shared by `cli.test.ts` (source) and `dist.test.ts` (compiled binary, `BTK_BIN`) |
+| `tests/integration/registry.test.ts` | What a tool gets for free from `defineTool()`, using the test-only `demo` tool, run in-process |
+| `tests/support/` | Helpers (below) |
 
 ## Test support
 
 | File | Purpose |
 |------|---------|
-| `tests/support/streams.ts` | PassThrough stream helpers, `readStream()` |
-| `tests/support/context.ts` | Creates a BtkContext with test defaults (mock reporter, mock config) |
-| `tests/support/fixtures/` | Test images, text files, YAML/JSON/TOML samples, config files |
+| `streams.ts` | `CaptureStream` (a PassThrough that records output, optionally a fake TTY), `createIO()`, the `ANSI` matcher |
+| `tmp.ts` | `createTempProject()`: a temp project dir with an isolated global config dir (`BTK_CONFIG_DIR`) so the real `~/.bun-toolkit` is never read |
+| `cli.ts` | `runBtk()` runs the CLI in-process with captured streams (fast); `spawnBtk()` spawns the source or `BTK_BIN` |
+| `context.ts` | `createTestContext()`: a `BtkContext` with default config, for TUI and unit tests |
+| `tui.tsx` | `renderTui()` renders a component inside the TUI providers; `keys` for arrow/enter/esc sequences; `press()` |
+| `fake-tool.ts` | The `demo` tool: config slice with defaults, default action with variadic positionals, config-backed flags, alias, hidden failing action, lazy TUI screen. Never part of the shipped registry |
+
+## Patterns
+
+Core logic is tested directly:
+
+```typescript
+const result = await hashFiles({ files: ["tests/fixtures/sample.txt"], algorithm: "sha256" });
+expect(result.rows[0].hex).toBe("...");
+```
+
+CLI behavior is tested in-process, which is fast enough to cover every flag and error:
+
+```typescript
+const { code, stdout, stderr } = await runBtk(["demo", "a.txt", "--json"], { registry: testRegistry(), cwd, env });
+expect(JSON.parse(stdout).data.level).toBe(5);
+```
+
+TUI components are driven with keystrokes:
+
+```typescript
+const ui = renderTui(ctx, <FileBrowser root={dir} extensions={[".png"]} multiple onSubmit={onSubmit} />);
+await ui.press(keys.down, keys.space, keys.enter);
+expect(onSubmit).toHaveBeenCalledWith([join(dir, "a.png")]);
+```
+
+Temp projects write config files in fresh directories, so `import()` module caching never leaks between tests.
+
+## Production-like testing (dist tests)
+
+`bun run test:dist` (`scripts/test-dist.ts`):
+1. Runs `scripts/build.ts` to compile `dist/btk` for the current platform
+2. Sets `BTK_BIN` to the binary
+3. Runs `tests/integration/dist.test.ts`, which is the same suite as `cli.test.ts`
+
+This catches issues that only show up in compiled builds: missing bundled modules, config loading from outside the bundle, the `bun-toolkit` virtual module.
+
+Without `BTK_BIN`, `dist.test.ts` is skipped, so `bun test` stays fast.
 
 ## Per-tool test checklist
 
 Every tool phase must include:
-- Unit tests for the core function
-- Integration test that runs the CLI and asserts on output
-- JSON mode test (`--json` produces valid, parseable JSON)
-- CI mode test (no ANSI codes in output)
-- Config test (config file values are respected, CLI flags override them)
-- Help text test (`btk <tool> --help` produces useful output)
+- Unit tests for `core.ts`
+- An end-to-end test that runs the CLI and checks its output
+- JSON mode test (`--json` produces the envelope with the expected `data`)
+- CI mode test (no ANSI codes)
+- Config test (config values are respected, flags override them, env vars work)
+- Help text test (`btk <tool> --help`, `btk <tool> <action> --help`)
+- Dashboard test with ink-testing-library, if the tool has a `ui`
+- Image and other binary fixtures generated in the test (e.g. with `Bun.Image`), not committed
 
 ## Linting and formatting
 
-- **oxlint**: fast Rust-based linter
-- **Biome** (or oxfmt): fast Rust-based formatter
-- No config ceremony. Defaults are fine.
+- **oxlint**: `bun run lint`
+- **Biome** (formatter + import sorting): `bun run format`
+- `bun run check` runs Biome, oxlint and tsc

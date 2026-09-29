@@ -9,14 +9,14 @@ Plugins only load from the config file. They cannot be installed globally or dis
 ## Plugin interface
 
 ```typescript
-interface BtkPlugin {
+type BtkPlugin = {
   name: string;
   setup(hooks: HookRegistry): void;
-}
+};
 
-interface HookRegistry {
+type HookRegistry = {
   on<T extends HookName>(name: T, handler: HookHandler<T>): void;
-}
+};
 ```
 
 A plugin is a function that returns a `BtkPlugin` object. The `setup` method receives a hook registry and registers handlers.

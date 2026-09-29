@@ -1,12 +1,44 @@
 {
   "name": "bun-toolkit",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Bun native API straight in your terminal. One CLI, one config, one output style.",
   "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "license": "MIT",
+  "bin": {
+    "btk": "bin/btk.ts",
+    "bun-toolkit": "bin/btk.ts"
   },
-  "peerDependencies": {
-    "typescript": "^7"
+  "exports": {
+    ".": "./src/public.ts"
+  },
+  "types": "./src/public.ts",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "bun bin/btk.ts",
+    "test": "bun test",
+    "test:dist": "bun scripts/test-dist.ts",
+    "build": "bun scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "format": "biome format --write .",
+    "check": "biome check . && oxlint && tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "1.8.1",
+    "ansis": "^4.4.0",
+    "ink": "^6.8.0",
+    "react": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@types/bun": "latest",
+    "@types/react": "^19.3.0",
+    "ink-testing-library": "^4.0.0",
+    "oxlint": "^1.86.0",
+    "typescript": "^7.0.2"
   }
 }

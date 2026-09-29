@@ -2,47 +2,53 @@
 
 ## Phase 0: foundation
 
-Build the project skeleton, CLI routing, config system (global + project), output layer, test infrastructure, build scripts, and CI pipeline.
+Project skeleton, CLI framework, config system (global + project), output layer, TUI foundation, test infrastructure, and build scripts. Every tool after this is "one folder + one registry line".
 
-### Deliverables
+**Change from the original plan:** the TUI foundation moved here from Phase 7. Every tool can ship a dashboard from day one (`btk image --ui`) instead of waiting for enough tools to fill a menu.
 
-- `btk --version` and `btk --help` work
-- `btk info` prints Bun version, bun-toolkit version, platform, config file status, detected output mode
-- `btk init` creates a `btk.config.ts` in the current directory (or `--global` for `~/.bun-toolkit/config.ts`)
-- Config loading from both tiers with correct merge order
-- `defineConfig()` export for type-safe config authoring
-- Reporter with human/json/ci modes
-- Output components: log, table, key-value, summary, spinner, progress bar, notice
-- Build script that cross-compiles to all targets
-- `bun run test:dist` script that builds and tests against the compiled binary
-- GitHub Actions: test.yml (PR checks), release.yml (publish), homebrew.yml (formula update)
-- npm package structure with JS shim and platform packages
-- README with installation instructions and usage examples
+### Done
+
+- `btk --version`, `btk --help`, and per-command / per-action help with examples, choices and config-sourced defaults
+- `btk info`: Bun and bun-toolkit versions, platform, config file status, output mode and why it was chosen
+- `btk init [--global] [--force]`: writes `btk.config.ts` or `~/.bun-toolkit/config.ts`, asks before overwriting (refuses when not interactive)
+- `btk config show | validate | path`: resolved values with their source; `validate` exits 78 on bad config
+- `btk ui`: home screen (tools + Info + Config), with `btk <tool> --ui` wired for any tool that declares `ui`
+- `defineTool()` / `defineAction()`: one descriptor gives routing, help, validated flags, config slice, env vars, JSON output and the TUI entry
+- Config: global + project (walk-up discovery), `--config`, `BTK_*` env vars, strict zod validation with all problems reported at once and typo suggestions, per-key source tracking, `defineConfig()` types derived from the registry, a runtime virtual module so `import { defineConfig } from "bun-toolkit"` works without node_modules
+- Reporter with human / ci / json modes; one JSON envelope for success and errors; exit codes 0 / 1 / 2 / 78 / 130
+- Output components: log, table, key-value, list, notice, summary, spinner, progress bar
+- TUI components: Screen, SelectList, FileBrowser, OptionsForm (generated from flag specs), ProgressList, ResultTable, Spinner, StatusBar, KeyHints; navigation stack, help overlay, alternate screen with guaranteed restore
+- `bun run build` (current platform or `--target`), `bun run test:dist` (end-to-end suite against the binary)
+- Tests: unit, TUI (ink-testing-library), in-process and spawned integration, dist
+- README with installation and usage
+
+### Deferred to the first release
+
+- GitHub Actions: test.yml, release.yml, homebrew.yml
+- npm package structure with the JS shim and `@btk/*` platform packages
+- Cross-compiled binaries verified on macOS, Linux and Windows runners
 
 ### Verification
 
-- `btk --version` prints the version
-- `btk --help` lists all registered commands
-- `btk info` prints environment details in human mode
-- `btk info --json` outputs valid JSON
-- `CI=true btk info` produces plain text (no ANSI codes)
-- `btk init` creates a valid config with the correct type import
-- `btk init --global` creates `~/.bun-toolkit/config.ts`
-- Global config merges correctly with project config
-- `bun test` passes
-- `bun run test:dist` passes
-- Cross-compiled binary runs on GitHub Actions runners (macOS, Linux, Windows)
+- `btk --version` prints the version; `btk --help` lists every registered command
+- `btk info` / `btk info --json` / `CI=true btk info` (no ANSI)
+- `btk ifno` exits 2 with `Did you mean "btk info"?`
+- `btk init`, `btk init --global`; project values override global ones, and `btk config show` says where each came from
+- An invalid config makes `btk config validate` exit 78 and list every problem with its file
+- `btk ui` opens the home screen in a terminal; without a terminal it exits 2 with a hint
+- `bun test` and `bun run test:dist` pass
 
 ---
 
 ## Phase 1: image optimizer
 
-**Bun API**: `Bun.image` (native image encoding/decoding)
+**Bun API**: `Bun.Image` (native image encoding/decoding; `Bun.file(path).image()`)
 
 ### Commands
 
-- `btk image optimize <glob>` - convert and optimize images
-- `btk image info <file>` - report dimensions, format, size
+- `btk image optimize <paths...>` - convert and optimize images (also `btk image <paths...>`)
+- `btk image info <file>` - report dimensions, format, size, optional ThumbHash placeholder
+- `btk image --ui` - dashboard: file browser with a metadata preview, multi-select, options form prefilled from config, live progress, results with total savings
 
 ### What it does
 
@@ -260,24 +266,15 @@ btk md preview CHANGELOG.md | less -R
 
 ---
 
-## Phase 7: interactive TUI
+## Phase 7: TUI polish
 
-### Command
+The TUI foundation shipped in Phase 0 and every tool brings its own dashboard. Phase 7 is about the whole-app experience once several tools exist.
 
-- `btk ui` (or just `btk` with no arguments)
-
-### What it does
-
-Full-screen interactive mode. Tool selection menu, option configuration, result browsing. Visual reference: terminal.shop.
-
-### Tech stack
-
-- Ink 6 + React 19 for the foundation (same as Claude Code, Gemini CLI)
-- OpenTUI (SST team) as a potential upgrade path
-
-### Why it's Phase 7
-
-The TUI depends on having enough tools to navigate. Building it early would mean a menu with one item.
+- `btk` with no arguments opens `btk ui` in an interactive terminal
+- Cross-tool flows (e.g. convert a file, then hash the result)
+- Result history within a session
+- Visual reference: terminal.shop
+- OpenTUI (SST team) stays the upgrade path if Ink's rendering becomes the bottleneck
 
 ---
 

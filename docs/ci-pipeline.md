@@ -33,7 +33,7 @@ Triggered by pushing a version tag. Builds, tests, and publishes everything.
   - `windows-x64` on `windows-latest`
 - Each job:
   1. Checkout + setup Bun
-  2. `bun build --compile --target=bun-{target} --minify --bytecode ./bin/btk.ts --outfile=dist/btk`
+  2. `bun scripts/build.ts --target bun-{target} --outfile dist/btk`
   3. Run `test:dist` on platforms that can execute natively
   4. Upload binary as artifact
 
@@ -90,16 +90,17 @@ Steps:
 
 ## Build flags
 
-All compiled binaries use the same flags:
+All compiled binaries go through `scripts/build.ts`:
 
 ```typescript
 await Bun.build({
   entrypoints: ["./bin/btk.ts"],
-  compile: { outfile, target: target.name },
+  compile: { outfile, target },
   minify: true,
-  bytecode: true,
-  format: "cjs",     // Required for bytecode compilation
+  sourcemap: "linked",
+  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  plugins: [stubDevtools],   // Ink's dev-only react-devtools-core import
 });
 ```
 
-Note: `format: "cjs"` is required when `bytecode: true` is set. The entrypoint (`bin/btk.ts`) should use an IIFE wrapper instead of top-level await.
+`--bytecode` is not used: Ink and yoga-layout rely on top-level await, which bytecode compilation rejects (see docs/distribution.md). The entrypoint still avoids top-level await, so bytecode can be enabled again if that changes.

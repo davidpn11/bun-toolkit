@@ -1,0 +1,149 @@
+import type { ComponentType } from "react";
+import type { z } from "zod";
+import type { BtkContext } from "../context.ts";
+import type { Output } from "../output/reporter.ts";
+
+export type FlagOptions = {
+  description: string;
+  /** Single-letter short form, e.g. `q` for `-q`. */
+  alias?: string;
+  /** Placeholder in help text, e.g. `<0-100>`. Derived from the schema when omitted. */
+  valueHint?: string;
+  /**
+   * Key in this tool's config slice (`tools.<tool>.<key>`) that supplies the default when the
+   * flag is not passed. This is what gives every flag the flag > env > project > global order.
+   */
+  config?: string;
+  hidden?: boolean;
+};
+
+export interface FlagSpec<S extends z.ZodType = z.ZodType> extends FlagOptions {
+  kind: "flag";
+  schema: S;
+}
+
+export type PositionalOptions = {
+  description: string;
+  /** Name shown in usage, e.g. `paths`. Defaults to the arg key. */
+  valueHint?: string;
+};
+
+export interface PositionalSpec<S extends z.ZodType = z.ZodType> extends PositionalOptions {
+  kind: "positional";
+  schema: S;
+}
+
+export type ArgSpec = FlagSpec | PositionalSpec;
+export type ArgsSpec = Record<string, ArgSpec>;
+export type InferArgs<A extends ArgsSpec> = { [K in keyof A]: z.output<A[K]["schema"]> };
+
+/** A `--flag`. The key in `args` becomes the kebab-case flag name (`maxWidth` -> `--max-width`). */
+export function flag<S extends z.ZodType>(schema: S, options: FlagOptions): FlagSpec<S> {
+  return { kind: "flag", schema, ...options };
+}
+
+/** A positional argument. An array schema makes it variadic (only valid as the last positional). */
+export function positional<S extends z.ZodType>(schema: S, options: PositionalOptions): PositionalSpec<S> {
+  return { kind: "positional", schema, ...options };
+}
+
+export type ActionDef<A extends ArgsSpec = ArgsSpec, R = unknown> = {
+  description: string;
+  examples?: string[];
+  aliases?: string[];
+  hidden?: boolean;
+  args?: A;
+  /**
+   * `false` for commands that must still run when the config is broken (`init`, `config validate`).
+   * Every other command fails early with the config error.
+   */
+  requiresConfig?: boolean;
+  /** Does the work and returns data. In json mode this return value is the output. */
+  run(input: InferArgs<A>, ctx: BtkContext): R | Promise<R>;
+  /** Presents the result in human/ci mode. Never called in json mode. */
+  render?(result: Awaited<R>, out: Output, ctx: BtkContext): void;
+};
+
+export type ToolScreenProps = {
+  ctx: BtkContext;
+  tool: ToolDef;
+};
+
+export type ToolScreen = ComponentType<ToolScreenProps>;
+export type ToolScreenLoader = () => Promise<{ default: ToolScreen }>;
+
+/** A leaf command with no actions, e.g. `btk info`. */
+export interface CommandDef<A extends ArgsSpec = ArgsSpec, R = unknown> extends ActionDef<A, R> {
+  kind: "command";
+  name: string;
+}
+
+/** A group of actions sharing a config slice and an optional TUI, e.g. `btk image optimize|info`. */
+export type ToolDef<C extends z.ZodObject = z.ZodObject, N extends string = string> = {
+  kind: "tool";
+  name: N;
+  description: string;
+  aliases?: string[];
+  /** Config slice under `tools.<name>`. Its `.default()`s are the built-in defaults. */
+  config?: C;
+  actions: Record<string, ActionDef<any, any>>;
+  /** Action used when the first argument is not an action name: `btk image a.png`. */
+  defaultAction?: string;
+  /** Lazy TUI screen for `btk <tool> --ui` and the `btk ui` home screen. */
+  ui?: ToolScreenLoader;
+  /** Built-in groups (like `config`) are listed apart from the Bun API tools. */
+  builtin?: boolean;
+};
+
+export type Entry = CommandDef | ToolDef;
+
+export function defineAction<A extends ArgsSpec, R>(def: ActionDef<A, R>): ActionDef<A, R> {
+  return def;
+}
+
+export function defineCommand<A extends ArgsSpec, R>(
+  def: Omit<CommandDef<A, R>, "kind"> & { args?: A },
+): CommandDef<A, R> {
+  return { kind: "command", ...def } as CommandDef<A, R>;
+}
+
+export function defineTool<const N extends string, C extends z.ZodObject = z.ZodObject>(
+  def: Omit<ToolDef<C, N>, "kind">,
+): ToolDef<C, N> {
+  if (def.defaultAction && !(def.defaultAction in def.actions)) {
+    throw new Error(`Tool "${def.name}": defaultAction "${def.defaultAction}" is not one of its actions`);
+  }
+  return { kind: "tool", ...def };
+}
+
+export type Registry = {
+  /** Built-ins first, then tools. Order is the order shown in help and in the TUI. */
+  entries: readonly Entry[];
+};
+
+export function createRegistry(builtins: readonly Entry[], tools: readonly ToolDef[]): Registry {
+  const entries = [...builtins, ...tools];
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    for (const name of [entry.name, ...(entry.aliases ?? [])]) {
+      if (seen.has(name)) throw new Error(`Duplicate command name or alias: "${name}"`);
+      seen.add(name);
+    }
+  }
+  return { entries };
+}
+
+export function findEntry(registry: Registry, name: string): Entry | undefined {
+  return registry.entries.find((e) => e.name === name || e.aliases?.includes(name));
+}
+
+export function findAction(tool: ToolDef, name: string): [string, ActionDef] | undefined {
+  for (const [key, action] of Object.entries(tool.actions)) {
+    if (key === name || action.aliases?.includes(name)) return [key, action];
+  }
+  return undefined;
+}
+
+export function registeredTools(registry: Registry): ToolDef[] {
+  return registry.entries.filter((e): e is ToolDef => e.kind === "tool" && !e.builtin);
+}

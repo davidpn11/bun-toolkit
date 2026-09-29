@@ -94,12 +94,21 @@ Bun cross-compiles to 8 targets from a single machine:
 | `bun-windows-x64` | Windows x64 |
 | `bun-windows-arm64` | Windows ARM64 |
 
-Build command:
+Build command (`scripts/build.ts` wraps `Bun.build`):
 ```bash
-bun build --compile --target=bun-linux-x64 --minify --bytecode ./bin/btk.ts --outfile=dist/btk
+bun run build                                   # current platform -> dist/btk
+bun scripts/build.ts --target bun-linux-x64     # cross-compile
 ```
 
-Binary size: ~57MB baseline (embeds the Bun runtime). `--minify` and `--bytecode` reduce the JS payload but not the runtime.
+Flags: `--minify`, `NODE_ENV=production`, a linked sourcemap, and a plugin that stubs `react-devtools-core`. That package is a dev-only import inside Ink (loaded only when `DEV=true`), and the bundler would otherwise leave it as a missing module.
+
+**No `--bytecode`.** Ink 6 and yoga-layout use top-level await, which bytecode compilation rejects in both ESM and CJS output (verified with Bun 1.4.0 in the Phase 0 spike). Startup is still ~20ms for plain commands because Ink is imported lazily, only when the TUI opens.
+
+The spike also confirmed that a compiled binary can:
+- `import()` a user's `btk.config.ts` from any directory
+- resolve `import { defineConfig } from "bun-toolkit"` through a runtime `Bun.plugin` virtual module, with no `node_modules`
+
+Binary size: ~63MB (embeds the Bun runtime).
 
 ## Platform package structure
 
