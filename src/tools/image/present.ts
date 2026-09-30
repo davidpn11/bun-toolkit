@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import { displayPath } from "../../config/loader.ts";
-import { formatBytes, formatDimensions } from "../../output/format.ts";
+import { changeTone, formatBytes, formatChange, formatDimensions } from "../../output/format.ts";
 import { icons } from "../../output/palette.ts";
 import type { FileResult } from "./optimize.ts";
 
@@ -17,16 +17,6 @@ export type FileRow = {
   changeTone: Tone;
   note: string;
 };
-
-/** Size change as a signed percentage: `-92.3%` smaller, `+4.0%` larger. */
-export function formatChange(percent: number): string {
-  return percent >= 0 ? `-${percent.toFixed(1)}%` : `+${Math.abs(percent).toFixed(1)}%`;
-}
-
-export function changeTone(percent: number): Tone {
-  if (percent > 20) return "success";
-  return percent >= 0 ? "warning" : "error";
-}
 
 export function fileRow(file: FileResult, cwd: string): FileRow {
   const { before, after } = file;

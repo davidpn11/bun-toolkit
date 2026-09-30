@@ -2,7 +2,7 @@
 
 Bun native API straight in your terminal. One CLI (`btk`), one config, one output style, and an interactive dashboard for every tool.
 
-> Status: Phase 3 is done. The foundation (CLI framework, config, output layer, TUI) and three tools work today: `btk image`, `btk hash` and `btk convert`. `btk password` is next. See [docs/roadmap.md](docs/roadmap.md).
+> Status: Phase 5 is done. The foundation (CLI framework, config, output layer, TUI) and five tools work today: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. `btk md` is next. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install (from source)
 
@@ -39,6 +39,8 @@ btk <tool> --ui             # open a tool's dashboard directly
 | `btk image` | `Bun.Image` | [docs/tools/image.md](docs/tools/image.md) |
 | `btk hash` | `Bun.CryptoHasher`, `Bun.hash` | [docs/tools/hash.md](docs/tools/hash.md) |
 | `btk convert` | `Bun.YAML`, `Bun.TOML`, `Bun.XML`, `Bun.JSON5`, `Bun.JSONC`, `Bun.JSONL` | [docs/tools/convert.md](docs/tools/convert.md) |
+| `btk password` | `Bun.password` | [docs/tools/password.md](docs/tools/password.md) |
+| `btk compress`, `btk decompress` | `Bun.gzipSync`, `Bun.zstdCompress`, `Bun.deflateSync`, `Bun.Archive`, brotli | [docs/tools/compress.md](docs/tools/compress.md) |
 
 ```bash
 btk image ./assets -r                      # every image → WebP q80, next to the originals
@@ -53,6 +55,13 @@ echo hello | btk hash crc32                # standard input
 btk convert config.yaml                    # JSON on stdout
 btk convert data.xml --to yaml -o data.yaml
 cat logs.jsonl | btk convert --from jsonl --to json
+
+btk password hash                          # hidden prompt, argon2id
+btk password verify "$HASH"                # exits 1 when it doesn't match
+
+btk compress ./dist --each --gzip --brotli # precompress static files
+btk compress ./site --zstd                 # → site.tar.zst
+btk decompress site.tar.zst                # → site/
 ```
 
 Every command takes `--json`, `--verbose`, `--no-color`, `--config <path>` and `--help`.
@@ -88,6 +97,8 @@ export default defineConfig({
     image: { format: "avif", quality: 70, presets: { hero: { maxWidth: 2560 } } },
     hash: { algorithm: "blake2b512" },
     convert: { to: "yaml", indent: 4 },
+    password: { algorithm: "argon2id", memoryCost: 65536 },
+    compress: { format: "zstd" },
   },
   output: { verbose: false },
 });

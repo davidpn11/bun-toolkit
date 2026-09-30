@@ -35,6 +35,8 @@ export type Output = {
   notice(lines: string[]): void;
   summary(stats: Record<string, string | number>, title?: string, tone?: SummaryTone): void;
   text(line?: string): void;
+  /** Writes bytes or text to stdout exactly as given, e.g. compressed data. */
+  raw(data: string | Uint8Array): void;
   /** Styling for custom text. Colors are off whenever stdout is not a color terminal. */
   style: Styler;
 };
@@ -90,6 +92,7 @@ export function createReporter(options: ReporterOptions): Reporter {
     summary: (stats, title, tone) =>
       silent || writeOut(renderSummary(outStyle, stats, { title, plain, tone })),
     text: (line = "") => silent || writeOut(line),
+    raw: (data) => silent || stdout.write(data),
   };
 
   return {

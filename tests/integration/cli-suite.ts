@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawnBtk } from "../support/cli.ts";
+import { btkCommand, spawnBtk } from "../support/cli.ts";
 import { ANSI } from "../support/streams.ts";
 import { createTempProject, type TempProject } from "../support/tmp.ts";
 
@@ -182,6 +182,37 @@ export function defineCliSuite(label: string): void {
       });
       expect(code).toBe(0);
       expect(stdout).toBe('name = "app"\nport = 8080\n');
+    });
+
+    test("compressed bytes survive a pipe from compress into decompress", async () => {
+      const p = fresh();
+      const body = "binary-safe round trip\n".repeat(500);
+      const packed = Bun.spawn([...btkCommand(), "compress", "--zstd"], {
+        cwd: p.dir,
+        env: p.env,
+        stdin: new Blob([body]),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const bytes = await new Response(packed.stdout).bytes();
+      expect(await packed.exited).toBe(0);
+      const unpacked = await spawnBtk(["decompress"], { cwd: p.dir, env: p.env, stdin: bytes });
+      expect(unpacked.code).toBe(0);
+      expect(unpacked.stdout).toBe(body);
+    });
+
+    test("password hash reads a pipe and prints a verifiable hash", async () => {
+      const p = fresh();
+      const { code, stdout } = await spawnBtk(
+        ["password", "hash", "--memory-cost", "1024", "--time-cost", "1"],
+        {
+          cwd: p.dir,
+          env: p.env,
+          stdin: "s3cret\n",
+        },
+      );
+      expect(code).toBe(0);
+      expect(await Bun.password.verify("s3cret", stdout.trim())).toBe(true);
     });
 
     test("ui without a terminal exits 2 with a hint", async () => {

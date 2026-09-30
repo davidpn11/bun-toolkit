@@ -2,7 +2,7 @@ import { dirname, relative } from "node:path";
 import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
 import { displayPath } from "../../../config/loader.ts";
-import { formatBytes, formatDuration } from "../../../output/format.ts";
+import { formatBytes, formatChange, formatDuration } from "../../../output/format.ts";
 import { colors } from "../../../output/palette.ts";
 import {
   type ProgressItem,
@@ -17,7 +17,7 @@ import {
 import type { ImageFile } from "../collect.ts";
 import { type FileResult, type OptimizeProgress, type OptimizeReport, optimizeImages } from "../optimize.ts";
 import { describeOptions, type OptimizeOptions } from "../options.ts";
-import { fileRow, formatChange } from "../present.ts";
+import { fileRow } from "../present.ts";
 import type { StepProps } from "./OptionsStep.tsx";
 
 function toImageFiles(paths: string[], cwd: string): ImageFile[] {

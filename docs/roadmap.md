@@ -170,60 +170,63 @@ curl -s api.example.com/data.xml | btk convert --to json
 
 ---
 
-## Phase 4: password hasher (next)
+## Phase 4: password hasher (done)
 
 Bun API: `Bun.password`.
 
+The full reference is [docs/tools/password.md](tools/password.md).
+
 ### Commands
 
-- `btk password hash <value>` hashes a password.
-- `btk password verify <hash> <value>` checks a password against a hash.
+- `btk password hash [passwords...]` hashes passwords from arguments, standard input (one per line) or a hidden prompt.
+- `btk password verify <hash> [password]` checks a password and exits 1 when it doesn't match.
+- `btk password inspect <hash>` shows the algorithm and cost, and whether the hash is weaker than your settings.
+- `btk password --ui` opens a dashboard with masked input.
 
 ### What it does
 
-It supports argon2id, argon2i, argon2d and bcrypt, with configurable cost parameters and automatic salts.
+It supports argon2id, argon2i, argon2d and bcrypt, with configurable memory, passes and bcrypt cost, and a new salt for every hash.
 
-### Why it matters
+Beyond the original plan it shipped a hidden prompt that asks twice and draws on stderr, a warning when a password is passed as an argument, one hash per line of standard input for seed data, `inspect` with rehash advice, and the same advice from `verify`. The JSON output never contains the password.
 
-No simple cross-platform CLI does this. It helps with seed data, auth tests and migration scripts.
+### Why it mattered
 
-### Config
-
-```typescript
-tools: {
-  password: {
-    algorithm: "argon2id",
-  }
-}
-```
+No simple cross-platform CLI does this. It helps with seed data, debugging logins, manual account resets and migrations between frameworks.
 
 ### Examples
 
 ```bash
-btk password hash "s3cret"
-btk password hash --algorithm bcrypt "s3cret"
-btk password verify '$argon2id$...' "s3cret"
-btk password hash "s3cret" --json
+btk password hash
+btk password hash --algorithm bcrypt --cost 12
+printf 'admin123\nuser123\n' | btk password hash
+btk password verify '$argon2id$...'
+btk password inspect '$2b$10$...'
 ```
 
 ---
 
-## Phase 5: compression suite
+## Phase 5: compression suite (done)
 
-Bun API: `Bun.gzipSync`, `Bun.deflateSync`, `Bun.zstdCompressSync` and brotli.
+Bun API: `Bun.gzipSync`, `Bun.deflateSync`, `Bun.zstdCompress` and `Bun.Archive`, with brotli from Bun's native `node:zlib`, because Bun has no `Bun.brotli`.
+
+The full reference is [docs/tools/compress.md](tools/compress.md).
 
 ### Commands
 
-- `btk compress <file> [--gzip|--zstd|--brotli]` compresses a file.
-- `btk decompress <file>` decompresses a file.
+- `btk compress <files...>` compresses files next to the originals, or packs each folder into one archive.
+- `btk decompress <files...>` restores files and extracts archives like `tar -x`.
+- `btk compress formats` lists the formats with their level ranges.
+- `btk compress --ui` and `btk decompress --ui` open dashboards.
 
 ### What it does
 
-It compresses and decompresses with gzip, zstd, brotli and deflate at a configurable level. It compresses folders by building a tar first.
+It compresses and decompresses gzip, zstd, brotli and deflate. Levels follow each format's own range, and the defaults favor small files: gzip 9 (libdeflate goes up to 12), zstd 19, brotli 11. Folders become `.tar.gz`, `.tar.zst` or `.tar.br` archives through `Bun.Archive`.
 
-### Why it matters
+Beyond the original plan it shipped `--each` with several formats at once for precompressing web assets, skipping files that wouldn't shrink, standard input and output for pipelines, format detection from magic bytes, `--stdout` for reading compressed logs, and the same overwrite rules as the other tools.
 
-One binary covers every common compression format, and many systems don't ship zstd.
+### Why it mattered
+
+One binary covers every common compression format, including on systems that don't ship zstd or brotli.
 
 ### Config
 
@@ -231,7 +234,7 @@ One binary covers every common compression format, and many systems don't ship z
 tools: {
   compress: {
     format: "zstd",
-    level: 9,
+    level: 19,
   }
 }
 ```
@@ -240,14 +243,14 @@ tools: {
 
 ```bash
 btk compress bundle.js --zstd --level 9
-btk compress styles.css --brotli
-btk decompress archive.gz
-btk compress ./dist --gzip --output dist.tar.gz
+btk compress ./dist --each --gzip --brotli
+btk decompress archive.tar.gz
+btk compress ./dist --gzip -o dist.tar.gz
 ```
 
 ---
 
-## Phase 6: markdown renderer and plugin system
+## Phase 6: markdown renderer and plugin system (next)
 
 Bun API: `Bun.markdown`, a CommonMark and GFM parser written in Rust.
 

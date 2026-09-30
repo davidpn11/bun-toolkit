@@ -20,7 +20,7 @@ export function btkCommand(): string[] {
 /** Spawns btk as a real subprocess (no TTY). */
 export async function spawnBtk(
   args: string[],
-  options: { cwd?: string; env?: Record<string, string | undefined>; stdin?: string } = {},
+  options: { cwd?: string; env?: Record<string, string | undefined>; stdin?: string | Uint8Array } = {},
 ): Promise<CliResult> {
   const proc = Bun.spawn([...btkCommand(), ...args], {
     cwd: options.cwd ?? emptyDir(),

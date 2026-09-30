@@ -52,6 +52,7 @@ type Output = {
   notice(lines);
   summary(stats, title?, tone?);       // tone: success, warning or error; an empty key prints the value alone
   text(line?);
+  raw(data);                           // bytes or text exactly as given, e.g. compressed output
   style: Styler;                       // semantic colors for stdout
 };
 ```
@@ -108,6 +109,7 @@ All of these export from `src/tui/index.ts`.
 | `ProgressList`, `ProgressBar` | Batch progress with a status per item |
 | `ResultTable` | Aligned result columns |
 | `TextViewer` | Scrollable text with line numbers, used by the convert preview |
+| `TextInput` | One line of typed input, optionally masked with `•` for passwords. It takes every key except esc while focused |
 | `Spinner`, `StatusBar`, `KeyHints` | Small building blocks |
 | `Mascot` | Bun in a hardhat, drawn with half blocks (34×12 cells). Home shows it when the terminal is at least 94×22 |
 

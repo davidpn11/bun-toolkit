@@ -15,7 +15,15 @@ export type Prompter = {
   confirm(message: string, options?: { initial?: boolean }): Promise<boolean>;
   select<T extends string>(message: string, options: SelectOption<T>[]): Promise<T>;
   text(message: string, options?: { placeholder?: string; initial?: string }): Promise<string>;
+  /**
+   * Hidden input drawn on stderr, so it works while stdout is redirected (`btk password hash > h.txt`).
+   * Needs only a terminal on stdin and stderr.
+   */
+  secret(message: string): Promise<string>;
+  readonly canAskSecret: boolean;
 };
+
+export type PrompterOptions = { interactive: boolean; canAskSecret: boolean };
 
 export function notInteractive(message: string, hint: string): BtkError {
   return new BtkError(message, { code: "ERR_NOT_INTERACTIVE", hint });
@@ -25,7 +33,7 @@ function cancelled(): BtkError {
   return new BtkError("Cancelled", { code: "ERR_CANCELLED", exitCode: ExitCode.Cancelled });
 }
 
-export function createPrompter(interactive: boolean): Prompter {
+export function createPrompter({ interactive, canAskSecret }: PrompterOptions): Prompter {
   const guard = (message: string) => {
     if (!interactive) {
       throw notInteractive(
@@ -37,6 +45,19 @@ export function createPrompter(interactive: boolean): Prompter {
 
   return {
     interactive,
+    canAskSecret,
+    async secret(message) {
+      if (!canAskSecret) {
+        throw notInteractive(
+          `Cannot ask "${message}" without a terminal`,
+          "Pipe the value in on standard input",
+        );
+      }
+      const clack = await import("@clack/prompts");
+      const answer = await clack.password({ message, output: process.stderr });
+      if (clack.isCancel(answer)) throw cancelled();
+      return answer;
+    },
     async confirm(message, options = {}) {
       guard(message);
       const clack = await import("@clack/prompts");

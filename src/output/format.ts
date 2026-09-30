@@ -49,3 +49,14 @@ export function formatValue(value: unknown): string {
   if (value !== null && typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
+
+/** Size change as a signed percentage: `-92.3%` smaller, `+4.0%` larger. */
+export function formatChange(percent: number): string {
+  return percent >= 0 ? `-${percent.toFixed(1)}%` : `+${Math.abs(percent).toFixed(1)}%`;
+}
+
+/** Green above 20% smaller, yellow for 0 to 20%, red when the file grew. */
+export function changeTone(percent: number): "success" | "warning" | "error" {
+  if (percent > 20) return "success";
+  return percent >= 0 ? "warning" : "error";
+}

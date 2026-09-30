@@ -42,6 +42,8 @@ export default defineConfig({
     },
     hash: { algorithm: "sha256", encoding: "hex" },
     convert: { to: "yaml", indent: 2 },
+    password: { algorithm: "argon2id" },
+    compress: { format: "zstd", level: 19 },
   },
   output: { verbose: false },
 });
@@ -56,7 +58,7 @@ Nobody writes the `tools` schema by hand. Each tool contributes its slice from t
 ```typescript
 type BtkConfig = {
   // One key per registered tool, typed from the tool's config schema.
-  // Shipped: image, hash, convert (docs/tools/). Planned: password, compress, md.
+  // Shipped: image, hash, convert, password, compress (docs/tools/). Planned: md.
   tools?: ToolsConfig;
 
   // Output preferences. Flags and env vars still win.
@@ -91,6 +93,8 @@ Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCa
 | `tools.image.maxWidth` | `BTK_IMAGE_MAX_WIDTH` |
 | `tools.hash.algorithm` | `BTK_HASH_ALGORITHM` |
 | `tools.convert.to` | `BTK_CONVERT_TO` |
+| `tools.password.algorithm` | `BTK_PASSWORD_ALGORITHM` |
+| `tools.compress.format` | `BTK_COMPRESS_FORMAT` |
 | `output.json` | `BTK_OUTPUT=json` |
 | `output.verbose` | `BTK_VERBOSE=true` |
 

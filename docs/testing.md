@@ -23,7 +23,7 @@ The tests use `bun:test`. `bun test` runs everything, and `bun run test:dist` bu
 | `cli.ts` | `runBtk()` runs the CLI in-process with captured streams, and `spawnBtk()` spawns the source or `BTK_BIN`. Both take `stdin` to pipe text in |
 | `context.ts` | `createTestContext()` builds a `BtkContext` with default config for TUI and unit tests |
 | `tui.tsx` | `renderTui()` renders a component inside the TUI providers, with `keys` for arrow, enter and esc sequences, `press()` to send them, and `waitFor()` for screens that finish asynchronously |
-| `dashboard.tsx` | `openDashboard(tool, project, text)` opens a tool's dashboard in a temp project, as `btk <tool> --ui` would |
+| `dashboard.tsx` | `openDashboard(tool, project, text)` opens a tool's dashboard in a temp project, as `btk <tool> --ui` would. It waits for `text` and then for Ink to attach its key listeners, so the first key press isn't lost |
 | `images.ts` | `writeImage()` writes a noisy test image as PNG, JPEG, WebP or BMP. Noise matters because a flat color compresses to almost nothing in every format |
 | `fake-tool.ts` | The `demo` tool: a config slice with defaults, a default action with variadic positionals, config-backed flags, an alias, a hidden failing action and a lazy TUI screen. It is never part of the shipped registry |
 

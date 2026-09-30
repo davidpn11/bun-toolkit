@@ -34,6 +34,8 @@ src/
     image/                    btk image (docs/tools/image.md)
     hash/                     btk hash (docs/tools/hash.md)
     convert/                  btk convert (docs/tools/convert.md)
+    password/                 btk password (docs/tools/password.md)
+    compress/                 btk compress and btk decompress (docs/tools/compress.md)
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
     loader.ts                 Discovery, import, per-file validation, merge, source tracking
@@ -52,7 +54,8 @@ src/
     palette.ts                Bun accent color, terminal color names and icons, for the CLI and the TUI
     format.ts                 Bytes, durations, percentages, dimensions
     components/               log, table, key-value, list, notice, summary, spinner, progress-bar
-  prompt/prompter.ts          @clack/prompts behind a Prompter type; throws when not interactive
+  prompt/prompter.ts          @clack/prompts behind a Prompter type; throws when not interactive. secret() asks
+                              for hidden input on stderr, so it works while stdout is redirected
   tui/
     launch.ts                 TTY check, then a lazy import of the runtime, so plain commands never load Ink
     runtime.tsx               Alternate screen, Ink render, terminal restore on every exit path
@@ -91,7 +94,9 @@ Each shipped tool splits its core logic by job instead of using one `core.ts`. `
 
 Tools share three building blocks from `src/shared/`. `collectFiles()` turns arguments into files with an `accept` filter and an `exclude` list. `runPool()` limits concurrency. `readStdin()` and `STDIN` (`-`) handle piped input, and tests feed it through `runBtk(args, { stdin })`.
 
-A command whose result is data, like `btk hash` and `btk convert`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean.
+A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline.
+
+`btk compress` and `btk decompress` are two tools in the registry that share one folder. `decompress` has no config slice of its own.
 
 - `action.run(input, ctx, meta)` calls the core logic and returns data. In json mode the runner prints that data inside the envelope.
 - `meta.sources` says where each value came from (`flag`, `argument`, `config` or `default`). `btk image` uses it so an explicit flag beats a preset while a config value does not.

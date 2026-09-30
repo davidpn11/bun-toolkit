@@ -39,7 +39,7 @@ export async function createTestContext(
     config: configInfo.config,
     configInfo,
     reporter: createReporter({ mode: "human", stdout: io.stdout, stderr: io.stderr }),
-    prompter: createPrompter(false),
+    prompter: createPrompter({ interactive: false, canAskSecret: false }),
     registry,
     io,
     signal: new AbortController().signal,

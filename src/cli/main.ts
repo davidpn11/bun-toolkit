@@ -101,7 +101,10 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
       config: configInfo.config,
       configInfo,
       reporter,
-      prompter: createPrompter(environment.interactive),
+      prompter: createPrompter({
+        interactive: environment.interactive,
+        canAskSecret: io.stdin.isTTY === true && io.stderr.isTTY === true && environment.mode !== "json",
+      }),
       registry,
       io,
       signal,
