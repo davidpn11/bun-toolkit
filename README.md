@@ -2,7 +2,7 @@
 
 Bun native API straight in your terminal. One CLI (`btk`), one config, one output style, and an interactive dashboard for every tool.
 
-> Status: Phase 1 is done. The foundation (CLI framework, config, output layer, TUI) and the first tool, `btk image` (`Bun.Image`), work today. `btk hash` is next. See [docs/roadmap.md](docs/roadmap.md).
+> Status: Phase 3 is done. The foundation (CLI framework, config, output layer, TUI) and three tools work today: `btk image`, `btk hash` and `btk convert`. `btk password` is next. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install (from source)
 
@@ -37,12 +37,22 @@ btk <tool> --ui             # open a tool's dashboard directly
 | Tool | Bun API | Docs |
 | --- | --- | --- |
 | `btk image` | `Bun.Image` | [docs/tools/image.md](docs/tools/image.md) |
+| `btk hash` | `Bun.CryptoHasher`, `Bun.hash` | [docs/tools/hash.md](docs/tools/hash.md) |
+| `btk convert` | `Bun.YAML`, `Bun.TOML`, `Bun.XML`, `Bun.JSON5`, `Bun.JSONC`, `Bun.JSONL` | [docs/tools/convert.md](docs/tools/convert.md) |
 
 ```bash
 btk image ./assets -r                      # every image → WebP q80, next to the originals
 btk image ./photos --preset web -o dist    # 1920px wide, q75, into dist/ (mirrored)
 btk image info hero.png                    # format, dimensions, size
 btk image --ui                             # pick files, tweak options, watch it run
+
+btk hash ./dist -r > SHA256SUMS            # sha256sum-compatible checksums
+btk hash verify app.tgz 9f86d081…          # exits 1 on a mismatch
+echo hello | btk hash crc32                # standard input
+
+btk convert config.yaml                    # JSON on stdout
+btk convert data.xml --to yaml -o data.yaml
+cat logs.jsonl | btk convert --from jsonl --to json
 ```
 
 Every command takes `--json`, `--verbose`, `--no-color`, `--config <path>` and `--help`.
@@ -76,6 +86,8 @@ import { defineConfig } from "bun-toolkit";
 export default defineConfig({
   tools: {
     image: { format: "avif", quality: 70, presets: { hero: { maxWidth: 2560 } } },
+    hash: { algorithm: "blake2b512" },
+    convert: { to: "yaml", indent: 4 },
   },
   output: { verbose: false },
 });

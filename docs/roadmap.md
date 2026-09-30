@@ -87,22 +87,29 @@ btk image info hero.png --placeholder
 
 ---
 
-## Phase 2: universal hasher (next)
+## Phase 2: universal hasher (done)
 
 Bun API: `Bun.CryptoHasher` and `Bun.hash`.
 
+The full reference is [docs/tools/hash.md](tools/hash.md).
+
 ### Commands
 
-- `btk hash <algorithm> <file...>` computes hashes.
-- `btk hash verify <file> <expected>` checks a file against a hash and exits 1 on a mismatch.
+- `btk hash <algorithm> <files...>` computes hashes. The algorithm is optional, and `--algorithm` or config sets it too.
+- `btk hash verify <file> <expected>` checks one file and exits 1 on a mismatch.
+- `btk hash check <sums-file>` verifies every line of a checksums file.
+- `btk hash algorithms` lists what is supported.
+- `btk hash --ui` opens a dashboard to pick files and an algorithm.
 
 ### What it does
 
-It supports more than 25 algorithms, including SHA-256, SHA-512, BLAKE2, MD5, CRC32, xxHash and MurmurHash. `--hmac-key` adds HMAC. It streams files, so large files don't load into memory, and it reads stdin.
+It supports 31 algorithms: 19 cryptographic ones through `Bun.CryptoHasher` and 12 fast ones through `Bun.hash`. `--hmac-key` adds HMAC, and `--encoding` prints hex, base64 or base64url. Cryptographic hashes and crc32 stream files, and every command reads standard input.
 
-### Why it matters
+Beyond the original plan it shipped `check` for checksums files, SRI values like `sha384-…` in `verify`, and algorithm detection from the hash length. Output uses the `sha256sum` format so the files it writes work with `sha256sum -c`, and it skips the file its own stdout is redirected into.
 
-It replaces shasum, md5sum and cksum with one command. It is small, and it adds stdin input and streaming to the foundation, which `btk convert` reuses.
+### Why it mattered
+
+It replaces shasum, md5sum, cksum and b2sum with one command. It also added stdin input and data-only stdout to the foundation, which `btk convert` reuses.
 
 ### Examples
 
@@ -111,35 +118,42 @@ btk hash sha256 package.tar.gz
 btk hash blake2b512 --hmac-key "secret" data.bin
 echo "hello" | btk hash crc32
 btk hash verify release.tar.gz abc123def456
-btk hash sha256 dist/*.js --json
+btk hash ./dist -r > SHA256SUMS && btk hash check SHA256SUMS
 ```
 
 ---
 
-## Phase 3: format converter
+## Phase 3: format converter (done)
 
-Bun API: the native YAML, TOML, XML, JSON5, JSONC and JSONL parsers.
+Bun API: `Bun.YAML`, `Bun.TOML`, `Bun.XML`, `Bun.JSON5`, `Bun.JSONC` and `Bun.JSONL`.
+
+The full reference is [docs/tools/convert.md](tools/convert.md).
 
 ### Commands
 
-- `btk convert <file> --to <format>` converts a file.
-- `btk convert --from <format> --to <format>` converts stdin.
+- `btk convert <files...> --to <format>` converts files, printing one result to stdout or writing several next to their originals.
+- `btk convert --from <format> --to <format>` converts standard input.
+- `btk convert formats` lists what it reads and writes.
+- `btk convert --ui` opens a dashboard with a live preview.
 
 ### What it does
 
-It converts between YAML, JSON, TOML, XML, JSON5, JSONC and JSONL. Every parser is part of Bun, and the XML parser ignores external entities, so it is safe against XXE attacks.
+It reads JSON, YAML, TOML, XML, JSON5, JSONC and JSONL, and writes all of them except JSONC. Every parser is part of Bun.
 
-### Why it matters
+Beyond the original plan it shipped `-o`, `--write` and `--out-dir` with the same overwrite rules as `btk image`, format detection for JSON, JSONL and XML on stdin, strict JSONL with line numbers, TOML dates written as ISO strings for other formats, and automatic `<root>` wrapping for XML.
 
-CI scripts and agents often need one format turned into another, and this handles the common ones in one command. It is also the first tool that writes its result to stdout for piping.
+### Why it mattered
+
+CI scripts and agents often need one format turned into another, and one command now covers the common ones. It is also the first tool whose main output is a document on stdout meant for piping.
 
 ### Config
 
 ```typescript
 tools: {
   convert: {
-    pretty: true,
+    to: "json",
     indent: 2,
+    pretty: true,
   }
 }
 ```
@@ -147,16 +161,16 @@ tools: {
 ### Examples
 
 ```bash
-btk convert config.yaml --to json
-btk convert data.xml --to json --pretty
+btk convert config.yaml
+btk convert data.xml --to json --no-pretty
 cat logs.jsonl | btk convert --from jsonl --to json
-btk convert tsconfig.json --to yaml
-curl -s api.example.com/data.xml | btk convert --from xml --to json
+btk convert tsconfig.json --to yaml -o tsconfig.yaml
+curl -s api.example.com/data.xml | btk convert --to json
 ```
 
 ---
 
-## Phase 4: password hasher
+## Phase 4: password hasher (next)
 
 Bun API: `Bun.password`.
 

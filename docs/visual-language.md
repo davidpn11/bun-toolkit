@@ -58,6 +58,8 @@ type Output = {
 
 Actions return data from `run()` and present it in `render(result, out)`. They never check the output mode. When a command fails, the runner stops any spinner or progress bar before printing the error.
 
+When the result is itself data meant for another program, such as digests or a converted document, stdout carries only that data. The header, progress, problems and summary go to stderr, so redirects and pipes get clean output. `btk hash` and `btk convert` work this way; `btk image`, whose result is a report, prints its table and summary on stdout.
+
 ## Colors
 
 btk has one accent color, Bun's pink `#FF1F8F` (`--c-accent` on bun.com). It marks the logo, titles, borders, the selection pointer, flag names in help, spinners and progress bars.
@@ -105,6 +107,7 @@ All of these export from `src/tui/index.ts`.
 | `OptionsForm` | A form built from an action's flag specs (`fieldsFromArgs`), prefilled from config (`initialValues`) and validated with the same zod schemas |
 | `ProgressList`, `ProgressBar` | Batch progress with a status per item |
 | `ResultTable` | Aligned result columns |
+| `TextViewer` | Scrollable text with line numbers, used by the convert preview |
 | `Spinner`, `StatusBar`, `KeyHints` | Small building blocks |
 | `Mascot` | Bun in a hardhat, drawn with half blocks (34×12 cells). Home shows it when the terminal is at least 94×22 |
 

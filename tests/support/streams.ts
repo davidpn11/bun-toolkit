@@ -33,10 +33,13 @@ export class CaptureStream extends PassThrough {
   }
 }
 
-export function createIO(options: { tty?: boolean } = {}) {
+/** With `stdin`, the text is piped in; otherwise a non-TTY stdin is empty and already closed. */
+export function createIO(options: { tty?: boolean; stdin?: string } = {}) {
   const tty = options.tty ?? false;
   const stdin = new PassThrough() as PassThrough & { isTTY?: boolean };
-  stdin.isTTY = tty;
+  stdin.isTTY = tty && options.stdin === undefined;
+  if (options.stdin !== undefined) stdin.end(options.stdin);
+  else if (!tty) stdin.end();
   return {
     stdin,
     stdout: new CaptureStream({ isTTY: tty }),

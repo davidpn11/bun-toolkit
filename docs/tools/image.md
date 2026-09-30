@@ -15,6 +15,45 @@ btk image --ui                                      # dashboard
 
 `btk image <paths>` is `btk image optimize <paths>`. `btk img` works too.
 
+## When to use it
+
+**Your site loads slowly because of large photos.** Convert them to WebP and cap the width at 1920px. The originals stay untouched, and the table shows how much each file shrank:
+
+```bash
+btk image ./public/images -r --preset web
+```
+
+Then point your `<img>` tags or imports at the new `.webp` files.
+
+**Try it before changing anything.** A dry run encodes every image and reports the savings without writing a file:
+
+```bash
+btk image ./public/images -r --preset web --dry-run
+```
+
+**Shrink screenshots before you commit them.** Keep each file's format and replace it in place. btk skips any file that re-encoding would make larger:
+
+```bash
+btk image ./docs/assets --format original --overwrite
+```
+
+Screenshots and diagrams with few colors usually get much smaller with `--format png --palette`, which reduces them to 256 colors.
+
+**Make thumbnails for a gallery.** Write small copies into a separate folder, mirroring subfolders:
+
+```bash
+btk image ./photos -r --preset thumbnail --out-dir ./photos/thumbs
+```
+
+**Check an image before uploading it, or get a blur placeholder.** `info` shows the format, dimensions and size, and `--placeholder` adds a tiny ThumbHash data URL you can show while the real image loads:
+
+```bash
+btk image info hero.jpg --placeholder
+```
+
+**Prefer to pick files by eye.** `btk image --ui` opens a file browser with a preview, lets you choose several images, adjust the options and watch the run.
+
+
 ## Defaults
 
 With the defaults, running btk on a folder never deletes or replaces a file you didn't ask it to:

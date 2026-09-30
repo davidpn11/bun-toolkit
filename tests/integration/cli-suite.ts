@@ -166,6 +166,24 @@ export function defineCliSuite(label: string): void {
       expect(stderr).toContain("./btk.config.ts");
     });
 
+    test("hash reads a pipe and matches sha256sum output", async () => {
+      const p = fresh();
+      const { code, stdout } = await spawnBtk(["hash"], { cwd: p.dir, env: p.env, stdin: "hello" });
+      expect(code).toBe(0);
+      expect(stdout).toBe("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824  -\n");
+    });
+
+    test("convert reads a pipe and writes the result to stdout", async () => {
+      const p = fresh();
+      const { code, stdout } = await spawnBtk(["convert", "--from", "yaml", "--to", "toml"], {
+        cwd: p.dir,
+        env: p.env,
+        stdin: "name: app\nport: 8080\n",
+      });
+      expect(code).toBe(0);
+      expect(stdout).toBe('name = "app"\nport = 8080\n');
+    });
+
     test("ui without a terminal exits 2 with a hint", async () => {
       fresh();
       const { code, stderr } = await btk(["ui"]);

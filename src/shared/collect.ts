@@ -1,0 +1,92 @@
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, resolve, sep } from "node:path";
+
+export type InputFile = {
+  path: string;
+  /** Directory the file was found under; `--out-dir` mirrors the structure below it. */
+  base: string;
+};
+
+export type Collected = {
+  files: InputFile[];
+  missing: string[];
+  /** Explicit files that `accept` rejected. */
+  ignored: string[];
+};
+
+export type CollectOptions = {
+  cwd: string;
+  recursive: boolean;
+  /** Folders to leave out, e.g. `--out-dir` so a second run does not re-read its own outputs. */
+  exclude?: string[];
+  /** Which files count, e.g. only images. Accepts everything when omitted. */
+  accept?: (path: string) => boolean;
+};
+
+const SKIPPED_DIRS = new Set(["node_modules"]);
+const GLOB_CHARS = /[*?[\]{}]/;
+
+export async function collectFiles(paths: readonly string[], options: CollectOptions): Promise<Collected> {
+  const found = new Map<string, InputFile>();
+  const collected: Collected = { files: [], missing: [], ignored: [] };
+  const excluded = (options.exclude ?? []).map((dir) => resolve(options.cwd, dir));
+
+  for (const arg of paths) {
+    const matches = await collectArg(arg, options, collected);
+    for (const file of matches) {
+      if (!found.has(file.path) && !isInside(file.path, excluded)) found.set(file.path, file);
+    }
+  }
+
+  collected.files = [...found.values()].sort((a, b) =>
+    a.path.localeCompare(b.path, undefined, { numeric: true }),
+  );
+  return collected;
+}
+
+async function collectArg(arg: string, options: CollectOptions, collected: Collected): Promise<InputFile[]> {
+  const absolute = resolve(options.cwd, arg);
+  const accept = options.accept ?? (() => true);
+  if (!existsSync(absolute)) {
+    const matches = GLOB_CHARS.test(arg) ? await expandGlob(arg, options.cwd, accept) : [];
+    if (matches.length === 0) collected.missing.push(arg);
+    return matches.map((path) => ({ path, base: options.cwd }));
+  }
+  if (statSync(absolute).isDirectory()) {
+    return walkDirectory(absolute, options.recursive, accept).map((path) => ({ path, base: absolute }));
+  }
+  if (accept(absolute)) return [{ path: absolute, base: dirname(absolute) }];
+  collected.ignored.push(arg);
+  return [];
+}
+
+function isInside(path: string, dirs: string[]): boolean {
+  return dirs.some((dir) => path.startsWith(dir + sep));
+}
+
+async function expandGlob(
+  pattern: string,
+  cwd: string,
+  accept: (path: string) => boolean,
+): Promise<string[]> {
+  const matches: string[] = [];
+  for await (const path of new Bun.Glob(pattern).scan({ cwd, absolute: true, onlyFiles: true })) {
+    if (accept(path)) matches.push(path);
+  }
+  return matches;
+}
+
+/** Skips hidden folders, and `node_modules` when recursing. */
+function walkDirectory(dir: string, recursive: boolean, accept: (path: string) => boolean): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".")) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (recursive && !SKIPPED_DIRS.has(entry.name)) files.push(...walkDirectory(path, true, accept));
+    } else if (accept(path)) {
+      files.push(path);
+    }
+  }
+  return files;
+}

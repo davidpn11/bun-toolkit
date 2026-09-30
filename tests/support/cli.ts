@@ -40,9 +40,9 @@ export async function spawnBtk(
 /** Runs btk in-process with captured streams. Much faster than spawning; used for most CLI tests. */
 export async function runBtk(
   args: string[],
-  options: Omit<RunOptions, "io"> & { tty?: boolean } = {},
+  options: Omit<RunOptions, "io"> & { tty?: boolean; stdin?: string } = {},
 ): Promise<CliResult> {
-  const io = createIO({ tty: options.tty });
+  const io = createIO({ tty: options.tty, stdin: options.stdin });
   const code = await run(args, {
     cwd: emptyDir(),
     ...options,

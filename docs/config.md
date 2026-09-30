@@ -40,6 +40,8 @@ export default defineConfig({
       maxWidth: 1920,
       presets: { hero: { maxWidth: 2560, quality: 85 } },
     },
+    hash: { algorithm: "sha256", encoding: "hex" },
+    convert: { to: "yaml", indent: 2 },
   },
   output: { verbose: false },
 });
@@ -54,7 +56,7 @@ Nobody writes the `tools` schema by hand. Each tool contributes its slice from t
 ```typescript
 type BtkConfig = {
   // One key per registered tool, typed from the tool's config schema.
-  // Shipped: image (docs/tools/image.md). Planned: hash, convert, password, compress, md.
+  // Shipped: image, hash, convert (docs/tools/). Planned: password, compress, md.
   tools?: ToolsConfig;
 
   // Output preferences. Flags and env vars still win.
@@ -87,6 +89,8 @@ Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCa
 | --- | --- |
 | `tools.image.quality` | `BTK_IMAGE_QUALITY` |
 | `tools.image.maxWidth` | `BTK_IMAGE_MAX_WIDTH` |
+| `tools.hash.algorithm` | `BTK_HASH_ALGORITHM` |
+| `tools.convert.to` | `BTK_CONVERT_TO` |
 | `output.json` | `BTK_OUTPUT=json` |
 | `output.verbose` | `BTK_VERBOSE=true` |
 

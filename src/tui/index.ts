@@ -14,6 +14,7 @@ export { Screen, type ScreenProps } from "./components/Screen.tsx";
 export { type SelectItem, SelectList, type SelectListProps } from "./components/SelectList.tsx";
 export { Spinner } from "./components/Spinner.tsx";
 export { StatusBar, type Tone } from "./components/StatusBar.tsx";
+export { TEXT_VIEWER_HINTS, TextViewer, type TextViewerProps } from "./components/TextViewer.tsx";
 export { useBtk } from "./context.tsx";
 export { type FormField, fieldsFromArgs, initialValues, labelFor } from "./form-fields.ts";
 export { useListCursor } from "./hooks/use-list-cursor.ts";

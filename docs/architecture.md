@@ -32,6 +32,8 @@ src/
   tools/
     index.ts                  The tool registry
     image/                    btk image (docs/tools/image.md)
+    hash/                     btk hash (docs/tools/hash.md)
+    convert/                  btk convert (docs/tools/convert.md)
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
     loader.ts                 Discovery, import, per-file validation, merge, source tracking
@@ -60,15 +62,17 @@ src/
     screens/                  Home, Info, Config, ToolHost (loads a tool's lazy `ui`)
     index.ts                  What tool dashboards import
   shared/
-    fs.ts                     Directory listing for pickers
+    collect.ts                Turns file, folder and glob arguments into a sorted, de-duplicated file list
+    fs.ts                     Directory listing for pickers, atomic writes, file error messages
     pool.ts                   Runs async work with a concurrency limit
+    stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
   plugins/types.ts            BtkPlugin type (the loader arrives in Phase 6)
   public.ts                   Package export: defineConfig and types
 tests/
   support/                    Streams, temp projects, in-process and spawned CLI runners, test context,
-                              Ink helpers, image fixtures, and the test-only `demo` tool
+                              Ink and dashboard helpers, image fixtures, and the test-only `demo` tool
   integration/                cli-suite.ts (shared), cli.test.ts (source), dist.test.ts (binary),
-                              registry.test.ts (what a tool gets from defineTool), image.test.ts
+                              registry.test.ts (what a tool gets from defineTool), one file per tool
 scripts/build.ts              Compiles the binary for this platform or a --target
 scripts/test-dist.ts          Builds, then runs the end-to-end suite against the binary
 ```
@@ -83,7 +87,11 @@ src/tools/<name>/
   <name>.test.ts   Tests for the core logic.
 ```
 
-`btk image` splits its core logic by job (`collect.ts`, `optimize.ts`, `info.ts`, `presets.ts`) instead of one `core.ts`. Either layout works.
+Each shipped tool splits its core logic by job instead of using one `core.ts`. `btk image` has `optimize.ts`, `info.ts` and `presets.ts`, `btk hash` has `digest.ts`, `compute.ts` and `verify.ts`, and `btk convert` has `codec.ts` and `convert.ts`. Either layout works.
+
+Tools share three building blocks from `src/shared/`. `collectFiles()` turns arguments into files with an `accept` filter and an `exclude` list. `runPool()` limits concurrency. `readStdin()` and `STDIN` (`-`) handle piped input, and tests feed it through `runBtk(args, { stdin })`.
+
+A command whose result is data, like `btk hash` and `btk convert`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean.
 
 - `action.run(input, ctx, meta)` calls the core logic and returns data. In json mode the runner prints that data inside the envelope.
 - `meta.sources` says where each value came from (`flag`, `argument`, `config` or `default`). `btk image` uses it so an explicit flag beats a preset while a config value does not.

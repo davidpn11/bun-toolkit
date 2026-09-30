@@ -5,7 +5,7 @@ import { render } from "ink-testing-library";
 import { createTestContext } from "../../../../tests/support/context.ts";
 import { writeImage } from "../../../../tests/support/images.ts";
 import { createTempProject, type TempProject } from "../../../../tests/support/tmp.ts";
-import { keys, tick } from "../../../../tests/support/tui.tsx";
+import { keys, tick, waitFor } from "../../../../tests/support/tui.tsx";
 import { defaultRegistry } from "../../../cli/main.ts";
 import { stripAnsi } from "../../../output/style.ts";
 import { TuiApp } from "../../../tui/app.tsx";
@@ -15,14 +15,6 @@ import { image, optimize } from "../tool.ts";
 
 let project: TempProject;
 afterEach(() => project?.cleanup());
-
-async function waitFor(frame: () => string, text: string, timeoutMs = 3000): Promise<void> {
-  const until = Date.now() + timeoutMs;
-  while (!frame().includes(text)) {
-    if (Date.now() > until) throw new Error(`Timed out waiting for "${text}". Last frame:\n${frame()}`);
-    await tick(20);
-  }
-}
 
 async function openDashboard() {
   project = createTempProject();

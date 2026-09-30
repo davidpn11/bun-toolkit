@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import { reduction } from "../../output/format.ts";
+import { writeFileAtomic } from "../../shared/fs.ts";
 import { defaultConcurrency, runPool } from "../../shared/pool.ts";
 import type { Collected, ImageFile } from "./collect.ts";
 import { describeImageError, type ImageProblem } from "./errors.ts";
@@ -200,7 +201,7 @@ export async function optimizeImage(
         code: "SKIP_LARGER",
       };
     }
-    if (!options.dryRun) await writeAtomic(output, bytes);
+    if (!options.dryRun) await writeFileAtomic(output, bytes);
     return converted(file.path, output, before, after);
   } catch (error) {
     return {
@@ -286,18 +287,6 @@ function wouldGrow(before: ImageStats, after: ImageStats): boolean {
     after.height === before.height &&
     after.bytes >= before.bytes
   );
-}
-
-async function writeAtomic(path: string, bytes: Uint8Array): Promise<void> {
-  mkdirSync(dirname(path), { recursive: true });
-  const temp = `${path}.btk-${process.pid}.tmp`;
-  try {
-    await Bun.write(temp, bytes);
-    renameSync(temp, path);
-  } catch (error) {
-    rmSync(temp, { force: true });
-    throw error;
-  }
 }
 
 function converted(input: string, output: string, before: ImageStats, after: ImageStats): FileResult {

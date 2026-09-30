@@ -1,5 +1,5 @@
-import { readdirSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+import { mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 
 export type DirEntry = {
   name: string;
@@ -41,4 +41,30 @@ export function listDirectory(dir: string, options: ListOptions = {}): DirEntry[
     ...entries.filter((e) => e.isDirectory).sort(byName),
     ...entries.filter((e) => !e.isDirectory).sort(byName),
   ];
+}
+
+/** Writes through a temp file and a rename, so readers never see a half-written file. */
+export async function writeFileAtomic(path: string, data: string | Uint8Array): Promise<void> {
+  mkdirSync(dirname(path), { recursive: true });
+  const temp = `${path}.btk-${process.pid}.tmp`;
+  try {
+    await Bun.write(temp, data);
+    renameSync(temp, path);
+  } catch (error) {
+    rmSync(temp, { force: true });
+    throw error;
+  }
+}
+
+const FILE_ERRORS: Record<string, string> = {
+  ENOENT: "File not found",
+  EACCES: "Permission denied",
+  EPERM: "Permission denied",
+  EISDIR: "Is a directory",
+};
+
+export function describeFileError(error: unknown): { code: string; reason: string } {
+  const code = (error as { code?: string } | null)?.code ?? "ERR_READ";
+  const reason = FILE_ERRORS[code] ?? (error instanceof Error ? error.message : String(error));
+  return { code, reason };
 }

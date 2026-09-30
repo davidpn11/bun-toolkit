@@ -19,6 +19,15 @@ export const keys = {
 
 export const tick = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Polls the rendered frame until it contains `text`, for screens that load or compute asynchronously. */
+export async function waitFor(frame: () => string, text: string, timeoutMs = 3000): Promise<void> {
+  const until = Date.now() + timeoutMs;
+  while (!frame().includes(text)) {
+    if (Date.now() > until) throw new Error(`Timed out waiting for "${text}". Last frame:\n${frame()}`);
+    await tick(20);
+  }
+}
+
 /** Renders a component inside the TUI providers, as it would be on a real screen. */
 export function renderTui(ctx: BtkContext, node: ReactNode, onQuit: () => void = () => {}) {
   const instance = render(
