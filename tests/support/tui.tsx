@@ -19,12 +19,17 @@ export const keys = {
 
 export const tick = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Waits until the frame shows `text`, then a little longer: Ink attaches key listeners in an effect
+ * after the paint, so a key sent the moment the text appears can be dropped.
+ */
 export async function waitFor(frame: () => string, text: string, timeoutMs = 3000): Promise<void> {
   const until = Date.now() + timeoutMs;
   while (!frame().includes(text)) {
     if (Date.now() > until) throw new Error(`Timed out waiting for "${text}". Last frame:\n${frame()}`);
     await tick(20);
   }
+  await tick(50);
 }
 
 export function renderTui(ctx: BtkContext, node: ReactNode, onQuit: () => void = () => {}) {

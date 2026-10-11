@@ -19,7 +19,5 @@ export async function openDashboard(tool: ToolDef, project: TempProject, firstTe
     }
   };
   await waitFor(frame, firstText);
-  // Ink attaches key listeners in an effect after the first paint; let it settle before typing.
-  await tick(50);
   return { frame, press, unmount: instance.unmount, until: (text: string) => waitFor(frame, text) };
 }
