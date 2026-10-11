@@ -41,7 +41,12 @@ export function createTempProject(): TempProject {
   return {
     dir,
     globalDir,
-    env: { PATH: process.env.PATH, HOME: process.env.HOME, BTK_CONFIG_DIR: globalDir },
+    env: {
+      PATH: process.env.PATH,
+      HOME: process.env.HOME,
+      BTK_CONFIG_DIR: globalDir,
+      BTK_NO_LOCAL_CONFIG: "off",
+    },
     write: (relativePath, content) => write(dir, relativePath, content),
     writeGlobal: (content, name = "config.ts") => write(globalDir, name, content),
     cleanup: () => rmSync(root, { recursive: true, force: true }),

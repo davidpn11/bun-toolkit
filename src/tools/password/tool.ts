@@ -79,7 +79,7 @@ export const hash = defineAction({
 export const verify = defineAction({
   description: "Check a password against a hash (exits 1 when it doesn't match)",
   examples: [
-    "btk password verify '$argon2id$v=19$m=65536,t=2,p=1$…'",
+    "echo hunter2 | btk password verify '$argon2id$v=19$m=65536,t=2,p=1$4yoS0cIxY+xqALTxd2IjrsgdVXSXFlbhHl5WIrxfnZU$RUEWincwBxq/gWjDBaVcF1HGSh0EShyk5jWi58N5LnI'",
     `echo "$PASSWORD" | btk password verify "$HASH"`,
   ],
   args: {
@@ -107,7 +107,7 @@ export const verify = defineAction({
 
 export const inspect = defineAction({
   description: "Show a hash's algorithm and cost, and whether it is weaker than your settings",
-  examples: ["btk password inspect '$2b$10$…'"],
+  examples: ["btk password inspect '$2b$10$sQZvDNu65lGgRJbJp0EkYOy3zzVpBXHKj7RlLzoRoQ3aRJoeuSkFu'"],
   args: { hash: positional(z.string(), { description: "An argon2 or bcrypt hash" }) },
   run: (input, ctx): Inspection => inspectHash(input.hash, passwordSettings(ctx)),
   render: renderInspect,

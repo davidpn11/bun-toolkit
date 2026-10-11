@@ -4,13 +4,13 @@ bun-toolkit reads TypeScript config files. Bun runs `.ts` natively, so `await im
 
 ## Two config tiers
 
-### Global config in `~/.bun-toolkit/config.ts`
+### Global config in `~/.bun-toolkit/`
 
-Personal defaults that apply in every project, such as your usual image quality or output preferences. `btk init --global` creates it, or you can write it by hand.
+Personal defaults that apply in every project, such as your usual image quality or output preferences. `btk init --global` creates `config.ts`, and `btk init --global --format json` creates `config.json`. You can also write either by hand.
 
-### Project config in `./btk.config.ts`
+### Project config in `./btk.config.ts` or `./btk.config.json`
 
-Overrides for one project, such as the image settings for this repo's assets. Commit it so the whole team gets the same results.
+Overrides for one project, such as the image settings for this repo's assets. Commit it so the whole team gets the same results. `btk init` creates `btk.config.ts`, and `btk init --format json` creates `btk.config.json`.
 
 ## Resolution order
 
@@ -51,6 +51,41 @@ export default defineConfig({
 
 Vite, Nuxt and tsup use the same pattern.
 
+## JSON configs
+
+btk is a CLI, so a project doesn't need bun-toolkit installed. A TypeScript config still loads without it, but the editor marks the `bun-toolkit` import as unresolved. A JSON config avoids that and holds the same values:
+
+```json
+{
+  "tools": {
+    "image": { "format": "webp", "quality": 80 },
+    "hash": { "algorithm": "sha256" }
+  },
+  "output": { "verbose": false }
+}
+```
+
+JSON configs may contain comments and trailing commas. They can't hold plugins, which are functions.
+
+## Running without a local config
+
+When a tool command (`image`, `hash`, `convert`, `password`, `compress`, `decompress`, or a tool's `--ui`) finds no project config, btk prints a warning on stderr and runs with the global config or the built-in defaults:
+
+```
+⚠ No local config found, using the global config (~/.bun-toolkit/config.ts)
+  → Create one with "btk init", or set noLocalConfig: "off" in ~/.bun-toolkit/config.ts
+```
+
+`noLocalConfig` in the global config controls this:
+
+| Value | Behavior |
+| --- | --- |
+| `"warn"` (default) | Print the warning and run |
+| `"off"` | Run silently |
+| `"error"` | Fail with exit code 78 |
+
+`BTK_NO_LOCAL_CONFIG` overrides it for one shell or CI job. Setting `noLocalConfig` in a project config is an error, because a project config means the check already passed. `info`, `init`, `config`, `ui` and `--help` never check. In json mode btk prints no warning.
+
 ## Config schema
 
 Nobody writes the `tools` schema by hand. Each tool contributes its slice from the zod schema in `defineTool({ config })`, and `BtkConfig["tools"]` derives from the registry in `src/tools/index.ts`. Adding a tool adds its key, its types and its validation.
@@ -68,6 +103,9 @@ type BtkConfig = {
     verbose?: boolean;            // debug messages and stack traces
   };
 
+  // Global config only. What tool commands do without a project config.
+  noLocalConfig?: "warn" | "off" | "error";
+
   // Plugins load from config only. The loader arrives in Phase 8.
   plugins?: BtkPlugin[];
 };
@@ -75,9 +113,12 @@ type BtkConfig = {
 
 ## File discovery
 
-btk looks for the project config in the current directory, then in each parent up to the filesystem root, and uses the first `btk.config.ts`, `btk.config.js` or `btk.config.mjs` it finds. Commands therefore work from any subdirectory of a project.
+btk looks for the project config in the current directory, then in each parent up to the filesystem root, and uses the first match. Commands therefore work from any subdirectory of a project. In each folder it checks these names in order:
 
-The global config is `config.ts`, `config.js` or `config.mjs` inside `~/.bun-toolkit/`. `BTK_CONFIG_DIR` points btk at a different directory, which the tests use to stay isolated.
+1. `btk.config.ts`, `btk.config.js`, `btk.config.mjs`, `btk.config.json`
+2. `bun-toolkit.config.ts`, `bun-toolkit.config.js`, `bun-toolkit.config.mjs`, `bun-toolkit.config.json`
+
+The global config is `config.ts`, `config.js`, `config.mjs` or `config.json` inside `~/.bun-toolkit/`, checked in that order. `BTK_CONFIG_DIR` points btk at a different directory, which the tests use to stay isolated.
 
 `--config <path>` replaces project discovery for one run. If the file doesn't exist, btk reports a config error.
 
@@ -97,6 +138,7 @@ Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCa
 | `tools.compress.format` | `BTK_COMPRESS_FORMAT` |
 | `output.json` | `BTK_OUTPUT=json` |
 | `output.verbose` | `BTK_VERBOSE=true` |
+| `noLocalConfig` | `BTK_NO_LOCAL_CONFIG=off` |
 
 btk converts the text to the right type (`"80"` becomes `80`, and `"true"`, `"1"` or `"yes"` become `true`; arrays are comma-separated), then validates it with the same schema as the config file. An invalid value is a config error that names the variable.
 
@@ -128,7 +170,7 @@ Commands that need config exit with code 78 (EX_CONFIG). `btk info`, `btk init` 
 
 ## Implementation notes
 
-- btk loads config files with `await import(path)` and uses the module's `default` export, or the whole module when there is no default.
+- btk loads `.ts`, `.js` and `.mjs` config files with `await import(path)` and uses the module's `default` export, or the whole module when there is no default. It reads `.json` files with `Bun.JSONC.parse`.
 - Before the first import, a `Bun.plugin` virtual module registers `bun-toolkit`. That makes `import { defineConfig } from "bun-toolkit"` resolve even when bun-toolkit isn't in the project's `node_modules`, as with a Homebrew install, the compiled binary or the global config. It works inside `bun build --compile` binaries, and `bun run test:dist` checks it.
 - Layers merge from lowest to highest priority: defaults, global, project, env. Objects merge key by key. `plugins` arrays concatenate across tiers. Every other array is replaced, so a project's list overrides the global one instead of adding to it.
 - btk applies the `.default()` values from each tool's zod schema once, after merging, so it can report where each value came from.

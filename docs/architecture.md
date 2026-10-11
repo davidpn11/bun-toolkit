@@ -38,8 +38,9 @@ src/
     compress/                 btk compress and btk decompress (docs/tools/compress.md)
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
-    loader.ts                 Discovery, import, per-file validation, merge, source tracking
+    loader.ts                 Discovery, import or JSON parse, per-file validation, merge, source tracking
     env.ts                    BTK_* env layer
+    local-config.ts           The noLocalConfig warning or error for tool commands
     merge.ts                  Layered deep merge that records each key's source
     format-issues.ts          Turns zod issues into "path  message" lines with suggestions
     paths.ts                  Global dir and walk-up project discovery

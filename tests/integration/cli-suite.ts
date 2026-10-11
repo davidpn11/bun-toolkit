@@ -162,6 +162,82 @@ export function defineCliSuite(label: string): void {
       expect(stderr).toContain("./btk.config.ts");
     });
 
+    test("JSON project and global configs set tool defaults", async () => {
+      const p = fresh();
+      p.writeGlobal(`{ "tools": { "hash": { "algorithm": "sha1" } } }`, "config.json");
+      const fromGlobal = await spawnBtk(["hash"], { cwd: p.dir, env: p.env, stdin: "hello" });
+      expect(fromGlobal.stdout).toBe("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d  -\n");
+
+      p.write("bun-toolkit.config.json", `{ "tools": { "hash": { "algorithm": "md5" } } }`);
+      const fromProject = await spawnBtk(["hash"], { cwd: p.dir, env: p.env, stdin: "hello" });
+      expect(fromProject.stdout).toBe("5d41402abc4b2a76b9719d911017c592  -\n");
+    });
+
+    describe("without a local config", () => {
+      const WARNING = "No local config found";
+      const unset = { BTK_NO_LOCAL_CONFIG: "" };
+      const hashFile = (env: Record<string, string> = unset, args: string[] = []) => {
+        project.write("a.txt", "hello");
+        return btk(["hash", "a.txt", ...args], env);
+      };
+
+      test("warn (the default) prints a warning and a hint on stderr, then runs", async () => {
+        fresh();
+        const { code, stdout, stderr } = await hashFile();
+        expect(code).toBe(0);
+        expect(stdout).toStartWith("2cf24dba");
+        expect(stderr).toContain(`${WARNING}, using built-in defaults`);
+        expect(stderr).toContain('Create one with "btk init", or set noLocalConfig: "off"');
+
+        project.writeGlobal(`{ "tools": {} }`, "config.json");
+        expect((await hashFile()).stderr).toContain(`${WARNING}, using the global config`);
+      });
+
+      test('"off" in the global config is silent', async () => {
+        fresh().writeGlobal(`{ "noLocalConfig": "off" }`, "config.json");
+        const { code, stderr } = await hashFile();
+        expect(code).toBe(0);
+        expect(stderr).not.toContain(WARNING);
+      });
+
+      test('"error" exits 78 with the hint', async () => {
+        fresh().writeGlobal(`export default { noLocalConfig: "error" };`);
+        const { code, stdout, stderr } = await hashFile();
+        expect(code).toBe(78);
+        expect(stdout).toBe("");
+        expect(stderr).toContain(`${WARNING} (noLocalConfig is "error")`);
+        expect(stderr).toContain("btk init");
+      });
+
+      test("a local config, json mode, help and non-tool commands never warn", async () => {
+        fresh();
+        expect((await hashFile(unset, ["--json"])).stderr).not.toContain(WARNING);
+        for (const args of [["info"], ["config", "show"], ["hash", "--help"]]) {
+          expect((await btk(args, unset)).stderr).not.toContain(WARNING);
+        }
+        project.write("btk.config.json", "{}");
+        expect((await hashFile()).stderr).not.toContain(WARNING);
+      });
+    });
+
+    test("init --format json writes JSON configs that validate", async () => {
+      const p = fresh();
+      expect((await btk(["init", "--format", "json"])).code).toBe(0);
+      expect(JSON.parse(readFileSync(join(p.dir, "btk.config.json"), "utf8"))).toEqual({
+        tools: {},
+        output: {},
+      });
+
+      expect((await btk(["init", "--global", "--format", "json"])).code).toBe(0);
+      const global = JSON.parse(readFileSync(join(p.globalDir, "config.json"), "utf8"));
+      expect(global.noLocalConfig).toBe("warn");
+
+      const { code, stdout } = await btk(["config", "validate"]);
+      expect(code).toBe(0);
+      expect(stdout).toContain("config.json (global)");
+      expect(stdout).toContain("btk.config.json (project)");
+    });
+
     test("hash reads a pipe and matches sha256sum output", async () => {
       const p = fresh();
       const { code, stdout } = await spawnBtk(["hash"], { cwd: p.dir, env: p.env, stdin: "hello" });

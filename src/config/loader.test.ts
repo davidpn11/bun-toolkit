@@ -177,6 +177,72 @@ describe("loadConfig()", () => {
   });
 });
 
+describe("JSON configs", () => {
+  test("btk.config.json and bun-toolkit.config.json are found; btk.config.* wins in the same folder", async () => {
+    project = createTempProject();
+    const named = project.write("bun-toolkit.config.json", `{ "tools": { "demo": { "level": 3 } } }`);
+    expect((await load()).config.tools.demo?.level).toBe(3);
+    expect(findProjectConfig(project.dir, project.env)).toBe(named);
+
+    const short = project.write("btk.config.json", `{ "tools": { "demo": { "level": 4 } } }`);
+    expect(findProjectConfig(project.dir, project.env)).toBe(short);
+
+    const ts = project.write("btk.config.ts", `export default { tools: { demo: { level: 6 } } };`);
+    expect(findProjectConfig(project.dir, project.env)).toBe(ts);
+  });
+
+  test("a global config.json loads, and comments and trailing commas are allowed", async () => {
+    project = createTempProject();
+    const path = project.writeGlobal(
+      `// personal defaults\n{ "tools": { "demo": { "mode": "slow", } } }`,
+      "config.json",
+    );
+    const loaded = await load();
+    expect(loaded.error).toBeUndefined();
+    expect(loaded.sources["tools.demo.mode"]).toEqual({ kind: "global", origin: path });
+  });
+
+  test("invalid JSON is a load error that names the file", async () => {
+    project = createTempProject();
+    project.write("btk.config.json", `{ "tools": `);
+    const { error, files } = await load();
+    expect(files.project?.status).toBe("unreadable");
+    expect(error?.details.join("\n")).toContain("./btk.config.json (project)");
+    expect(error?.details.join("\n")).toContain("Invalid JSON");
+  });
+
+  test("a JSON config must hold an object", async () => {
+    project = createTempProject();
+    project.write("btk.config.json", `[1, 2]`);
+    expect((await load()).error?.details.join("\n")).toContain("must contain a JSON object");
+  });
+});
+
+describe("noLocalConfig", () => {
+  test("defaults to warn; set from the global config or BTK_NO_LOCAL_CONFIG", async () => {
+    project = createTempProject();
+    const env = { BTK_NO_LOCAL_CONFIG: "" };
+    expect((await load(env)).config.noLocalConfig).toBe("warn");
+
+    const path = project.writeGlobal(`{ "noLocalConfig": "error" }`, "config.json");
+    const loaded = await load(env);
+    expect(loaded.config.noLocalConfig).toBe("error");
+    expect(loaded.sources.noLocalConfig).toEqual({ kind: "global", origin: path });
+
+    const fromEnv = await load({ BTK_NO_LOCAL_CONFIG: "off" });
+    expect(fromEnv.config.noLocalConfig).toBe("off");
+    expect(fromEnv.sources.noLocalConfig).toEqual({ kind: "env", origin: "BTK_NO_LOCAL_CONFIG" });
+  });
+
+  test("is rejected in a project config and validated in env", async () => {
+    project = createTempProject();
+    project.write("btk.config.json", `{ "noLocalConfig": "off" }`);
+    const text = (await load({ BTK_NO_LOCAL_CONFIG: "loud" })).error?.details.join("\n") ?? "";
+    expect(text).toContain("noLocalConfig  Only allowed in the global config");
+    expect(text).toContain('BTK_NO_LOCAL_CONFIG  Expected warn, off, error, received "loud"');
+  });
+});
+
 describe("mergeLayers()", () => {
   test("objects merge, arrays replace (except plugins), sources track the winner", () => {
     const { values, sources } = mergeLayers([

@@ -138,7 +138,7 @@ export const decompressRun = defineAction({
     "btk decompress bundle.js.gz",
     "btk decompress site.tar.zst",
     "btk decompress logs.gz --stdout | grep ERROR",
-    "curl -sL https://example.com/data.zst | btk decompress > data",
+    "cat dump.sql.zst | btk decompress > dump.sql",
   ],
   args: {
     inputs: inputsArg,

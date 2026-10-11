@@ -25,6 +25,7 @@ bun run build       # -> dist/btk
 btk --help                  # every command
 btk info                    # versions, platform, output mode, config status
 btk init                    # create ./btk.config.ts
+btk init --format json      # create ./btk.config.json instead
 btk init --global           # create ~/.bun-toolkit/config.ts
 btk config                  # resolved config, and where each value comes from
 btk config validate         # exits 78 if any config is invalid (use it in CI)
@@ -104,7 +105,11 @@ export default defineConfig({
 });
 ```
 
-Precedence, from highest to lowest: CLI flags, `BTK_<TOOL>_<KEY>` env vars, project `btk.config.ts` (found by walking up from the current directory), global `~/.bun-toolkit/config.ts`, built-in defaults.
+The same config works as plain JSON in `btk.config.json` or `bun-toolkit.config.json`, which needs nothing installed in the project.
+
+Precedence, from highest to lowest: CLI flags, `BTK_<TOOL>_<KEY>` env vars, the project config (found by walking up from the current directory), the global `~/.bun-toolkit/config.ts` or `config.json`, built-in defaults.
+
+When a tool runs without a project config, btk warns on stderr. Set `noLocalConfig` in the global config to `"off"` to silence it, or `"error"` to make it fail.
 
 btk validates configs strictly and reports every problem at once, with the file, the key path, what it expected, and a "did you mean" for typos:
 

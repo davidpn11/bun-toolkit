@@ -1,5 +1,6 @@
 import { builtins } from "../commands/index.ts";
 import { loadConfig } from "../config/loader.ts";
+import { checkLocalConfig } from "../config/local-config.ts";
 import type { BtkContext, BtkIO } from "../context.ts";
 import { detectEnvironment, type Environment, type EnvironmentInput } from "../env.ts";
 import { BtkError, ExitCode, isBtkError } from "../errors.ts";
@@ -112,6 +113,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     }
     if (route.kind === "tool-ui") {
       if (configInfo.error) throw configInfo.error;
+      if (!route.tool.builtin) checkLocalConfig(configInfo, cwd, reporter);
       parseArgs(route.tokens, { ...globalFlags, ...uiFlag }, { commandPath: route.tool.name });
       await launchTui(ctx, route.tool);
       return ExitCode.Ok;
@@ -133,6 +135,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     }
 
     if (action.requiresConfig !== false && configInfo.error) throw configInfo.error;
+    if (tool && !tool.builtin) checkLocalConfig(configInfo, cwd, reporter);
 
     // `btk <tool> <action> --ui` opens the dashboard; the action's own arguments are not required.
     if (tool?.ui && hasToken(route.tokens, "--ui")) {

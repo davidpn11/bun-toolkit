@@ -2,18 +2,49 @@
 
 Compress files with gzip, zstd, brotli or deflate, pack folders into archives, and reverse both. Bun provides every codec, so this works the same on machines that have no `zstd` or `brotli` installed.
 
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `btk compress [files...]` | Compress files, or pack each folder into one archive. Short for `btk compress run` |
+| `btk compress formats` | List the formats with their extensions and level ranges |
+| `btk decompress [files...]` | Decompress files and extract archives. Short for `btk decompress run` |
+| `btk compress --ui` | Open the dashboard. `btk decompress --ui` opens its decompress screen directly |
+
+### compress
+
+`btk compress [files...]` writes a compressed copy next to each input and keeps the original. It uses gzip unless you pass a format.
+
 ```bash
-btk compress bundle.js                          # → bundle.js.gz, original kept
-btk compress ./dist --each --gzip --brotli      # .gz and .br next to every file
-btk compress ./site --zstd                      # → site.tar.zst
+btk compress bundle.js                          # bundle.js.gz
+btk compress styles.css --brotli --level 9      # styles.css.br at level 9
+btk compress ./site --zstd                      # site.tar.zst, one archive for the folder
+btk compress ./dist --each --gzip --brotli      # a .gz and a .br next to every file in dist/
+btk compress dump.sql --zstd --out-dir backups  # backups/dump.sql.zst
+btk compress ./dist --each --dry-run            # sizes only, nothing written
 cat dump.sql | btk compress --zstd > dump.sql.zst
-btk decompress site.tar.zst                     # → site/
-btk decompress app.log.gz --stdout | grep ERROR
-btk compress formats                            # extensions and level ranges
-btk compress --ui                               # dashboard
 ```
 
-`btk compress <inputs>` is `btk compress run <inputs>`, and `btk decompress <inputs>` is `btk decompress run <inputs>`.
+### formats
+
+`btk compress formats` prints the table in [Formats and levels](#formats-and-levels).
+
+```bash
+btk compress formats
+```
+
+### decompress
+
+`btk decompress [files...]` restores each file next to the compressed one. Archives such as `.tar.zst` extract into a folder.
+
+```bash
+btk decompress bundle.js.gz                     # bundle.js
+btk decompress site.tar.zst                     # site/
+btk decompress site.tar.zst -o ./restore        # into restore/
+btk decompress app.log.gz --stdout | grep ERROR # print instead of writing a file
+btk decompress data.bin --format brotli         # brotli has no signature, so name the format
+cat dump.sql.zst | btk decompress > dump.sql
+```
 
 ## When to use it
 
@@ -23,7 +54,7 @@ btk compress --ui                               # dashboard
 btk compress ./dist --each --gzip --brotli
 ```
 
-Files that wouldn't get smaller, such as images and fonts, are skipped instead of producing a useless `.gz`.
+btk skips files that wouldn't get smaller, such as images and fonts, instead of writing a useless `.gz`.
 
 **Send or back up a folder as one file.** Pack a folder into a single archive, then unpack it on the other side:
 
@@ -63,13 +94,13 @@ btk decompress < mydb.sql.zst | psql mydb
 
 | Input | compress | decompress |
 | --- | --- | --- |
-| A file | `name.ext.gz` next to it, keeping the original | the original name next to it (`app.js.gz` → `app.js`) |
+| A file | `name.ext.gz` next to it, keeping the original | the original name next to it (`app.js.gz` becomes `app.js`) |
 | A folder | one `folder.tar.gz` next to it, including hidden files | |
 | A folder with `--each` | a compressed copy of every file inside, recursively | |
 | An archive (`.tar.gz`, `.tgz`, `.tar.zst`, `.tzst`, `.tar.br`) | | extracted like `tar -x`: an archive of `site/` gives `site/` next to it, and loose files go into a folder named after the archive |
 | Standard input | standard output, or `-o <file>` | standard output, or `-o <file>` |
 
-Both commands keep the input, never replace an existing file or folder without `--overwrite`, and write through a temp file. `--out-dir` puts results in another folder, `-o` names a single output, and `--dry-run` reports sizes without writing. Folders and globs with `-r` include subfolders. Files that are already compressed are left out of `btk compress`, so rerunning it on a folder doesn't compress its own outputs. Batches show a progress bar on stderr, and Ctrl+C lets the files in flight finish, skips the rest and exits 130.
+Both commands keep the input, never replace an existing file or folder without `--overwrite`, and write through a temp file. `--out-dir` puts results in another folder, `-o` names a single output, and `--dry-run` reports sizes without writing. Folders and globs with `-r` include subfolders. `btk compress` leaves out files that are already compressed, so rerunning it on a folder doesn't compress its own outputs. Batches show a progress bar on stderr. Ctrl+C lets the files in flight finish, skips the rest and exits 130.
 
 btk refuses to print compressed data to a terminal or into `--json` output, and suggests a redirect or `-o` instead.
 
@@ -86,7 +117,7 @@ The defaults favor small files over speed, because you usually compress somethin
 
 gzip and deflate use libdeflate, which compresses better than zlib at the same level, and levels above 9 go further than zlib can. The shortcut flags `--gzip`, `--zstd`, `--brotli` and `--deflate` can be combined to write one file per format. Without them, btk uses `--format` or the configured format.
 
-`btk decompress` picks the format from the file extension. gzip and zstd files are also recognized by their first bytes when the extension is missing or wrong, and btk names the output `name.out`. brotli and raw deflate have no such signature, so those need `--format`.
+`btk decompress` picks the format from the file extension. It also recognizes gzip and zstd by their first bytes when the extension is missing or wrong, and then names the output `name.out`. brotli and raw deflate have no such signature, so those need `--format`.
 
 ## Limits
 
@@ -122,13 +153,13 @@ decompress:
 | `--overwrite` | off |
 | `-n, --dry-run` | off |
 
-Config keys for `btk compress` can also be set with `BTK_COMPRESS_<KEY>`, such as `BTK_COMPRESS_FORMAT=zstd`.
+Config keys for `btk compress` can also be set with `BTK_COMPRESS_<KEY>`, such as `BTK_COMPRESS_FORMAT=zstd`. `btk decompress` has no config.
 
 ## Exit codes
 
 | Code | When |
 | --- | --- |
-| 0 | Everything was written, or deliberately skipped |
+| 0 | Everything was written, or skipped on purpose |
 | 1 | A file failed, a path matched nothing, or the data wasn't valid for its format |
 | 2 | Bad flags, a level outside the format's range, `-o` with several outputs, or binary data aimed at a terminal or JSON |
 | 78 | Invalid `tools.compress` config |

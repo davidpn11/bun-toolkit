@@ -22,7 +22,7 @@ function flatten(config: ResolvedConfig): [string, unknown][] {
     }
     rows.push([prefix, value]);
   };
-  walk({ tools: config.tools, output: config.output }, "");
+  walk({ tools: config.tools, output: config.output, noLocalConfig: config.noLocalConfig }, "");
   if (config.plugins.length > 0) rows.push(["plugins", config.plugins.map((p) => p.name)]);
   return rows;
 }

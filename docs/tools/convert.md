@@ -2,17 +2,37 @@
 
 Convert between JSON, YAML, TOML, XML, JSON5, JSONC and JSONL with the parsers built into Bun. You don't need jq, yq or a Python script.
 
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `btk convert [files...]` | Convert files, folders or standard input. Short for `btk convert run` |
+| `btk convert formats` | List the formats it reads and writes, with their extensions |
+| `btk convert --ui` | Open the dashboard |
+
+### run
+
+`btk convert [files...]` converts to JSON unless you pass `--to`. One input prints the result on stdout. Several inputs, a folder or `--out-dir` write files instead.
+
 ```bash
-btk convert config.yaml                            # → JSON on stdout
-btk convert data.xml --to yaml
-cat logs.jsonl | btk convert --from jsonl --to json
-btk convert tsconfig.json --to yaml -o tsconfig.yaml
-btk convert ./config -r --to toml --out-dir build  # a whole folder
-btk convert formats                                # what it reads and writes
-btk convert --ui                                   # dashboard
+btk convert config.yaml                              # JSON on stdout
+btk convert data.xml --to yaml                       # YAML on stdout
+btk convert tsconfig.json --to yaml -o tsconfig.yaml # into a file
+btk convert config.yaml --to toml --write            # config.toml next to config.yaml
+cat logs.jsonl | btk convert --from jsonl            # standard input needs --from unless it is JSON, JSONL or XML
+btk convert ./config -r --to toml --out-dir build    # a folder, mirrored into build/
+btk convert ./config -r --to json --dry-run          # show what would be written
+btk convert notes.txt --from yaml                    # a file with an unknown extension
 ```
 
-`btk convert <inputs>` is `btk convert run <inputs>`.
+### formats
+
+`btk convert formats` prints the table in [Formats](#formats), so you can check what a build of btk supports.
+
+```bash
+btk convert formats
+btk convert formats --json
+```
 
 ## When to use it
 
@@ -23,16 +43,16 @@ btk convert docker-compose.yml | jq '.services | keys'
 btk convert Cargo.toml | jq -r '.package.version'
 ```
 
-**Move a config to the format a tool now wants.** Many tools accept both YAML and JSON, and some are dropping one. Convert once and save the result:
+**Move a config to the format a tool now wants.** Many tools accept both YAML and JSON. Convert once and save the result:
 
 ```bash
 btk convert .eslintrc.yaml -o .eslintrc.json
 ```
 
-**Use an XML API from a script.** Turn the response into JSON, then pick out what you need:
+**Use an XML feed from a script.** Turn the feed into JSON, then pick out what you need:
 
 ```bash
-curl -s https://example.com/feed.xml | btk convert --to json | jq '.rss.channel.title'
+curl -fsSL https://github.com/oven-sh/bun/releases.atom | btk convert --to json | jq -r '.feed.title'
 ```
 
 **Turn log lines into one document.** Structured logs are often JSONL, one JSON object per line. Convert them into a single JSON array for a spreadsheet, a chart or another tool:
@@ -47,14 +67,13 @@ cat app.jsonl | btk convert --from jsonl > app.json
 btk convert config.toml > /dev/null
 ```
 
-**Convert a whole folder.** Fixtures, translations or configs in one format can all move to another at once, written next to the originals or into another folder:
+**Convert a whole folder.** Move fixtures, translations or configs from one format to another in one run, written next to the originals or into another folder:
 
 ```bash
 btk convert ./fixtures -r --to json --out-dir ./fixtures-json
 ```
 
 **Look before you save.** `btk convert --ui` lets you pick a file and a target format, shows the converted text, and writes it when you press `w`.
-
 
 ## Where the result goes
 
@@ -65,7 +84,13 @@ btk convert ./fixtures -r --to json --out-dir ./fixtures-json
 | One file with `--write` | Written next to the original with the new extension |
 | Several files, a folder, or `--out-dir` | Written next to each original, or under `--out-dir` with subfolders mirrored, with a result table |
 
-When btk writes files it follows the same rules as `btk image`. It never replaces an existing file without `--overwrite`, and it never rewrites a file in place (`app.json` converted to JSON) without `--overwrite`. It leaves earlier outputs alone, so on a second run `app.json` next to `app.yaml` isn't treated as a new source. When two inputs would write the same file, such as `app.json` and `app.yaml` both becoming `app.toml`, the first in sort order wins and the other is skipped with a reason. Writes are atomic, and `--dry-run` shows what would be written.
+When btk writes files it follows the same rules as `btk image`:
+
+- It never replaces an existing file without `--overwrite`.
+- It never rewrites a file in place, such as `app.json` converted to JSON, without `--overwrite`.
+- It leaves earlier outputs alone, so on a second run `app.json` next to `app.yaml` isn't treated as a new source.
+- When two inputs would write the same file, such as `app.json` and `app.yaml` both becoming `app.toml`, the first in sort order wins and btk skips the other with a reason.
+- It writes through a temp file, and `--dry-run` shows what would be written.
 
 ## Formats
 
@@ -81,13 +106,13 @@ When btk writes files it follows the same rules as `btk image`. It never replace
 
 btk takes the input format from the file extension. For standard input, it recognizes JSON, JSONL and XML by trying to parse them. Anything else needs `--from`, because almost any text is valid YAML. `--from` also lets you name a file with another extension, such as `btk convert notes.txt --from yaml`. Folder scans still only pick up the extensions above.
 
-Bun has no JSONC writer, and JSONC output would just be JSON, so write JSON instead.
+Bun has no JSONC writer, and JSONC output would be plain JSON anyway, so write JSON instead.
 
 ## How values map between formats
 
 - TOML dates stay dates when converting TOML to TOML. Every other format gets the ISO 8601 string, such as `1979-05-27T07:32:00Z`.
 - TOML needs an object at the top level. Converting a list to TOML fails with a hint to convert to JSON or YAML instead.
-- XML needs exactly one root element. An object with one key becomes that element. Anything else is wrapped in `<root>` (`--xml-root` renames it), and a list becomes `<root><item>…</item></root>`.
+- XML needs exactly one root element. An object with one key becomes that element. btk wraps anything else in `<root>` (`--xml-root` renames it), and a list becomes `<root><item>…</item></root>`.
 - XML attributes appear as `@name` keys and text next to attributes as `#text`, which is Bun's compact XML shape.
 - JSONL writes one JSON value per line. A list becomes one line per item, and anything else becomes a single line.
 - JSONL input is strict. A bad line fails with its line number instead of stopping quietly at the last good value.
@@ -117,7 +142,7 @@ A parse error names the format, such as `Invalid YAML: Unexpected token`, and su
 
 | Code | When |
 | --- | --- |
-| 0 | Converted, or every file was deliberately skipped |
+| 0 | Converted, or every file was skipped on purpose |
 | 1 | Invalid input, a format that can't hold the data, an existing `-o` file, or a failed file in a batch |
 | 2 | Bad flags, nothing to convert, `-o` with several files, or `--write` with standard input |
 | 78 | Invalid `tools.convert` config |

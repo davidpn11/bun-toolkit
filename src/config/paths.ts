@@ -2,8 +2,19 @@ import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-export const CONFIG_FILENAMES = ["btk.config.ts", "btk.config.js", "btk.config.mjs"] as const;
-export const GLOBAL_CONFIG_FILENAMES = ["config.ts", "config.js", "config.mjs"] as const;
+const EXTENSIONS = ["ts", "js", "mjs", "json"] as const;
+
+export const CONFIG_FORMATS = ["ts", "json"] as const;
+export type ConfigFormat = (typeof CONFIG_FORMATS)[number];
+
+export const CONFIG_FILENAMES = ["btk", "bun-toolkit"].flatMap((base) =>
+  EXTENSIONS.map((ext) => `${base}.config.${ext}`),
+);
+export const GLOBAL_CONFIG_FILENAMES = EXTENSIONS.map((ext) => `config.${ext}`);
+
+export function isJsonConfig(path: string): boolean {
+  return path.endsWith(".json");
+}
 
 export function globalConfigDir(env: Record<string, string | undefined> = process.env): string {
   return env.BTK_CONFIG_DIR ? resolve(env.BTK_CONFIG_DIR) : join(homedir(), ".bun-toolkit");

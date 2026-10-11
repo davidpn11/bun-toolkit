@@ -10,7 +10,7 @@ The TUI foundation moved here from the TUI polish phase. That way every tool can
 
 - `btk --version`, `btk --help`, and help for each command and action with examples, choices and config-sourced defaults
 - `btk info`, which prints the Bun and bun-toolkit versions, platform, config file status, output mode and why btk chose that mode
-- `btk init [--global] [--force]`, which writes `btk.config.ts` or `~/.bun-toolkit/config.ts` and asks before overwriting (it refuses when not interactive)
+- `btk init [--global] [--format ts|json] [--force]`, which writes `btk.config.ts`/`.json` or `~/.bun-toolkit/config.ts`/`.json` and asks before overwriting (it refuses when not interactive)
 - `btk config show | validate | path`. `show` prints resolved values with their source, and `validate` exits 78 on bad config
 - `btk ui`, a home screen with the tools, Info and Config, plus `btk <tool> --ui` for any tool that declares a `ui`
 - `defineTool()` and `defineAction()`, where one descriptor gives routing, help, validated flags, a config slice, env vars, JSON output and the TUI entry

@@ -3,6 +3,7 @@ import type { ToolDef } from "../cli/define.ts";
 import type { BtkPlugin } from "../plugins/types.ts";
 import type { tools } from "../tools/index.ts";
 import { type ConfigIssue, formatIssues } from "./format-issues.ts";
+import type { ConfigScope } from "./loader.ts";
 
 export const outputConfigSchema = z.strictObject({
   color: z.boolean().optional(),
@@ -19,6 +20,10 @@ export const pluginSchema = z.custom<BtkPlugin>(
   "Expected a plugin object with a name and a setup() function",
 );
 
+export const NO_LOCAL_CONFIG = ["warn", "off", "error"] as const;
+export const noLocalConfigSchema = z.enum(NO_LOCAL_CONFIG);
+export type NoLocalConfig = z.infer<typeof noLocalConfigSchema>;
+
 type RegisteredTool = (typeof tools)[number];
 
 export type ToolsConfig = {
@@ -30,12 +35,15 @@ export type ToolsConfig = {
 export type BtkConfig = {
   tools?: ToolsConfig;
   output?: z.input<typeof outputConfigSchema>;
+  /** What tool commands do when no local config is found. Global config only. */
+  noLocalConfig?: NoLocalConfig;
   plugins?: BtkPlugin[];
 };
 
 export type ResolvedConfig = {
   tools: Record<string, Record<string, unknown>>;
   output: z.output<typeof outputConfigSchema>;
+  noLocalConfig: NoLocalConfig;
   plugins: BtkPlugin[];
 };
 
@@ -57,7 +65,7 @@ export function fileSliceSchema(config: z.ZodObject) {
   return z.strictObject(shape);
 }
 
-export function buildConfigFileSchema(toolDefs: readonly ToolDef[]) {
+export function buildConfigFileSchema(toolDefs: readonly ToolDef[], scope: ConfigScope) {
   const toolShapes: Record<string, z.ZodType> = {};
   for (const tool of toolDefs) {
     if (tool.config) toolShapes[tool.name] = fileSliceSchema(tool.config).optional();
@@ -65,6 +73,12 @@ export function buildConfigFileSchema(toolDefs: readonly ToolDef[]) {
   return z.strictObject({
     tools: z.strictObject(toolShapes).optional(),
     output: outputConfigSchema.optional(),
+    noLocalConfig:
+      scope === "global"
+        ? noLocalConfigSchema.optional()
+        : z
+            .custom<never>(() => false, "Only allowed in the global config (~/.bun-toolkit/config.ts)")
+            .optional(),
     plugins: z.array(pluginSchema).optional(),
   });
 }
@@ -76,7 +90,7 @@ export function defaultsLayer(toolDefs: readonly ToolDef[]): Record<string, unkn
     const parsed = tool.config.safeParse({});
     if (parsed.success) toolDefaults[tool.name] = stripUndefined(parsed.data as Record<string, unknown>);
   }
-  return { tools: toolDefaults, output: {}, plugins: [] };
+  return { tools: toolDefaults, output: {}, noLocalConfig: "warn", plugins: [] };
 }
 
 function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
@@ -111,6 +125,7 @@ export function finalizeConfig(
     config: {
       tools: resolvedTools,
       output: (merged.output ?? {}) as ResolvedConfig["output"],
+      noLocalConfig: (merged.noLocalConfig ?? "warn") as NoLocalConfig,
       plugins: (merged.plugins ?? []) as BtkPlugin[],
     },
     issues,

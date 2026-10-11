@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type { ToolDef } from "../cli/define.ts";
 import { coerceText, describeExpected, inspectSchema } from "../cli/schema-info.ts";
 import type { ConfigIssue } from "./format-issues.ts";
+import { NO_LOCAL_CONFIG, noLocalConfigSchema } from "./schema.ts";
 
 function toEnvSegment(key: string): string {
   return key
@@ -54,6 +55,20 @@ export function readEnvLayer(
     }
   }
   if (Object.keys(output).length > 0) values.output = output;
+
+  const noLocalConfig = env.BTK_NO_LOCAL_CONFIG;
+  if (noLocalConfig !== undefined && noLocalConfig !== "") {
+    const parsed = noLocalConfigSchema.safeParse(noLocalConfig);
+    if (parsed.success) {
+      values.noLocalConfig = parsed.data;
+      origins.noLocalConfig = "BTK_NO_LOCAL_CONFIG";
+    } else {
+      issues.push({
+        path: "BTK_NO_LOCAL_CONFIG",
+        message: `Expected ${NO_LOCAL_CONFIG.join(", ")}, received ${JSON.stringify(noLocalConfig)}`,
+      });
+    }
+  }
 
   const tools: Record<string, Record<string, unknown>> = {};
   for (const tool of toolDefs) {

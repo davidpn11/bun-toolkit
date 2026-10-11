@@ -2,18 +2,59 @@
 
 Convert, compress and inspect images with `Bun.Image`. Bun decodes, resizes and encodes the images itself with libjpeg-turbo, libspng and libwebp, plus the OS codecs for AVIF and HEIC. You don't need sharp or ImageMagick.
 
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `btk image <paths...>` | Convert and compress images. Short for `btk image optimize`. `btk img` works too |
+| `btk image info <paths...>` | Show each image's format, dimensions and size |
+| `btk image presets` | List the presets for `--preset`, including the ones in your config |
+| `btk image --ui` | Open the dashboard |
+
+### optimize
+
+`btk image <paths...>` writes a WebP at quality 80 next to each image and keeps the original. Paths can be files, folders or quoted globs.
+
 ```bash
-btk image hero.png                                  # → hero.webp next to it
+btk image hero.png                                  # hero.webp next to hero.png
 btk image ./assets -r --format avif -q 60           # a whole tree, as AVIF
 btk image ./photos --preset web --out-dir dist/img  # 1920px wide, q75, into dist/img
+btk image "photos/**/*.jpg" -w 1200                 # a glob; shrink to 1200px wide
 btk image logo.png --format png --palette --overwrite
 btk image ./assets -r --dry-run --json              # plan only, machine-readable
-btk image info hero.png --placeholder               # dimensions, size, ThumbHash
-btk image presets                                   # built-in and configured presets
-btk image --ui                                      # dashboard
 ```
 
-`btk image <paths>` is `btk image optimize <paths>`. `btk img` works too.
+### info
+
+`btk image info <paths...>` reads images without changing them. `--placeholder` adds a ThumbHash blur placeholder as a data URL.
+
+```bash
+btk image info hero.png
+btk image info ./photos -r
+btk image info hero.png --placeholder --json
+```
+
+```
+file                    format  dimensions   MP    size
+./hero.png              png     2560 × 1280  3.28  298.8 KB
+./photos/beach.jpg      jpeg    1600 × 800   1.28  104.4 KB
+./photos/trip/hill.jpg  jpeg    1200 × 600   0.72  63.6 KB
+```
+
+### presets
+
+`btk image presets` lists every preset with its settings and where it comes from: `built-in` or `config`.
+
+```bash
+btk image presets
+```
+
+```
+name       settings            source
+web        q75 · fit 1920×∞    built-in
+thumbnail  q60 · fit 400×400   built-in
+social     q80 · fit 1200×1200 built-in
+```
 
 ## When to use it
 
@@ -51,8 +92,7 @@ btk image ./photos -r --preset thumbnail --out-dir ./photos/thumbs
 btk image info hero.jpg --placeholder
 ```
 
-**Prefer to pick files by eye.** `btk image --ui` opens a file browser with a preview, lets you choose several images, adjust the options and watch the run.
-
+**Pick files by eye.** `btk image --ui` opens a file browser with a preview, lets you choose several images, adjust the options and watch the run.
 
 ## Defaults
 
@@ -67,7 +107,7 @@ With the defaults, running btk on a folder never deletes or replaces a file you 
 | Same format and size, but bigger | Skipped, because the original was already smaller. Nothing is written |
 | Earlier outputs (`hero.webp` next to `hero.png`) | Left alone instead of being processed again as sources |
 | The `--out-dir` folder | Never scanned for inputs, so a second run doesn't write `dist/dist/...` |
-| Two inputs, one output (`a.png` and `a.jpg` → `a.webp`) | The most faithful source wins (PNG > BMP > TIFF > GIF > HEIC > JPEG > WebP > AVIF); the other is skipped |
+| Two inputs, one output (`a.png` and `a.jpg` both becoming `a.webp`) | The most faithful source wins (PNG, then BMP, TIFF, GIF, HEIC, JPEG, WebP, AVIF); btk skips the other |
 | JPEG | Progressive |
 | PNG | Maximum zlib compression. `--palette` reduces it to 256 colors |
 | Folders | Top level only. `-r` includes subfolders, except hidden folders and `node_modules` |
@@ -90,6 +130,8 @@ A failed file never stops the batch. Every file gets a row that says it was conv
 
 ## Options
 
+`optimize`:
+
 | Flag | Config key | Default |
 | --- | --- | --- |
 | `-f, --format <webp\|avif\|jpeg\|png\|heic\|original>` | `format` | `webp` |
@@ -103,6 +145,8 @@ A failed file never stops the batch. Every file gets a row that says it was conv
 | `-r, --recursive` | `recursive` | `false` |
 | `--overwrite` | `overwrite` | `false` |
 | `-n, --dry-run` | | `false` |
+
+`info` takes `--placeholder` and `-r, --recursive`.
 
 You can also set every config key with an environment variable named `BTK_IMAGE_<KEY>`, such as `BTK_IMAGE_QUALITY=70` or `BTK_IMAGE_MAX_WIDTH=1600`.
 
@@ -154,11 +198,11 @@ Changes over 20% are green, 0 to 20% yellow, and growth red. `--json` returns th
 
 | Code | When |
 | --- | --- |
-| 0 | Everything converted or was deliberately skipped |
+| 0 | Everything converted or was skipped on purpose |
 | 1 | At least one file failed, a path matched nothing, or no images were found |
-| 2 | Bad flags, e.g. an unknown preset |
+| 2 | Bad flags, such as an unknown preset |
 | 78 | Invalid `tools.image` config |
-| 130 | Cancelled with Ctrl+C (the partial report is still printed) |
+| 130 | Cancelled with Ctrl+C (btk still prints the partial report) |
 
 ## Dashboard (`btk image --ui`)
 

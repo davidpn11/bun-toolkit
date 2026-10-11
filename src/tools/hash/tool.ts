@@ -75,9 +75,9 @@ export const compute = defineAction({
 export const verify = defineAction({
   description: "Check a file against an expected hash (exits 1 on a mismatch)",
   examples: [
-    "btk hash verify release.tar.gz 9f86d081884c7d65...",
-    "btk hash verify app.js sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC",
-    "curl -sL https://example.com/x.tgz | btk hash verify - 2cf24dba...",
+    "btk hash verify bun-darwin-aarch64.zip c669e97f6164e1c96e0701748db98dfa77492908cbd8394c7557134a735de381",
+    "btk hash verify hello.txt sha384-HQ8oTv4+3qS5yjvVFPoTSxfq42HMx6Hu/v+AG5vWYE4B8h9r8knvAwWZ8MIY8rqM",
+    "curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-darwin-aarch64.zip | btk hash verify - c669e97f6164e1c96e0701748db98dfa77492908cbd8394c7557134a735de381",
   ],
   args: {
     file: positional(z.string(), { description: 'File to check; "-" reads standard input' }),
