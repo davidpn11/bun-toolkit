@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { openDashboard } from "../../../../tests/support/dashboard.tsx";
+import { dotSlash } from "../../../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../../../tests/support/tmp.ts";
 import { keys } from "../../../../tests/support/tui.tsx";
 import { convert } from "../tool.ts";
@@ -24,7 +25,7 @@ describe("convert dashboard", () => {
     expect(ui.frame()).toContain('name = "app"');
 
     await ui.press("w");
-    await ui.until("Wrote ./app.toml");
+    await ui.until(`Wrote ${dotSlash("app.toml")}`);
     expect(readFileSync(join(project.dir, "app.toml"), "utf8")).toBe('name = "app"\nport = 8080\n');
 
     await ui.press("w");

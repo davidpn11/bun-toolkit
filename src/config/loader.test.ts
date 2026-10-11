@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { z } from "zod";
 import { demoTool } from "../../tests/support/fake-tool.ts";
+import { dotSlash } from "../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../tests/support/tmp.ts";
 import { defineTool } from "../cli/define.ts";
 import { ExitCode } from "../errors.ts";
@@ -207,7 +208,7 @@ describe("JSON configs", () => {
     project.write("btk.config.json", `{ "tools": `);
     const { error, files } = await load();
     expect(files.project?.status).toBe("unreadable");
-    expect(error?.details.join("\n")).toContain("./btk.config.json (project)");
+    expect(error?.details.join("\n")).toContain(`${dotSlash("btk.config.json")} (project)`);
     expect(error?.details.join("\n")).toContain("Invalid JSON");
   });
 

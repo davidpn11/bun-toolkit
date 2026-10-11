@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { render } from "ink-testing-library";
 import { createTestContext } from "../../../../tests/support/context.ts";
 import { writeImage } from "../../../../tests/support/images.ts";
+import { dotSlash } from "../../../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../../../tests/support/tmp.ts";
 import { keys, tick, waitFor } from "../../../../tests/support/tui.tsx";
 import { defaultRegistry } from "../../../cli/main.ts";
@@ -57,7 +58,7 @@ describe("image dashboard", () => {
     await ui.press(...Array(submitRow).fill(keys.down), keys.enter);
     await waitFor(ui.frame, "Done · 2 converted");
     expect(existsSync(join(ui.dir, "a.webp"))).toBe(true);
-    expect(ui.frame()).toContain("./b.png");
+    expect(ui.frame()).toContain(dotSlash("b.png"));
 
     await ui.press(keys.enter);
     await waitFor(ui.frame, "a.webp");

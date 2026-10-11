@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { btkCommand, spawnBtk } from "../support/cli.ts";
+import { dotSlash } from "../support/paths.ts";
 import { ANSI } from "../support/streams.ts";
 import { createTempProject, type TempProject } from "../support/tmp.ts";
 
@@ -139,7 +140,7 @@ export function defineCliSuite(label: string): void {
       p.write("btk.config.ts", `export default { output: { verbose: "yes" }, toolz: {} };`);
       const { code, stderr } = await btk(["config", "validate"]);
       expect(code).toBe(78);
-      expect(stderr).toContain("./btk.config.ts (project)");
+      expect(stderr).toContain(`${dotSlash("btk.config.ts")} (project)`);
       expect(stderr).toContain('output.verbose  Expected boolean, received "yes"');
       expect(stderr).toContain('Did you mean "tools"?');
     });
@@ -159,7 +160,7 @@ export function defineCliSuite(label: string): void {
       const { code, stderr } = await btk(["config", "validate"]);
       expect(code).toBe(78);
       expect(stderr).toContain("Could not load the configuration");
-      expect(stderr).toContain("./btk.config.ts");
+      expect(stderr).toContain(dotSlash("btk.config.ts"));
     });
 
     test("JSON project and global configs set tool defaults", async () => {

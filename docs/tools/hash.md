@@ -126,7 +126,7 @@ btk hash xxhash3 ./assets -r
 
 ## Output
 
-Digests go to stdout in the same `<hash>  <file>` format as `sha256sum`, one line per input. You can redirect them into a checksums file that `sha256sum -c`, `shasum -c` and `btk hash check` all accept. Paths are relative to the working directory, and standard input shows as `-`.
+Digests go to stdout in the same `<hash>  <file>` format as `sha256sum`, one line per input. You can redirect them into a checksums file that `sha256sum -c`, `shasum -c` and `btk hash check` all accept. Paths are relative to the working directory and use `/` on every OS, so a checksums file made on Windows verifies on macOS and Linux. Standard input shows as `-`.
 
 Everything else goes to stderr: the header, the progress bar, unreadable files, and a summary line when there is more than one input. When stdout is redirected into a file inside the folder you are hashing, btk skips that file, so `btk hash . -r > SHA256SUMS` never lists a half-written `SHA256SUMS`.
 

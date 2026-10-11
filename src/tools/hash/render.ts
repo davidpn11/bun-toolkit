@@ -1,4 +1,4 @@
-import { isAbsolute, relative } from "node:path";
+import { isAbsolute, relative, sep } from "node:path";
 import type { BtkContext } from "../../context.ts";
 import { formatBytes, formatDuration, pluralize } from "../../output/format.ts";
 import { icons } from "../../output/palette.ts";
@@ -9,11 +9,14 @@ import type { HashReport } from "./compute.ts";
 import type { CheckReport } from "./tool.ts";
 import type { VerifyResult } from "./verify.ts";
 
-/** Path as `sha256sum` prints it: relative to the working directory, without a leading `./`. */
+/**
+ * Path as `sha256sum` prints it: relative to the working directory, without a leading `./`, and with
+ * `/` on every OS so a checksums file made on Windows verifies elsewhere.
+ */
 export function sumsPath(file: string, cwd: string): string {
   if (file === STDIN) return STDIN;
   const rel = relative(cwd, file);
-  return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel : file;
+  return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel.split(sep).join("/") : file;
 }
 
 export function renderCompute(report: HashReport, out: Output, ctx: BtkContext): void {

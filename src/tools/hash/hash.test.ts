@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { UsageError } from "../../errors.ts";
 import { collectFiles } from "../../shared/collect.ts";
@@ -141,9 +141,12 @@ describe("expected hashes", () => {
       "",
     ].join("\n");
     expect(parseSums(text, "/p/SUMS")).toEqual([
-      { expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", file: "/p/a.txt" },
-      { expected: "5d41402abc4b2a76b9719d911017c592", file: "/p/bin/b.dat" },
-      { expected: "abcd", file: "/p/c.txt", algorithm: "sha512" },
+      {
+        expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        file: resolve("/p/a.txt"),
+      },
+      { expected: "5d41402abc4b2a76b9719d911017c592", file: resolve("/p/bin/b.dat") },
+      { expected: "abcd", file: resolve("/p/c.txt"), algorithm: "sha512" },
     ]);
   });
 });
@@ -158,7 +161,7 @@ describe("hashAll()", () => {
       recursive: false,
     });
     const report = await hashAll({ collected, stdin: hello }, { algorithm: "md5", encoding: "hex" });
-    expect(report.results.map((r) => r.file.split("/").at(-1))).toEqual(["-", "a.txt", "b.txt"]);
+    expect(report.results.map((r) => basename(r.file))).toEqual(["-", "a.txt", "b.txt"]);
     expect(report.results[0]?.digest).toBe("5d41402abc4b2a76b9719d911017c592");
     expect(report.totals).toEqual({ hashed: 3, failed: 0, bytes: 15 });
     expect(report.missing).toEqual(["nope.txt"]);

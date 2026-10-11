@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { posixRelative } from "../../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { UsageError } from "../../errors.ts";
 import { CodecError, compressBytes, decompressBytes } from "./codec.ts";
@@ -91,7 +92,7 @@ describe("compressInputs()", () => {
     expect(existsSync(join(project.dir, "site.tar.zst"))).toBe(true);
 
     const each = await compressInputs(["site"], project.dir, plan({ each: true }));
-    expect(each.results.map((r) => r.output.slice(project.dir.length + 1)).sort()).toEqual([
+    expect(each.results.map((r) => posixRelative(project.dir, r.output)).sort()).toEqual([
       "site/css/app.css.gz",
       "site/index.html.gz",
     ]);

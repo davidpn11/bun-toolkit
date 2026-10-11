@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { writeImage } from "../../../tests/support/images.ts";
+import { posixRelative } from "../../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { UsageError } from "../../errors.ts";
 import { collectImages, type ImageFile } from "./collect.ts";
@@ -41,16 +42,16 @@ describe("collectImages()", () => {
     project.write("notes.txt", "x");
 
     const flat = await collectImages(["."], { cwd: dir, recursive: false });
-    expect(flat.files.map((f) => f.path.slice(dir.length + 1))).toEqual(["a.png", "B.JPG"]);
+    expect(flat.files.map((f) => posixRelative(dir, f.path))).toEqual(["a.png", "B.JPG"]);
 
     const deep = await collectImages(["."], { cwd: dir, recursive: true });
-    expect(deep.files.map((f) => f.path.slice(dir.length + 1))).toEqual(["a.png", "B.JPG", "nested/c.webp"]);
+    expect(deep.files.map((f) => posixRelative(dir, f.path))).toEqual(["a.png", "B.JPG", "nested/c.webp"]);
 
     const mixed = await collectImages(["a.png", "a.png", "notes.txt", "nope.png", "**/*.webp", "*.gif"], {
       cwd: dir,
       recursive: false,
     });
-    expect(mixed.files.map((f) => f.path.slice(dir.length + 1))).toEqual(["a.png", "nested/c.webp"]);
+    expect(mixed.files.map((f) => posixRelative(dir, f.path))).toEqual(["a.png", "nested/c.webp"]);
     expect(mixed.ignored).toEqual(["notes.txt"]);
     expect(mixed.missing).toEqual(["nope.png", "*.gif"]);
   });
@@ -58,9 +59,9 @@ describe("collectImages()", () => {
 
 describe("outputPathFor()", () => {
   test("next to the original, or mirrored under --out-dir", () => {
-    const file = { path: "/p/assets/icons/a.png", base: "/p/assets" };
-    expect(outputPathFor(file, "webp")).toBe("/p/assets/icons/a.webp");
-    expect(outputPathFor(file, "jpeg", "/out")).toBe("/out/icons/a.jpg");
+    const file = { path: resolve("/p/assets/icons/a.png"), base: resolve("/p/assets") };
+    expect(outputPathFor(file, "webp")).toBe(resolve("/p/assets/icons/a.webp"));
+    expect(outputPathFor(file, "jpeg", resolve("/out"))).toBe(resolve("/out/icons/a.jpg"));
   });
 });
 
@@ -89,7 +90,7 @@ describe("presets and options", () => {
   });
 
   test("buildOptions resolves outDir and describeOptions summarizes", () => {
-    expect(buildOptions({ ...defaults, outDir: "dist" }, "/p").outDir).toBe("/p/dist");
+    expect(buildOptions({ ...defaults, outDir: "dist" }, "/p").outDir).toBe(resolve("/p/dist"));
     expect(describeOptions(opts({ maxWidth: 800 }))).toBe("webp · q80 · fit 800×∞");
     expect(describeOptions(opts({ format: "png", palette: true }))).toBe("png · palette");
     expect(describeOptions(opts({ lossless: true }))).toBe("webp · lossless");
@@ -195,7 +196,10 @@ describe("optimizeImage()", () => {
 
 describe("planBatch()", () => {
   test("leaves earlier outputs alone and resolves collisions to the best source", () => {
-    const files = ["/p/a.jpg", "/p/a.png", "/p/a.webp", "/p/b.webp"].map((path) => ({ path, base: "/p" }));
+    const files = ["a.jpg", "a.png", "a.webp", "b.webp"].map((name) => ({
+      path: resolve("/p", name),
+      base: resolve("/p"),
+    }));
     const webp = planBatch(files, opts());
     expect(webp.get(2)).toMatchObject({ code: "SKIP_PREVIOUS_OUTPUT" });
     expect(webp.get(1)).toBeUndefined();
