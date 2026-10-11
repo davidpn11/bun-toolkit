@@ -1,9 +1,5 @@
 import { PassThrough } from "node:stream";
 
-/**
- * A writable stream that records everything written to it. Pass `isTTY` to simulate a terminal.
- * It is a real PassThrough, so it also works where a Node stream is expected.
- */
 export class CaptureStream extends PassThrough {
   isTTY: boolean;
   columns: number;
@@ -47,5 +43,4 @@ export function createIO(options: { tty?: boolean; stdin?: string } = {}) {
   };
 }
 
-/** Matches any ANSI escape sequence (ESC + "["). */
 export const ANSI = new RegExp(`${String.fromCharCode(27)}\\[`);

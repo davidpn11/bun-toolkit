@@ -11,7 +11,6 @@ export type Layer = {
   values: Record<string, unknown>;
 };
 
-/** Keys whose arrays accumulate across layers instead of being replaced. */
 const CONCAT_KEYS = new Set(["plugins"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -20,10 +19,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return proto === Object.prototype || proto === null;
 }
 
-/**
- * Deep-merges layers from lowest to highest priority and records which layer set each leaf.
- * Objects merge key by key; `plugins` concatenates; any other array or value is replaced.
- */
 export function mergeLayers(layers: Layer[]): {
   values: Record<string, unknown>;
   sources: Record<string, ValueSource>;

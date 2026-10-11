@@ -47,11 +47,9 @@ export function halfBlockLines(pixels: (string | null)[][]): Run[][] {
 
 const LINES = halfBlockLines(mascotPixels());
 
-/** Terminal columns and rows the mascot takes up. */
 export const MASCOT_WIDTH = MASCOT_SPRITE[0]?.length ?? 0;
 export const MASCOT_HEIGHT = LINES.length;
 
-/** The btk mascot, drawn with half blocks. Needs a truecolor terminal to look right. */
 export function Mascot() {
   return (
     <Box flexDirection="column" flexShrink={0}>

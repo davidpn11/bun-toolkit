@@ -19,7 +19,6 @@ export const keys = {
 
 export const tick = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Polls the rendered frame until it contains `text`, for screens that load or compute asynchronously. */
 export async function waitFor(frame: () => string, text: string, timeoutMs = 3000): Promise<void> {
   const until = Date.now() + timeoutMs;
   while (!frame().includes(text)) {
@@ -28,7 +27,6 @@ export async function waitFor(frame: () => string, text: string, timeoutMs = 300
   }
 }
 
-/** Renders a component inside the TUI providers, as it would be on a real screen. */
 export function renderTui(ctx: BtkContext, node: ReactNode, onQuit: () => void = () => {}) {
   const instance = render(
     <TuiProviders ctx={ctx}>
@@ -39,9 +37,7 @@ export function renderTui(ctx: BtkContext, node: ReactNode, onQuit: () => void =
   );
   return {
     ...instance,
-    /** Last frame without ANSI codes. */
     frame: () => stripAnsi(instance.lastFrame() ?? ""),
-    /** Sends keys one at a time, letting React re-render between them. */
     async press(...sequence: string[]) {
       for (const key of sequence) {
         instance.stdin.write(key);

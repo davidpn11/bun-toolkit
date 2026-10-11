@@ -16,7 +16,6 @@ export function sumsPath(file: string, cwd: string): string {
   return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel : file;
 }
 
-/** Digests go to stdout in `<hash>  <file>` form, so `btk hash … > SHA256SUMS` works with sha256sum -c. */
 export function renderCompute(report: HashReport, out: Output, ctx: BtkContext): void {
   const s = out.style;
   for (const result of report.results) {

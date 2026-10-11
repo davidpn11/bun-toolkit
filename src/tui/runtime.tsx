@@ -9,10 +9,6 @@ const ENTER_ALT_SCREEN = "\x1b[?1049h\x1b[H";
 const LEAVE_ALT_SCREEN = "\x1b[?1049l";
 const SHOW_CURSOR = "\x1b[?25h";
 
-/**
- * Runs the TUI in the terminal's alternate screen, so the user's scrollback is untouched, and
- * always restores the terminal: on quit, on a crash, and on process exit.
- */
 export async function runTui(ctx: BtkContext, tool?: ToolDef): Promise<void> {
   const stdout = ctx.io.stdout as NodeJS.WriteStream;
   const stdin = ctx.io.stdin as NodeJS.ReadStream;

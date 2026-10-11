@@ -15,22 +15,18 @@ export type ConfigScope = "global" | "project";
 export type ConfigFileStatus = {
   scope: ConfigScope;
   path: string;
-  /** Path for display: relative to cwd, or with `~` for the home dir. */
   displayPath: string;
   status: "ok" | "invalid" | "unreadable";
   issues: ConfigIssue[];
 };
 
 export type LoadedConfig = {
-  /** Merged config. Layers that failed to load or validate are left out. */
   config: ResolvedConfig;
   sources: Record<string, ValueSource>;
   globalDir: string;
   files: { global?: ConfigFileStatus; project?: ConfigFileStatus };
   envIssues: ConfigIssue[];
-  /** Problems that only appear once the layers are combined. */
   mergedIssues: ConfigIssue[];
-  /** Set when any layer is invalid. Commands that need config throw it. */
   error?: ConfigError;
 };
 
@@ -53,7 +49,6 @@ export function displayPath(path: string, cwd: string): string {
   return path.startsWith(home + sep) ? `~${path.slice(home.length)}` : path;
 }
 
-/** Imports a config file and returns its default export (or the module itself when there is none). */
 export async function importConfigFile(path: string): Promise<unknown> {
   installConfigModule();
   const mod = (await import(path)) as Record<string, unknown>;
@@ -107,11 +102,7 @@ async function readLayer(
   return { status, values: raw as Record<string, unknown> };
 }
 
-/**
- * Loads and validates config from every tier (defaults < global < project < env) and merges it.
- * Never throws for bad config: problems are reported in `error` so each command decides whether
- * it can run anyway (`btk init` and `btk config validate` must).
- */
+/** Never throws for bad config: `error` lets each command decide whether it can still run. */
 export async function loadConfig(options: LoadConfigOptions): Promise<LoadedConfig> {
   const { cwd, env, tools } = options;
   const schema = buildConfigFileSchema(tools);

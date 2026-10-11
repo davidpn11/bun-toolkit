@@ -24,10 +24,6 @@ import { createStyler, type Styler } from "./style.ts";
 
 type LogFn = (message: string) => void;
 
-/**
- * Result output, written to stdout. Actions call these from `render()`; the reporter decides
- * whether that means styled columns, tab-separated text, or nothing (json mode).
- */
 export type Output = {
   table(rows: Record<string, unknown>[], options?: TableOptions): void;
   keyValue(pairs: Record<string, unknown>, title?: string): void;
@@ -35,9 +31,7 @@ export type Output = {
   notice(lines: string[]): void;
   summary(stats: Record<string, string | number>, title?: string, tone?: SummaryTone): void;
   text(line?: string): void;
-  /** Writes bytes or text to stdout exactly as given, e.g. compressed data. */
   raw(data: string | Uint8Array): void;
-  /** Styling for custom text. Colors are off whenever stdout is not a color terminal. */
   style: Styler;
 };
 
@@ -57,7 +51,6 @@ export type ReporterOptions = {
   mode: OutputMode;
   stdout: OutStream;
   stderr: OutStream;
-  /** Allow ANSI styling. Ignored outside human mode. */
   color?: boolean;
   verbose?: boolean;
 };

@@ -1,7 +1,3 @@
-/**
- * Builds the binary for this platform and runs the end-to-end suite against it, catching problems
- * that only show up in compiled builds (missing modules, config loading, the virtual module).
- */
 import { resolve } from "node:path";
 
 const binary = resolve(`dist/btk${process.platform === "win32" ? ".exe" : ""}`);

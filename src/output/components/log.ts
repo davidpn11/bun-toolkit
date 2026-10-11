@@ -3,7 +3,6 @@ import type { Styler } from "../style.ts";
 
 export type LogLevel = "error" | "warn" | "info" | "success" | "debug";
 
-/** `✔ message`, with continuation lines indented under the text. */
 export function renderLog(s: Styler, level: LogLevel, message: string): string {
   const [icon, paint]: [string, (text: string) => string] = {
     error: [icons.error, s.error],

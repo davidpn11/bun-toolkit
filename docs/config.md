@@ -68,7 +68,7 @@ type BtkConfig = {
     verbose?: boolean;            // debug messages and stack traces
   };
 
-  // Plugins load from config only. The loader arrives in Phase 6.
+  // Plugins load from config only. The loader arrives in Phase 8.
   plugins?: BtkPlugin[];
 };
 ```

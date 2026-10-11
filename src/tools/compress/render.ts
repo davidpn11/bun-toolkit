@@ -63,7 +63,6 @@ export function renderDecompress(result: DecompressResult, out: Output, ctx: Btk
   out.summary(stats, title(result), tone(result));
 }
 
-/** Stream results print only the bytes to stdout; the size line goes to stderr. */
 function renderStream(result: StreamResult, out: Output, ctx: BtkContext, verb: string): void {
   const sizes = `${formatBytes(result.before)} → ${formatBytes(result.after)}`;
   if (result.path) {

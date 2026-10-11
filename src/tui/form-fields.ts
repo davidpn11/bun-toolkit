@@ -17,17 +17,11 @@ export type FormField = {
   optional: boolean;
 };
 
-/** `maxWidth` -> `Max width` */
 export function labelFor(key: string): string {
   const words = key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/**
- * Builds TUI form fields from an action's flags: the same specs that define the CLI flags.
- * Positionals are skipped (the TUI picks those with a FileBrowser or similar); arrays and
- * hidden flags are skipped too.
- */
 export function fieldsFromArgs(args: ArgsSpec, options: { exclude?: string[] } = {}): FormField[] {
   const fields: FormField[] = [];
   for (const [key, spec] of Object.entries(args)) {
@@ -60,10 +54,6 @@ export function fieldsFromArgs(args: ArgsSpec, options: { exclude?: string[] } =
   return fields;
 }
 
-/**
- * Initial form values: the resolved config (so the form shows what the CLI would use), then
- * schema defaults.
- */
 export function initialValues(
   args: ArgsSpec,
   toolConfig: Record<string, unknown> = {},

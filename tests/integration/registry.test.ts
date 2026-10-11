@@ -4,10 +4,6 @@ import { testRegistry } from "../support/fake-tool.ts";
 import { ANSI } from "../support/streams.ts";
 import { createTempProject, type TempProject } from "../support/tmp.ts";
 
-/**
- * What a new tool gets for free from `defineTool()`: routing, help, validated flags, config
- * defaults, env vars, JSON output and `--ui`. Uses the test-only `demo` tool, run in-process.
- */
 describe("a registered tool", () => {
   let project: TempProject;
   afterEach(() => project?.cleanup());

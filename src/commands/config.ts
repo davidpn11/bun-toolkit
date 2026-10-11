@@ -27,7 +27,6 @@ function flatten(config: ResolvedConfig): [string, unknown][] {
   return rows;
 }
 
-/** Every resolved value with the layer that set it. Shared with the TUI's Config screen. */
 export function configRows(ctx: BtkContext): ConfigValueRow[] {
   return flatten(ctx.config).map(([key, value]) => {
     const source = ctx.configInfo.sources[key] ?? { kind: "default" as const };

@@ -2,10 +2,8 @@ import { BtkError } from "../../errors.ts";
 import type { InputFormat, OutputFormat } from "./formats.ts";
 
 export type WriteOptions = {
-  /** Spaces per level. `pretty: false` writes the most compact form the format allows. */
   indent: number;
   pretty: boolean;
-  /** Root element name used when a value has to be wrapped to become an XML document. */
   xmlRoot: string;
 };
 

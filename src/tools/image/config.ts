@@ -26,7 +26,6 @@ export const imageConfig = z.object({
   outDir: z.string().optional(),
   recursive: z.boolean().default(false),
   overwrite: z.boolean().default(false),
-  /** Extra or overridden presets for `--preset`, e.g. `{ hero: { maxWidth: 2560, quality: 85 } }`. */
   presets: z.record(z.string(), presetSchema).default({}),
 });
 

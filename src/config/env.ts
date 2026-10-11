@@ -3,7 +3,6 @@ import type { ToolDef } from "../cli/define.ts";
 import { coerceText, describeExpected, inspectSchema } from "../cli/schema-info.ts";
 import type { ConfigIssue } from "./format-issues.ts";
 
-/** `maxWidth` -> `MAX_WIDTH` */
 function toEnvSegment(key: string): string {
   return key
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
@@ -11,7 +10,6 @@ function toEnvSegment(key: string): string {
     .toUpperCase();
 }
 
-/** `tools.image.quality` -> `BTK_IMAGE_QUALITY` */
 export function envVarName(toolName: string, key: string): string {
   return `BTK_${toEnvSegment(toolName)}_${toEnvSegment(key)}`;
 }
@@ -23,10 +21,6 @@ export type EnvLayer = {
   issues: ConfigIssue[];
 };
 
-/**
- * Reads `BTK_<TOOL>_<KEY>` for every key of every tool's config schema, plus `BTK_VERBOSE`
- * and `BTK_OUTPUT`. Values are coerced and validated with the same schemas as the config file.
- */
 export function readEnvLayer(
   env: Record<string, string | undefined>,
   toolDefs: readonly ToolDef[],

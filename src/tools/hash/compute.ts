@@ -5,7 +5,6 @@ import { STDIN } from "../../shared/stdio.ts";
 import { type DigestOptions, digestBytes, digestFile } from "./digest.ts";
 
 export type HashResult = {
-  /** Absolute path, or `-` for standard input. */
   file: string;
   status: "ok" | "failed";
   digest?: string;

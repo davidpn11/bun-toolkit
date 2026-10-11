@@ -9,7 +9,6 @@ export type Progress = {
   /** Advance by `n` (default 1). `detail` replaces the trailing text, e.g. the current file. */
   tick(n?: number, detail?: string): void;
   done(message?: string): void;
-  /** Clears the bar without a completion message, e.g. when the command fails. */
   stop(): void;
 };
 
@@ -55,7 +54,6 @@ export function createProgressBar(s: Styler, stream: OutStream, now: () => numbe
   };
 }
 
-/** CI mode: start and end lines only, so logs stay readable. */
 export function createStaticProgress(stream: OutStream, now: () => number = Date.now): Progress {
   let label = "";
   let total = 0;

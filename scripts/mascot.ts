@@ -20,7 +20,6 @@ const pixels = mascotPixels();
 const SH = pixels.length;
 const SW = pixels[0]?.length ?? 0;
 
-/** One unit per pixel; runs of the same color become one rect. `fill` paints every pixel one color (the shadow). */
 function spriteRects(fill?: string) {
   const out: string[] = [];
   pixels.forEach((row, y) => {
@@ -46,7 +45,6 @@ ${spriteRects()}
 </svg>
 `;
 
-// ---- banner: the mascot inside the btk TUI frame, 1280x640 ----------------
 const W = 1280;
 const H = 640;
 const FONT = "'SF Mono', 'JetBrains Mono', Menlo, monospace";

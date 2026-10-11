@@ -66,7 +66,6 @@ function Shell() {
 export type TuiAppProps = {
   ctx: BtkContext;
   initial: ScreenEntry;
-  /** Called when the user quits. Defaults to Ink's `exit()`. */
   onQuit?: () => void;
 };
 

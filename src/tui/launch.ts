@@ -3,10 +3,6 @@ import type { BtkContext } from "../context.ts";
 import { UsageError } from "../errors.ts";
 import { BIN } from "../version.ts";
 
-/**
- * Opens the full-screen TUI. Ink and React load here, on demand, so plain CLI runs never pay for them.
- * With `tool`, opens straight into that tool's dashboard (`btk image --ui`).
- */
 export async function launchTui(ctx: BtkContext, tool?: ToolDef): Promise<void> {
   const { io, environment } = ctx;
   if (environment.mode !== "human" || !io.stdin.isTTY || !io.stdout.isTTY) {

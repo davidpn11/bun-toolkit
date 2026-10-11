@@ -17,7 +17,6 @@ export function btkCommand(): string[] {
   return process.env.BTK_BIN ? [process.env.BTK_BIN] : [process.execPath, ENTRY];
 }
 
-/** Spawns btk as a real subprocess (no TTY). */
 export async function spawnBtk(
   args: string[],
   options: { cwd?: string; env?: Record<string, string | undefined>; stdin?: string | Uint8Array } = {},
@@ -37,7 +36,6 @@ export async function spawnBtk(
   return { code, stdout, stderr };
 }
 
-/** Runs btk in-process with captured streams. Much faster than spawning; used for most CLI tests. */
 export async function runBtk(
   args: string[],
   options: Omit<RunOptions, "io"> & { tty?: boolean; stdin?: string } = {},

@@ -5,7 +5,6 @@ import type { Output } from "../../output/reporter.ts";
 import type { Inspection } from "./inspect.ts";
 import type { HashReport, VerifyReport } from "./tool.ts";
 
-/** Only the hashes go to stdout, one per line, in input order. */
 export function renderHash(report: HashReport, out: Output, ctx: BtkContext): void {
   for (const hash of report.hashes) out.text(out.style.accent(hash));
   if (report.hashes.length > 1) {

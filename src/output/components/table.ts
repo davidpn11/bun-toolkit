@@ -11,7 +11,6 @@ export type TableColumn = {
 export type TableOptions = {
   title?: string;
   columns?: TableColumn[];
-  /** Plain mode: tab-separated, no styling, easy to `cut`/`awk`. */
   plain?: boolean;
 };
 

@@ -19,17 +19,12 @@ export type RunOptions = {
   io?: Partial<BtkIO>;
   env?: Record<string, string | undefined>;
   cwd?: string;
-  /** Override the command registry (tests register a fake tool). */
   registry?: Registry;
   signal?: AbortSignal;
 };
 
 export const defaultRegistry = (): Registry => createRegistry(builtins, tools);
 
-/**
- * Runs one CLI invocation and resolves to the exit code. This is the only error boundary:
- * nothing below it calls `process.exit`.
- */
 export async function run(argv: readonly string[], options: RunOptions = {}): Promise<number> {
   const io: BtkIO = {
     stdin: options.io?.stdin ?? process.stdin,

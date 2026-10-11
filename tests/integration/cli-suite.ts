@@ -5,10 +5,6 @@ import { btkCommand, spawnBtk } from "../support/cli.ts";
 import { ANSI } from "../support/streams.ts";
 import { createTempProject, type TempProject } from "../support/tmp.ts";
 
-/**
- * End-to-end tests that spawn btk as a subprocess. `cli.test.ts` runs them against the source
- * entrypoint and `dist.test.ts` against the compiled binary (BTK_BIN), with identical assertions.
- */
 export function defineCliSuite(label: string): void {
   describe(`btk end-to-end (${label})`, () => {
     let project: TempProject;

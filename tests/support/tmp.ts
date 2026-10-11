@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 export type TempProject = {
-  /** Project directory (use as cwd). */
   dir: string;
   /** Isolated global config dir; pass `env` so the real ~/.bun-toolkit is never read. */
   globalDir: string;

@@ -12,14 +12,9 @@ export type Navigation = {
   canGoBack: boolean;
   push(screen: ScreenEntry): void;
   pop(): void;
-  /** Pops back to the screen with this id, keeping it and everything below. */
   popTo(id: string): void;
   replace(screen: ScreenEntry): void;
   quit(): void;
-  /**
-   * While true, global keys (q, esc, ?) are ignored so a focused text field can receive them.
-   * Components that capture typing call `setInputLocked(true)` and release it when done.
-   */
   inputLocked: boolean;
   setInputLocked(locked: boolean): void;
 };
@@ -27,10 +22,6 @@ export type Navigation = {
 const NavigationContext = createContext<Navigation | null>(null);
 const ScreenActiveContext = createContext(true);
 
-/**
- * Screens below the top of the stack stay mounted (so going back keeps their state) but hidden;
- * input components use this to ignore keys while their screen is not the visible one.
- */
 export const ScreenActiveProvider = ScreenActiveContext.Provider;
 
 export function useScreenActive(): boolean {

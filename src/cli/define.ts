@@ -7,14 +7,9 @@ import type { ValueSource } from "./args.ts";
 
 export type FlagOptions = {
   description: string;
-  /** Single-letter short form, e.g. `q` for `-q`. */
   alias?: string;
-  /** Placeholder in help text, e.g. `<0-100>`. Derived from the schema when omitted. */
   valueHint?: string;
-  /**
-   * Key in this tool's config slice (`tools.<tool>.<key>`) that supplies the default when the
-   * flag is not passed. This is what gives every flag the flag > env > project > global order.
-   */
+  /** Key in `tools.<tool>` that supplies the default when the flag is not passed. */
   config?: string;
   hidden?: boolean;
 };
@@ -26,7 +21,6 @@ export type FlagSpec<S extends z.ZodType = z.ZodType> = FlagOptions & {
 
 export type PositionalOptions = {
   description: string;
-  /** Name shown in usage, e.g. `paths`. Defaults to the arg key. */
   valueHint?: string;
 };
 
@@ -50,7 +44,6 @@ export function positional<S extends z.ZodType>(schema: S, options: PositionalOp
 }
 
 export type ActionMeta<A extends ArgsSpec = ArgsSpec> = {
-  /** Where each value came from, e.g. to let explicit flags beat a preset but not config. */
   sources: Record<keyof A, ValueSource>;
 };
 
@@ -65,11 +58,8 @@ export type ActionDef<A extends ArgsSpec = ArgsSpec, R = unknown> = {
    * Every other command fails early with the config error.
    */
   requiresConfig?: boolean;
-  /** Does the work and returns data. In json mode this return value is the output. */
   run(input: InferArgs<A>, ctx: BtkContext, meta: ActionMeta<A>): R | Promise<R>;
-  /** Presents the result in human/ci mode. Never called in json mode. */
   render?(result: Awaited<R>, out: Output, ctx: BtkContext): void;
-  /** Exit code for a result that was still worth printing, e.g. a batch where some files failed. */
   exitCode?(result: Awaited<R>, ctx: BtkContext): ExitCode;
 };
 
@@ -81,26 +71,21 @@ export type ToolScreenProps = {
 export type ToolScreen = ComponentType<ToolScreenProps>;
 export type ToolScreenLoader = () => Promise<{ default: ToolScreen }>;
 
-/** A leaf command with no actions, e.g. `btk info`. */
 export type CommandDef<A extends ArgsSpec = ArgsSpec, R = unknown> = ActionDef<A, R> & {
   kind: "command";
   name: string;
 };
 
-/** A group of actions sharing a config slice and an optional TUI, e.g. `btk image optimize|info`. */
 export type ToolDef<C extends z.ZodObject = z.ZodObject, N extends string = string> = {
   kind: "tool";
   name: N;
   description: string;
   aliases?: string[];
-  /** Config slice under `tools.<name>`. Its `.default()`s are the built-in defaults. */
   config?: C;
   actions: Record<string, ActionDef<any, any>>;
   /** Action used when the first argument is not an action name: `btk image a.png`. */
   defaultAction?: string;
-  /** Lazy TUI screen for `btk <tool> --ui` and the `btk ui` home screen. */
   ui?: ToolScreenLoader;
-  /** Built-in groups (like `config`) are listed apart from the Bun API tools. */
   builtin?: boolean;
 };
 
@@ -126,7 +111,6 @@ export function defineTool<const N extends string, C extends z.ZodObject = z.Zod
 }
 
 export type Registry = {
-  /** Built-ins first, then tools. Order is the order shown in help and in the TUI. */
   entries: readonly Entry[];
 };
 

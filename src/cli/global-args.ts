@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { type ArgsSpec, flag } from "./define.ts";
 
-/** Flags accepted by every command. They are listed once in help, under "Global options". */
 export const globalFlags = {
   json: flag(z.boolean().default(false), { description: "Print a single JSON document (also AGENT=true)" }),
   verbose: flag(z.boolean().default(false), { description: "Show debug output and stack traces" }),

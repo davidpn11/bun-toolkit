@@ -14,10 +14,7 @@ export type ScreenProps = {
   children: ReactNode;
 };
 
-/**
- * The frame every screen uses: brand header with breadcrumbs, a bordered body and a key-hint footer.
- * Fills the terminal, one row short so Ink never has to clear the screen between frames.
- */
+/** One row short of the terminal so Ink never has to clear the screen between frames. */
 export function Screen({ subtitle, hints = [], aside, children }: ScreenProps) {
   const nav = useNavigation();
   const { columns, rows } = useTerminalSize();

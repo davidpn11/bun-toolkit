@@ -13,7 +13,6 @@ export const passwordConfig = z.object({
   /** Argon2 memory in KiB. Bun's default, 64 MiB. */
   memoryCost: memoryCostSchema.default(65_536),
   timeCost: timeCostSchema.default(2),
-  /** bcrypt work factor: each step doubles the time. */
   cost: bcryptCostSchema.default(10),
 });
 

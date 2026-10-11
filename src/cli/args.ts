@@ -25,7 +25,6 @@ type PositionalEntry = {
   info: SchemaInfo;
 };
 
-/** The spec split into flags and positionals, with lookups by `--long` and `-s` name. */
 type SpecIndex = {
   flags: FlagEntry[];
   positionals: PositionalEntry[];
@@ -33,13 +32,11 @@ type SpecIndex = {
   byShort: Map<string, FlagEntry>;
 };
 
-/** What argv held before coercion and validation: flag values by key, and everything else in order. */
 type Scan = {
   raw: Map<string, unknown>;
   loose: string[];
 };
 
-/** Validated values so far, plus the problems to report together at the end. */
 type Resolved = ParseResult & { problems: string[] };
 
 export type ParseOptions = {
@@ -89,8 +86,6 @@ function indexSpec(spec: ArgsSpec): SpecIndex {
   };
 }
 
-// ---- scanning: argv tokens -> raw flag values and loose arguments ----------
-
 function scanTokens(tokens: readonly string[], index: SpecIndex, helpHint: string): Scan {
   const scan: Scan = { raw: new Map(), loose: [] };
   for (let i = 0; i < tokens.length; i++) {
@@ -99,7 +94,6 @@ function scanTokens(tokens: readonly string[], index: SpecIndex, helpHint: strin
       scan.loose.push(...tokens.slice(i + 1));
       break;
     }
-    // each reader returns how many of the following tokens it consumed as a value
     if (token.startsWith("--")) i += readLongFlag(token, tokens[i + 1], index, scan, helpHint);
     else if (isShortFlags(token)) i += readShortFlags(token, tokens[i + 1], index, scan, helpHint);
     else scan.loose.push(token);
@@ -173,7 +167,6 @@ function isShortFlags(token: string): boolean {
   return token.startsWith("-") && token.length > 1 && !isNegativeNumber(token);
 }
 
-/** Repeated array flags accumulate; anything else keeps the last value. */
 function assign(raw: Map<string, unknown>, entry: FlagEntry, value: unknown): void {
   if (entry.info.kind === "array") {
     const list = (raw.get(entry.key) as unknown[] | undefined) ?? [];
@@ -202,9 +195,6 @@ function unknownFlag(token: string, index: SpecIndex, helpHint: string): never {
   });
 }
 
-// ---- resolving: raw values -> coerced, defaulted and validated values ------
-
-/** Positionals in declaration order; an array schema soaks up the rest. Consumes `loose`. */
 function resolvePositionals(
   positionals: PositionalEntry[],
   loose: string[],
@@ -259,7 +249,6 @@ function resolveFlags(
   }
 }
 
-/** Where a flag's value comes from, highest priority first: argv, tool config, the schema default. */
 function flagValue(
   entry: FlagEntry,
   raw: Map<string, unknown>,
@@ -279,7 +268,6 @@ function flagValue(
   return { value: undefined, source: "default" };
 }
 
-/** Argv values are strings (or `true`/`false` for booleans); turn them into what the schema expects. */
 function coerceGiven(info: SchemaInfo, given: unknown): unknown {
   if (info.kind === "array" && Array.isArray(given)) {
     return given.map((v) => (typeof v === "string" ? coerceText(v, info.itemKind ?? "string") : v));

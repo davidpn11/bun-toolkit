@@ -3,7 +3,6 @@ import type { Styler } from "../style.ts";
 
 export type SummaryTone = "success" | "warning" | "error";
 
-/** End-of-command stats line: `✔ Done · 3 files · 1.2 MB saved · 340ms`. An empty key shows the value alone. */
 export function renderSummary(
   s: Styler,
   stats: Record<string, string | number>,

@@ -1,4 +1,3 @@
-/** Runs `worker` over `items` with at most `limit` in flight, preserving indexes. */
 export async function runPool<T>(
   items: readonly T[],
   limit: number,

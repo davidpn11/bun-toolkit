@@ -1,11 +1,7 @@
 import { readdirSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 
-/**
- * Tar bytes of a folder, with entries under the folder's own name so extracting recreates it.
- * Reads each file's bytes first: Bun.Archive writes empty entries for Bun.file() values.
- * Includes hidden files; skips nothing, like `tar -cf`.
- */
+/** Reads each file's bytes first: Bun.Archive writes empty entries for Bun.file() values. */
 export async function tarFolder(folder: string): Promise<{ tar: Uint8Array; files: number }> {
   const entries: Record<string, Uint8Array> = {};
   const root = basename(folder);
@@ -23,7 +19,6 @@ export function extractTar(tar: Uint8Array, dest: string): Promise<number> {
 
 export type TarLayout = { files: number; root?: string };
 
-/** `root` is set when every entry sits under one top-level folder, as `btk compress <folder>` writes them. */
 export async function tarLayout(tar: Uint8Array): Promise<TarLayout> {
   const paths = [...(await new Bun.Archive(tar).files()).keys()];
   const roots = new Set(paths.map((path) => path.split("/")[0]));

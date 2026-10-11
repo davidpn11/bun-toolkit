@@ -2,7 +2,7 @@
 
 Bun native API straight in your terminal. One CLI (`btk`), one config, one output style, and an interactive dashboard for every tool.
 
-> Status: Phase 5 is done. The foundation (CLI framework, config, output layer, TUI) and five tools work today: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. `btk md` is next. See [docs/roadmap.md](docs/roadmap.md).
+> Status: Phase 5 is done. The foundation (CLI framework, config, output layer, TUI) and five tools work today: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. The first release (CI, npm and Homebrew) is next, then the documentation site. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install (from source)
 

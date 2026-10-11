@@ -38,10 +38,6 @@ function tildify(path: string): string {
 
 type Row = DirEntry & { parent?: boolean };
 
-/**
- * Keyboard file picker. Enter opens a directory or picks the highlighted file (or the current
- * selection, when there is one). ← / backspace goes to the parent directory.
- */
 export function FileBrowser({
   root,
   extensions,

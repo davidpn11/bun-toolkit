@@ -4,9 +4,6 @@
  *   bun scripts/build.ts                                 # current platform -> dist/btk
  *   bun scripts/build.ts --target bun-linux-x64          # cross-compile
  *   bun scripts/build.ts --target bun-windows-x64 --outfile dist/btk-windows-x64.exe
- *
- * No `--bytecode`: Ink and yoga-layout use top-level await, which bytecode compilation rejects
- * (see docs/distribution.md).
  */
 import { parseArgs } from "node:util";
 import type { BunPlugin } from "bun";
@@ -23,7 +20,6 @@ const target = values.target as Bun.Build.CompileTarget | undefined;
 const isWindows = target ? target.includes("windows") : process.platform === "win32";
 const outfile = values.outfile ?? `dist/btk${isWindows ? ".exe" : ""}`;
 
-/** Ink imports react-devtools-core only when DEV=true; stub it so the bundle has no missing module. */
 const stubDevtools: BunPlugin = {
   name: "stub-react-devtools",
   setup(build) {

@@ -22,7 +22,6 @@ export type DecompressResult = {
   input: string;
   output?: string;
   format?: Format;
-  /** `folder` when the data was a tar archive and got extracted. */
   kind?: "file" | "folder";
   status: "done" | "skipped" | "failed";
   before?: number;
@@ -122,11 +121,6 @@ async function writeFile(
   return { ...base, output, kind: "file", status: "done" };
 }
 
-/**
- * Like `tar -x`: an archive whose entries share one top-level folder extracts next to it, so
- * `site.tar.zst` gives `site/`, not `site/site/`. Loose entries go into a folder named after the archive.
- * `-o` is the folder to extract into.
- */
 async function writeFolder(
   raw: Uint8Array,
   stem: string,

@@ -8,7 +8,6 @@ import { createTestContext } from "./context.ts";
 import type { TempProject } from "./tmp.ts";
 import { tick, waitFor } from "./tui.tsx";
 
-/** Opens a tool's dashboard as `btk <tool> --ui` would, inside a temp project. */
 export async function openDashboard(tool: ToolDef, project: TempProject, firstText: string) {
   const ctx = await createTestContext({ registry: defaultRegistry(), cwd: project.dir, env: project.env });
   const instance = render(<TuiApp ctx={ctx} initial={toolScreen(tool)} onQuit={() => {}} />);

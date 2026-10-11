@@ -82,10 +82,6 @@ export type SumsEntry = { expected: string; file: string; algorithm?: Algorithm 
 const COREUTILS_LINE = /^\\?([0-9a-fA-F]+|[A-Za-z0-9+/_=-]+) [ *](.+)$/;
 const BSD_LINE = /^([A-Za-z0-9-]+) \((.+)\) = ([0-9a-fA-F]+|[A-Za-z0-9+/_=-]+)$/;
 
-/**
- * Reads `sha256sum`-style lines (`<hash>  <file>`) and BSD-style lines (`SHA256 (file) = <hash>`).
- * Paths are resolved against the sums file's folder, so it works from any working directory.
- */
 export function parseSums(text: string, sumsPath: string): SumsEntry[] {
   const dir = dirname(sumsPath);
   const entries: SumsEntry[] = [];

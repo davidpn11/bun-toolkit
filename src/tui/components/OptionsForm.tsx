@@ -27,11 +27,6 @@ function clampNumber(value: number, field: FormField): number {
   return next;
 }
 
-/**
- * A form generated from an action's flag specs (see `fieldsFromArgs`). Numbers step with ←/→ or
- * can be typed after Enter; enums cycle; booleans toggle with space/←/→; text is typed after Enter.
- * Values are validated with the same zod schemas the CLI uses before `onSubmit` is called.
- */
 export function OptionsForm({
   fields,
   initial,

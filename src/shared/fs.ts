@@ -15,7 +15,6 @@ export type ListOptions = {
   showHidden?: boolean;
 };
 
-/** Directory listing for pickers: directories first, then files, each sorted by name. Never throws on unreadable entries. */
 export function listDirectory(dir: string, options: ListOptions = {}): DirEntry[] {
   const allowed = options.extensions ? new Set(options.extensions.map((e) => e.toLowerCase())) : undefined;
   const entries: DirEntry[] = [];
@@ -43,7 +42,6 @@ export function listDirectory(dir: string, options: ListOptions = {}): DirEntry[
   ];
 }
 
-/** Writes through a temp file and a rename, so readers never see a half-written file. */
 export async function writeFileAtomic(path: string, data: string | Uint8Array): Promise<void> {
   mkdirSync(dirname(path), { recursive: true });
   const temp = `${path}.btk-${process.pid}.tmp`;

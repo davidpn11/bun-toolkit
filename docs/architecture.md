@@ -69,7 +69,7 @@ src/
     fs.ts                     Directory listing for pickers, atomic writes, file error messages
     pool.ts                   Runs async work with a concurrency limit
     stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
-  plugins/types.ts            BtkPlugin type (the loader arrives in Phase 6)
+  plugins/types.ts            BtkPlugin type (the loader arrives in Phase 8)
   public.ts                   Package export: defineConfig and types
 tests/
   support/                    Streams, temp projects, in-process and spawned CLI runners, test context,

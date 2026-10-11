@@ -6,7 +6,6 @@ import { useNavigation, useScreenActive } from "../navigation.tsx";
 export type TextInputProps = {
   label: string;
   onSubmit: (value: string) => void;
-  /** Shows `•` for each character, for passwords. */
   mask?: boolean;
   placeholder?: string;
   isFocused?: boolean;

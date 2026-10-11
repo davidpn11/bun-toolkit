@@ -10,18 +10,14 @@ export type EnvironmentInput = {
 
 export type Environment = {
   mode: OutputMode;
-  /** ANSI styling allowed. Only ever true in human mode. */
   color: boolean;
-  /** Prompts and the TUI are allowed: human mode with a TTY on both stdin and stdout. */
   interactive: boolean;
   verbose: boolean;
   isCI: boolean;
   isAgent: boolean;
-  /** Why the mode was chosen, shown by `btk info`. */
   reason: string;
 };
 
-/** Output preferences coming from the config file. Flags and env vars still win. */
 export type OutputPreferences = {
   json?: boolean | undefined;
   color?: boolean | undefined;
@@ -38,7 +34,6 @@ function hasFlag(argv: readonly string[], flag: string): boolean {
   return scan.includes(flag);
 }
 
-/** Priority: flags > env vars > config file > terminal detection. */
 export function detectEnvironment(input: EnvironmentInput, prefs: OutputPreferences = {}): Environment {
   const { argv, env } = input;
   const isCI = truthy(env.CI);

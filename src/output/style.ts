@@ -3,7 +3,6 @@ import { ACCENT } from "./palette.ts";
 
 type Paint = (text: string) => string;
 
-/** Semantic styling. With `enabled` false every function is the identity, so ci/json output never carries ANSI. */
 export type Styler = {
   enabled: boolean;
   accent: Paint;
@@ -37,7 +36,6 @@ export function stripAnsi(text: string): string {
   return Bun.stripANSI(text);
 }
 
-/** Terminal column width, ignoring ANSI codes and counting wide characters correctly. */
 export function visibleWidth(text: string): number {
   return Bun.stringWidth(text);
 }

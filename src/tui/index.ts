@@ -1,8 +1,3 @@
-/**
- * Building blocks for tool dashboards (`ui: () => import("./ui/Dashboard.tsx")`).
- * Import from here rather than from individual files.
- */
-
 export { colors, icons } from "../output/palette.ts";
 export { FILE_BROWSER_HINTS, FileBrowser, type FileBrowserProps } from "./components/FileBrowser.tsx";
 export { type KeyHint, KeyHints } from "./components/KeyHints.tsx";

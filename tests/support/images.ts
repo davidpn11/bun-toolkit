@@ -34,7 +34,6 @@ export function noiseBmp(width: number, height: number, seed = 1): Uint8Array {
 
 export type FixtureFormat = "png" | "jpeg" | "webp" | "bmp";
 
-/** Writes a noisy test image in the given format and returns its path. */
 export async function writeImage(
   path: string,
   options: { width?: number; height?: number; format?: FixtureFormat; quality?: number; seed?: number } = {},

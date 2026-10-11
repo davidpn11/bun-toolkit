@@ -16,7 +16,6 @@ export type CompressPlan = {
   output?: string | undefined;
   overwrite: boolean;
   dryRun: boolean;
-  /** Compress each file inside folders instead of packing each folder into one archive. */
   each: boolean;
   recursive: boolean;
 };
@@ -67,7 +66,6 @@ export type CompressReport = {
 
 export type BatchHooks = {
   signal?: AbortSignal;
-  /** Called once planning is done, with the number of outputs to produce. */
   onStart?: (total: number) => void;
   /** Called once per output as it finishes, in completion order. */
   onProgress?: (input: string) => void;

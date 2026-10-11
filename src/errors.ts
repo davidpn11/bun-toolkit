@@ -18,10 +18,6 @@ export type BtkErrorOptions = {
   cause?: unknown;
 };
 
-/**
- * A user-facing error. The top-level boundary prints `message`, `details` and `hint`
- * without a stack trace and exits with `exitCode`.
- */
 export class BtkError extends Error {
   readonly code: string;
   readonly hint: string | undefined;

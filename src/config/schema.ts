@@ -21,7 +21,6 @@ export const pluginSchema = z.custom<BtkPlugin>(
 
 type RegisteredTool = (typeof tools)[number];
 
-/** `tools.<name>` for every registered tool, typed from its config schema. */
 export type ToolsConfig = {
   [T in RegisteredTool as T["name"]]?: T["config"] extends z.ZodObject
     ? Partial<z.input<T["config"]>>
@@ -29,10 +28,8 @@ export type ToolsConfig = {
 };
 
 export type BtkConfig = {
-  /** Per-tool defaults, keyed by tool name. */
   tools?: ToolsConfig;
   output?: z.input<typeof outputConfigSchema>;
-  /** Plugins load from config only (docs/plugins.md). */
   plugins?: BtkPlugin[];
 };
 
@@ -60,7 +57,6 @@ export function fileSliceSchema(config: z.ZodObject) {
   return z.strictObject(shape);
 }
 
-/** Validates one config file (or the env layer). Strict everywhere so typos are caught. */
 export function buildConfigFileSchema(toolDefs: readonly ToolDef[]) {
   const toolShapes: Record<string, z.ZodType> = {};
   for (const tool of toolDefs) {

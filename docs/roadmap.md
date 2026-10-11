@@ -4,7 +4,7 @@
 
 Phase 0 built the project skeleton, CLI framework, config system (global and project), output layer, TUI foundation, test setup and build scripts. After it, adding a tool means one folder and one line in the registry.
 
-The TUI foundation moved here from Phase 7. That way every tool can ship a dashboard from its first release (`btk image --ui`) instead of waiting for enough tools to fill a menu.
+The TUI foundation moved here from the TUI polish phase. That way every tool can ship a dashboard from its first release (`btk image --ui`) instead of waiting for enough tools to fill a menu.
 
 ### What shipped
 
@@ -22,11 +22,7 @@ The TUI foundation moved here from Phase 7. That way every tool can ship a dashb
 - Unit, TUI, in-process, spawned and dist tests
 - A README with installation and usage
 
-### Left for the first release
-
-- GitHub Actions workflows: test.yml, release.yml and homebrew.yml
-- The npm package with the JS shim and the `@btk/*` platform packages
-- Cross-compiled binaries checked on macOS, Linux and Windows runners
+The CI workflows and packaging were left for the first release, which is now Phase 6.
 
 ### How we checked it
 
@@ -250,7 +246,54 @@ btk compress ./dist --gzip -o dist.tar.gz
 
 ---
 
-## Phase 6: markdown renderer and plugin system (next)
+## Phase 6: first release, 0.1 (next)
+
+The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md](distribution.md). This work used to be a list of leftovers at the end of Phase 0. It now has its own phase so it lands before more features do.
+
+### What ships
+
+- `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `main`, on macOS, Linux and Windows.
+- `release.yml` runs when a `v*` tag is pushed. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash`.
+- The npm package `bun-toolkit`, with the `bin.mjs` shim and the five `@btk/*` platform packages. `"private": true` comes off `package.json`.
+- The Homebrew tap, which `homebrew.yml` updates after every release.
+
+### Why now
+
+Five tools work, but the test suite only runs on one Mac, and nobody can install btk without cloning the repo. CI also protects Phase 8, whose plugin loader changes how config loads.
+
+### How we'll check it
+
+- A pull request shows the test workflow passing on all three operating systems.
+- Pushing `v0.1.0` creates a GitHub Release with the binaries, and `btk hash check SHA256SUMS` passes against them.
+- On a machine without Bun, `npx bun-toolkit --version`, `npm install -g bun-toolkit` and `brew install bun-toolkit` all give `0.1.0`.
+
+---
+
+## Phase 7: documentation site
+
+The docs stay markdown files in `docs/` that read well on GitHub. VitePress builds a website from the same files, and a workflow publishes it to GitHub Pages on every push to `main`.
+
+### What ships
+
+- A landing page, `docs/index.md`, with the banner, the mascot, the install commands and a short tour of the tools.
+- A getting-started page covering installation, `btk init`, a first command for each tool and the output modes.
+- A sidebar that groups pages by reader: a guide (getting started, config, output modes), the tools (`docs/tools/*`), and contributing (architecture, testing, CI, distribution, plugins and the roadmap).
+- Search, navigation and dark mode from VitePress. The only site-specific files are `docs/.vitepress/config.ts` and the landing page's frontmatter.
+- `pages.yml`, which deploys the site from `main` and builds it on pull requests so broken links fail the check.
+
+### Why VitePress
+
+It reads plain markdown without required frontmatter, and relative links such as `tools/image.md` work both on GitHub and on the site, so every page is written once. Starlight and Docusaurus want their own folder layout and frontmatter, which makes the files read worse on GitHub. Building the site with `btk md html` stays an experiment for after Phase 8.
+
+### How we'll check it
+
+- Every page reads correctly on GitHub and on the site, and its links work in both.
+- A dead link fails `bunx vitepress build docs`, so the pull request check catches it.
+- The README and the npm package link to the site.
+
+---
+
+## Phase 8: markdown renderer and plugin system
 
 Bun API: `Bun.markdown`, a CommonMark and GFM parser written in Rust.
 
@@ -288,9 +331,9 @@ btk md preview CHANGELOG.md | less -R
 
 ---
 
-## Phase 7: TUI polish
+## Phase 9: TUI polish
 
-The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. Phase 7 works on the app as a whole once several tools exist.
+The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. Phase 9 works on the app as a whole once several tools exist.
 
 - `btk` with no arguments opens `btk ui` in an interactive terminal.
 - Flows that span tools, such as converting a file and then hashing the result.
@@ -300,11 +343,11 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 
 ---
 
-## Phase 8 and later
+## Phase 10 and later
 
 - `btk html` transforms and scrapes HTML with HTMLRewriter.
 - `btk color` converts color formats and previews them in the terminal.
 - `btk tar` creates and extracts archives with glob filters.
 - `btk transpile` turns a TypeScript or JSX file into JavaScript.
 - `btk semver` compares and validates semantic versions.
-- A website with interactive documentation.
+- Interactive examples on the documentation site.

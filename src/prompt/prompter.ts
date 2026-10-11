@@ -6,19 +6,11 @@ export type SelectOption<T extends string> = {
   hint?: string;
 };
 
-/**
- * Interactive prompts behind an interface, so the backing library (@clack/prompts today) can be
- * swapped without touching commands. Every method throws when the session is not interactive.
- */
 export type Prompter = {
   readonly interactive: boolean;
   confirm(message: string, options?: { initial?: boolean }): Promise<boolean>;
   select<T extends string>(message: string, options: SelectOption<T>[]): Promise<T>;
   text(message: string, options?: { placeholder?: string; initial?: string }): Promise<string>;
-  /**
-   * Hidden input drawn on stderr, so it works while stdout is redirected (`btk password hash > h.txt`).
-   * Needs only a terminal on stdin and stderr.
-   */
   secret(message: string): Promise<string>;
   readonly canAskSecret: boolean;
 };

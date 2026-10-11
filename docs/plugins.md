@@ -1,6 +1,6 @@
 # Plugin system
 
-Plugins change bun-toolkit's behavior through hooks. They arrive in Phase 6 with the markdown renderer, the first tool where people will want more than config values, such as their own themes and templates.
+Plugins change bun-toolkit's behavior through hooks. They arrive in Phase 8 with the markdown renderer, the first tool where people will want more than config values, such as their own themes and templates.
 
 Plugins load only from the config file. You can't install them globally, and btk never discovers them on its own, so a project's behavior depends only on its config.
 
@@ -53,7 +53,7 @@ export default defineConfig({
 
 The first release has few hooks, and more arrive as tools need them.
 
-### Phase 6 hooks for markdown
+### Phase 8 hooks for markdown
 
 | Hook | Arguments | Return | Purpose |
 |------|-----------|--------|---------|

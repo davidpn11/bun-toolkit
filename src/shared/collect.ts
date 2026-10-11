@@ -10,7 +10,6 @@ export type InputFile = {
 export type Collected = {
   files: InputFile[];
   missing: string[];
-  /** Explicit files that `accept` rejected. */
   ignored: string[];
 };
 
@@ -19,7 +18,6 @@ export type CollectOptions = {
   recursive: boolean;
   /** Folders to leave out, e.g. `--out-dir` so a second run does not re-read its own outputs. */
   exclude?: string[];
-  /** Which files count, e.g. only images. Accepts everything when omitted. */
   accept?: (path: string) => boolean;
 };
 
@@ -76,7 +74,6 @@ async function expandGlob(
   return matches;
 }
 
-/** Skips hidden folders, and `node_modules` when recursing. */
 function walkDirectory(dir: string, recursive: boolean, accept: (path: string) => boolean): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

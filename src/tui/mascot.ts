@@ -1,9 +1,6 @@
 import { ACCENT } from "../output/palette.ts";
 
-/**
- * The btk mascot: Bun in a hardhat. One character per pixel, `.` is transparent.
- * `<Mascot>` draws it in the terminal and `scripts/mascot.ts` turns it into the SVGs in docs/assets.
- */
+/** One character per pixel, `.` is transparent. */
 export const MASCOT_PALETTE: Record<string, string> = {
   o: "#1B0F0A", // outline, eyes
   b: "#FBF0DF", // bun
@@ -46,7 +43,6 @@ export const MASCOT_SPRITE = [
   "........oooooooooooooooooo........",
 ];
 
-/** Color of each pixel, `null` where transparent. */
 export function mascotPixels(sprite: string[] = MASCOT_SPRITE): (string | null)[][] {
   return sprite.map((row) => [...row].map((ch) => (ch === "." ? null : (MASCOT_PALETTE[ch] ?? null))));
 }

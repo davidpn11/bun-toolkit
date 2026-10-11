@@ -9,7 +9,6 @@ import { VERSION } from "../../src/version.ts";
 import { createIO } from "./streams.ts";
 import { emptyDir } from "./tmp.ts";
 
-/** A BtkContext with default config and captured streams, for TUI and unit tests. */
 export async function createTestContext(
   options: { registry?: Registry; cwd?: string; env?: Record<string, string | undefined> } = {},
 ): Promise<BtkContext> {

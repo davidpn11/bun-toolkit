@@ -3,7 +3,6 @@ import { extname } from "node:path";
 export const OUTPUT_FORMATS = ["webp", "avif", "jpeg", "png", "heic"] as const;
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
-/** `original` re-encodes each image in its own format. */
 export const FORMAT_CHOICES = [...OUTPUT_FORMATS, "original"] as const;
 export type FormatChoice = (typeof FORMAT_CHOICES)[number];
 

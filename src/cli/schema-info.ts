@@ -41,10 +41,6 @@ function defOf(schema: AnySchema): Def {
   return (schema as unknown as { def: Def }).def;
 }
 
-/**
- * Reads what the CLI, help text, env mapping and TUI forms need to know about a zod schema:
- * its base type, enum choices, bounds and default. Wrappers (optional, default, pipe...) are peeled off.
- */
 export function inspectSchema(schema: AnySchema): SchemaInfo {
   let current: AnySchema = schema;
   let hasDefault = false;
@@ -134,7 +130,6 @@ export function coerceText(raw: string, kind: ValueKind): unknown {
   }
 }
 
-/** Short human description of the expected value, for help text and error hints. */
 export function describeExpected(info: SchemaInfo): string {
   switch (info.kind) {
     case "enum":

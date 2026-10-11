@@ -56,7 +56,6 @@ export function createAnimatedSpinner(s: Styler, stream: OutStream, intervalMs =
   };
 }
 
-/** CI mode: one static line when work starts and one when it ends. No animation. */
 export function createStaticSpinner(stream: OutStream): Spinner {
   let text = "";
   let running = false;

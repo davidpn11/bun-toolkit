@@ -6,10 +6,6 @@ export type PasswordSource = "argument" | "stdin" | "prompt";
 
 export type Passwords = { values: string[]; source: PasswordSource };
 
-/**
- * Where a password comes from, safest last: arguments (visible in shell history), one per line
- * on standard input, or a hidden prompt. `confirm` asks twice, for new passwords.
- */
 export async function readPasswords(given: string[], ctx: BtkContext, confirm: boolean): Promise<Passwords> {
   if (given.length > 0) {
     if (ctx.outputMode === "human") {

@@ -13,7 +13,6 @@ export function formatBytes(bytes: number): string {
   return `${sign}${value.toFixed(digits)} ${BYTE_UNITS[unit]}`;
 }
 
-/** `850` -> `850ms`, `1520` -> `1.52s`, `125000` -> `2m 5s`. */
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(2)}s`;
@@ -40,7 +39,6 @@ export function pluralize(count: number, singular: string, plural = `${singular}
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-/** Renders any config/result value as a short single-line string. */
 export function formatValue(value: unknown): string {
   if (value === undefined) return "—";
   if (typeof value === "string") return value;
@@ -50,12 +48,10 @@ export function formatValue(value: unknown): string {
   return String(value);
 }
 
-/** Size change as a signed percentage: `-92.3%` smaller, `+4.0%` larger. */
 export function formatChange(percent: number): string {
   return percent >= 0 ? `-${percent.toFixed(1)}%` : `+${Math.abs(percent).toFixed(1)}%`;
 }
 
-/** Green above 20% smaller, yellow for 0 to 20%, red when the file grew. */
 export function changeTone(percent: number): "success" | "warning" | "error" {
   if (percent > 20) return "success";
   return percent >= 0 ? "warning" : "error";

@@ -28,7 +28,6 @@ function summarize(file: ConfigFileStatus | undefined): ConfigFileSummary {
   return { path: file.path, status: file.status, problems: file.issues.length };
 }
 
-/** Shared by `btk info` and the TUI's Info screen. */
 export function collectInfo(ctx: BtkContext): InfoResult {
   return {
     name: NAME,

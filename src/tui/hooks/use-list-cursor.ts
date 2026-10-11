@@ -8,10 +8,6 @@ export type ListCursor = {
   moveTo(index: number): void;
 };
 
-/**
- * Cursor + scroll window over a list of `length` rows. Keeps the cursor on screen and skips rows
- * for which `isDisabled` returns true.
- */
 export function useListCursor(
   length: number,
   limit: number,

@@ -1,7 +1,6 @@
 import { fstatSync, statSync } from "node:fs";
 import type { BtkIO } from "../context.ts";
 
-/** The path argument that means "read standard input". */
 export const STDIN = "-";
 
 export function hasPipedStdin(io: BtkIO): boolean {
@@ -16,10 +15,6 @@ export async function readStdin(io: BtkIO): Promise<Uint8Array> {
   return Buffer.concat(chunks);
 }
 
-/**
- * True when `path` is the file this process's stdout is redirected into, as in `btk hash . > SUMS`.
- * Lets a command skip its own half-written output.
- */
 export function isStdoutFile(io: BtkIO, path: string): boolean {
   if (io.stdout !== process.stdout) return false;
   try {

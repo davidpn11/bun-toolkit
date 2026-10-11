@@ -6,7 +6,6 @@ import type { FileResult } from "./optimize.ts";
 
 export type Tone = "success" | "warning" | "error" | "muted";
 
-/** One result row, shared by the CLI table and the dashboard. Tones map to `Styler` methods and `colors`. */
 export type FileRow = {
   status: string;
   statusTone: Tone;

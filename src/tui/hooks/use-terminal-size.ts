@@ -6,7 +6,6 @@ export type TerminalSize = {
   rows: number;
 };
 
-/** Current terminal size, updated on resize. Falls back to 80×24 when the stream does not report one. */
 export function useTerminalSize(): TerminalSize {
   const { stdout } = useStdout();
   const read = (): TerminalSize => ({ columns: stdout.columns || 80, rows: stdout.rows || 24 });

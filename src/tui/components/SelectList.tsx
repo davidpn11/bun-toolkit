@@ -18,14 +18,12 @@ export type SelectListProps<V> = {
   items: SelectItem<V>[];
   onSelect: (item: SelectItem<V>) => void;
   onHighlight?: (item: SelectItem<V> | undefined) => void;
-  /** Visible rows before scrolling. */
   limit?: number;
   isFocused?: boolean;
   initialIndex?: number;
   emptyText?: string;
 };
 
-/** Arrow-key list with a scroll window. ↑↓ / j k move, PgUp/PgDn jump, Home/End, Enter selects. */
 export function SelectList<V>({
   items,
   onSelect,

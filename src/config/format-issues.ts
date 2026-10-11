@@ -22,7 +22,6 @@ function article(type: string): string {
   return type;
 }
 
-/** Keys allowed at `path` in a (possibly wrapped) strict object schema, for "did you mean". */
 function keysAt(schema: z.ZodType, path: PropertyKey[]): string[] {
   let current: unknown = schema;
   const unwrap = (s: unknown): unknown => {
@@ -42,7 +41,6 @@ function keysAt(schema: z.ZodType, path: PropertyKey[]): string[] {
   return shape ? Object.keys(shape) : [];
 }
 
-/** Turns zod issues into one readable line per problem, with typo suggestions for unknown keys. */
 export function formatIssues(issues: readonly Issue[], schema: z.ZodType): ConfigIssue[] {
   const out: ConfigIssue[] = [];
   for (const issue of issues) {

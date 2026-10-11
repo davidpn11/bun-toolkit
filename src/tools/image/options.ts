@@ -15,7 +15,6 @@ export type OptimizeOptions = {
   dryRun: boolean;
 };
 
-/** Normalizes flag or form values; `outDir` becomes absolute. */
 export function buildOptions(
   values: Omit<OptimizeOptions, "outDir"> & { outDir?: string | undefined },
   cwd: string,
@@ -35,7 +34,6 @@ export function buildOptions(
 
 const PRESET_KEYS = ["format", "quality", "lossless", "palette", "maxWidth", "maxHeight"] as const;
 
-/** Precedence: explicit flag > preset > config (env, project, global) > built-in default. */
 export function applyPreset(
   options: OptimizeOptions,
   preset: Preset | undefined,

@@ -30,7 +30,6 @@ export class LiveLine {
     this.#stream.write(CLEAR_LINE + truncate(text, columns - 1));
   }
 
-  /** Clears the line and, if given, leaves a final message in its place. */
   finish(finalText?: string): void {
     if (!this.#drawn) {
       if (finalText) this.#stream.write(`${finalText}\n`);

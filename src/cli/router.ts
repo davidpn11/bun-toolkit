@@ -11,12 +11,10 @@ export type Route =
   | { kind: "tool-ui"; tool: ToolDef; tokens: string[] }
   | {
       kind: "action";
-      /** `info`, `config show`, `image optimize` */
       path: string;
       entry: Entry;
       tool?: ToolDef;
       action: ActionDef;
-      /** Everything except the command/action names: flags and positionals for the parser. */
       tokens: string[];
     };
 
@@ -42,7 +40,6 @@ export function hasToken(tokens: readonly string[], ...flags: string[]): boolean
   return false;
 }
 
-/** Value of a global value flag (`--config x` or `--config=x`), without full parsing. */
 export function peekValue(tokens: readonly string[], flag: string): string | undefined {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i] as string;

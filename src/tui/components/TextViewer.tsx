@@ -14,7 +14,6 @@ export const TEXT_VIEWER_HINTS = [
   { key: "pgup/pgdn", label: "page" },
 ];
 
-/** Read-only scrolling view of a block of text, with line numbers. */
 export function TextViewer({ text, height, isFocused = true }: TextViewerProps) {
   const screenActive = useScreenActive();
   const lines = text.replace(/\n$/, "").split("\n");
