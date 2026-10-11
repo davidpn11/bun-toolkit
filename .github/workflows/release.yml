@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BUN_VERSION: 1.4.0
+  BTK_NO_LOCAL_CONFIG: "off"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Tag matches package.json
+        run: |
+          version="v$(jq -r .version package.json)"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun test
+
+  build:
+    needs: checks
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { target: bun-darwin-arm64, file: btk-darwin-arm64, os: macos-latest, runs: true }
+          - { target: bun-darwin-x64, file: btk-darwin-x64, os: macos-latest, runs: false }
+          - { target: bun-linux-x64, file: btk-linux-x64, os: ubuntu-latest, runs: true }
+          - { target: bun-linux-arm64, file: btk-linux-arm64, os: ubuntu-latest, runs: false }
+          - { target: bun-windows-x64, file: btk-windows-x64.exe, os: windows-latest, runs: true }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/build.ts --target ${{ matrix.target }} --outfile dist/${{ matrix.file }}
+      - name: End-to-end tests against the binary
+        if: matrix.runs
+        run: bun test tests/integration/dist.test.ts
+        env:
+          BTK_BIN: ${{ github.workspace }}/dist/${{ matrix.file }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.file }}
+          path: dist/${{ matrix.file }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Checksums
+        working-directory: release
+        run: |
+          chmod +x btk-*
+          ./btk-linux-x64 hash btk-* > SHA256SUMS
+          cat SHA256SUMS
+      - name: Create the release
+        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+      - name: Check the published files
+        run: |
+          mkdir published
+          gh release download "$GITHUB_REF_NAME" --dir published
+          chmod +x published/btk-linux-x64
+          published/btk-linux-x64 hash check published/SHA256SUMS
+
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: tap
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Write the formula
+        run: |
+          gh release view "$GITHUB_REF_NAME" --json assets > "$RUNNER_TEMP/assets.json"
+          gh release download "$GITHUB_REF_NAME" --pattern SHA256SUMS --dir "$RUNNER_TEMP"
+          mkdir -p tap/Formula
+          bun scripts/homebrew-formula.ts \
+            --version "${GITHUB_REF_NAME#v}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --assets "$RUNNER_TEMP/assets.json" \
+            --sums "$RUNNER_TEMP/SHA256SUMS" \
+            ${{ github.event.repository.private && '--private' || '' }} \
+            > tap/Formula/bun-toolkit.rb
+          cat tap/Formula/bun-toolkit.rb
+      - name: Commit the formula to the default branch
+        working-directory: tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/bun-toolkit.rb
+          git diff --cached --quiet && exit 0
+          git commit -m "bun-toolkit ${GITHUB_REF_NAME#v} formula"
+          git push

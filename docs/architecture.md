@@ -1,148 +1,170 @@
 # Architecture
 
-## CLI framework: citty
+## Command framework
 
-citty is a 3KB, zero-dependency, TypeScript-first command router from the UnJS ecosystem (Nuxt, Nitro). It supports nested subcommands, auto-generates help text, and infers argument types from definitions.
+The first plan used citty for routing. We dropped it in Phase 0 because citty 0.2 takes only single-value positionals, has no repeated flags, silently ignores unknown flags, and prints its own errors and help. Typo suggestions, validated values, variadic paths and config-sourced defaults would all have meant working around it.
 
-Why citty over alternatives:
-- @stricli/core couples commands to a context-building pattern. Unnecessary here.
-- Commander.js is Node-centric and string-template-based.
-- Boune bundles too many concerns (colors, spinners, arg parsing in one package).
-- Hand-rolling command parsing leads to reimplementing help text, type coercion, and subcommand routing.
+The replacement lives in `src/cli/` (about 600 lines). `defineTool()` and `defineCommand()` descriptors drive it, and every argument is a zod schema. One descriptor produces:
 
-citty handles routing. Everything else (output, config, context) is ours.
+- routing for `btk <tool> <action>`, aliases, and a default action (`btk image a.png` runs `btk image optimize a.png`)
+- argument parsing for long and short flags, `-abc` clusters, `--no-x`, `--x=y`, repeated array flags and `--`
+- validation with readable errors and "did you mean" suggestions, exiting with code 2
+- help text with usage, arguments, choices, examples, and each default along with the config file that set it
+- the `tools.<name>` config slice, its `defineConfig` types and its `BTK_<TOOL>_<KEY>` env vars
+- the `--ui` flag and the tool's entry on the `btk ui` home screen
+- TUI option forms, which `fieldsFromArgs` builds from the same flag specs
 
 ## Project structure
 
 ```
-bun-toolkit/
-  bin/
-    btk.ts                    # CLI entrypoint (compiled target)
-  src/
-    cli.ts                    # citty app, subcommand registration
-    config/
-      loader.ts               # Discovers and loads global + project config
-      schema.ts               # BtkConfig type definition and defaults
-      define.ts               # defineConfig() identity function
-    context.ts                # BtkContext type (config, reporter, prompter)
-    env.ts                    # Environment detection (CI, agent, TTY, NO_COLOR)
-    output/
-      reporter.ts             # Output dispatcher (human / json / ci)
-      formatter.ts            # ANSI styling via ansis, icon set
-      components/
-        log.ts                # error/warn/info/success lines
-        table.ts              # Aligned columns
-        key-value.ts          # Key-value pair lists
-        list.ts               # Bulleted lists
-        notice.ts             # Boxed messages
-        spinner.ts            # Progress spinner
-        progress-bar.ts       # File processing progress
-        summary.ts            # End-of-command summary
-      themes/
-        default.ts            # Brand palette and icons
-    prompt/
-      prompter.ts             # Wraps @clack/prompts, throws in non-interactive
-      guards.ts               # isInteractive(), requireInteractive()
-    plugins/
-      loader.ts               # Plugin discovery and registration
-      types.ts                # Plugin interface definition
-    tools/
-      image/
-        command.ts            # citty command (parses args, calls core, pipes to reporter)
-        core.ts               # Pure logic: optimize, info
-        image.test.ts
-      hash/
-        command.ts
-        core.ts
-        hash.test.ts
-      convert/
-        command.ts
-        core.ts
-        convert.test.ts
-      ... (one directory per tool)
-    tui/
-      app.tsx                 # Ink/React TUI entry (Phase 7)
-      components/             # TUI-specific React components
-    shared/
-      fs.ts                   # File helpers (glob, walk, size formatting)
-      timing.ts               # Duration measurement
-      errors.ts               # BtkError base class
-      version.ts              # Version introspection
-  tests/
-    support/
-      streams.ts              # PassThrough helpers for output capture
-      fixtures/               # Test images, text files, config samples
-      context.ts              # Test context builder
-    integration/
-      cli.test.ts             # End-to-end CLI tests against source
-      dist.test.ts            # Same tests against compiled binary
-  scripts/
-    build.ts                  # Cross-compilation orchestrator
-    package-npm.ts            # Generates dist/ with platform packages
-    test-dist.ts              # Builds for current platform, runs dist.test.ts
-    update-homebrew.ts        # Updates Homebrew formula
-  dist/                       # Generated: npm packages and binaries
-  package.json
-  tsconfig.json
-  bunfig.toml
-  LICENSE
-  README.md
-  CHANGELOG.md
-  ROADMAP.md
+bin/btk.ts                    Entrypoint. Turns SIGINT into an AbortSignal, calls run(), sets the exit code. No top-level await.
+src/
+  cli/
+    main.ts                   run(argv), the only error boundary. Route, config, context, action, output.
+    define.ts                 defineTool, defineAction, defineCommand, flag, positional, Registry
+    router.ts                 Maps argv to a route: root help, version, tool help, tool UI or action
+    args.ts                   Token parser, per-argument zod validation, config fallback for flags
+    schema-info.ts            Reads zod schemas: kind, enum values, bounds, defaults
+    help.ts                   Help renderer
+    suggest.ts                Edit distance for "did you mean"
+    global-args.ts            --json, --verbose, --no-color, --config, --help and --ui
+  commands/                   Built-ins: info, init, config (show, validate, path), ui
+  tools/
+    index.ts                  The tool registry
+    image/                    btk image (docs/tools/image.md)
+    hash/                     btk hash (docs/tools/hash.md)
+    convert/                  btk convert (docs/tools/convert.md)
+    password/                 btk password (docs/tools/password.md)
+    compress/                 btk compress and btk decompress (docs/tools/compress.md)
+  config/
+    schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
+    loader.ts                 Discovery, import or JSON parse, per-file validation, merge, source tracking
+    env.ts                    BTK_* env layer
+    local-config.ts           The noLocalConfig warning or error for tool commands
+    merge.ts                  Layered deep merge that records each key's source
+    format-issues.ts          Turns zod issues into "path  message" lines with suggestions
+    paths.ts                  Global dir and walk-up project discovery
+    virtual-module.ts         Serves `import { defineConfig } from "bun-toolkit"` at runtime
+    define.ts                 defineConfig()
+  context.ts                  BtkContext
+  env.ts                      Output mode detection
+  errors.ts                   BtkError, UsageError, ConfigError and exit codes
+  output/
+    reporter.ts               Reporter and Output for each mode (human, ci, json)
+    style.ts                  Styler (semantic colors through ansis) and visible-width helpers
+    palette.ts                Bun accent color, terminal color names and icons, for the CLI and the TUI
+    format.ts                 Bytes, durations, percentages, dimensions
+    components/               log, table, key-value, list, notice, summary, spinner, progress-bar
+  prompt/prompter.ts          @clack/prompts behind a Prompter type; throws when not interactive. secret() asks
+                              for hidden input on stderr, so it works while stdout is redirected
+  tui/
+    launch.ts                 TTY check, then a lazy import of the runtime, so plain commands never load Ink
+    runtime.tsx               Alternate screen, Ink render, terminal restore on every exit path
+    app.tsx                   Providers, global keys (q, esc, ?, ctrl+c), help overlay
+    navigation.tsx            Screen stack, breadcrumbs, input lock for text fields, active-screen flag
+    components/               Screen, SelectList, FileBrowser, OptionsForm, ProgressList, ResultTable, ...
+    screens/                  Home, Info, Config, ToolHost (loads a tool's lazy `ui`)
+    index.ts                  What tool dashboards import
+  shared/
+    collect.ts                Turns file, folder and glob arguments into a sorted, de-duplicated file list
+    fs.ts                     Directory listing for pickers, atomic writes, file error messages
+    pool.ts                   Runs async work with a concurrency limit
+    stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
+  plugins/types.ts            BtkPlugin type (the loader arrives in Phase 8)
+  public.ts                   Package export: defineConfig and types
+tests/
+  support/                    Streams, temp projects, in-process and spawned CLI runners, test context,
+                              Ink and dashboard helpers, image fixtures, and the test-only `demo` tool
+  integration/                cli-suite.ts (shared), cli.test.ts (source), dist.test.ts (binary),
+                              registry.test.ts (what a tool gets from defineTool), one file per tool
+scripts/build.ts              Compiles the binary for this platform or a --target
+scripts/test-dist.ts          Builds, then runs the end-to-end suite against the binary
 ```
 
 ## The tool contract
 
-Every tool follows the same pattern:
+```
+src/tools/<name>/
+  core logic       Pure functions. Typed input, typed result. Takes { signal, onProgress }. No CLI or TUI imports.
+  tool.ts          defineTool({ name, description, config, actions, defaultAction?, ui? })
+  ui/Dashboard.tsx Optional. The default export receives { ctx, tool }.
+  <name>.test.ts   Tests for the core logic.
+```
 
-1. `core.ts` contains the pure logic. Accepts typed input, returns typed output. No CLI dependencies, no reporter calls.
-2. `command.ts` defines the citty command. Parses args, merges config defaults, calls the function from `core.ts`, sends the result through the reporter.
-3. Tests cover the core function directly. Integration tests cover CLI behavior separately.
+Each shipped tool splits its core logic by job instead of using one `core.ts`. `btk image` has `optimize.ts`, `info.ts` and `presets.ts`, `btk hash` has `digest.ts`, `compute.ts` and `verify.ts`, and `btk convert` has `codec.ts` and `convert.ts`. Either layout works.
 
-This separation means tools are testable without simulating CLI invocations, and the TUI can call the same core functions without going through arg parsing.
+Tools share three building blocks from `src/shared/`. `collectFiles()` turns arguments into files with an `accept` filter and an `exclude` list. `runPool()` limits concurrency. `readStdin()` and `STDIN` (`-`) handle piped input, and tests feed it through `runBtk(args, { stdin })`.
+
+A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline.
+
+`btk compress` and `btk decompress` are two tools in the registry that share one folder. `decompress` has no config slice of its own.
+
+- `action.run(input, ctx, meta)` calls the core logic and returns data. In json mode the runner prints that data inside the envelope.
+- `meta.sources` says where each value came from (`flag`, `argument`, `config` or `default`). `btk image` uses it so an explicit flag beats a preset while a config value does not.
+- `action.render(result, out, ctx)` presents the data in human and ci mode with `out.table()`, `out.keyValue()`, `out.summary()` and so on. It never checks the output mode.
+- `action.exitCode(result, ctx)` is optional. It lets a command print a full report and still exit non-zero, for example when some files in a batch failed. In json mode the envelope's `ok` follows it.
+- Progress goes through `ctx.reporter.spinner` and `ctx.reporter.progress`. Each mode makes them animated, static or silent.
+- The dashboard calls the same core functions and builds its screens from `src/tui/index.ts`.
+- A flag that declares `config: "<key>"` falls back to `tools.<name>.<key>`, which gives it the full flag, env, project, global, default chain.
+
+Adding the tool to `src/tools/index.ts` is the only wiring.
 
 ## Execution lifecycle
 
 ```
 bin/btk.ts
-  -> detect environment (env.ts)
-  -> load config (config/loader.ts): global + project, merged
-  -> build context (context.ts): config, reporter, prompter
-  -> citty routes to the correct command
-  -> command.ts: parse tool-specific args, merge with config defaults
-  -> command.ts: call core function from core.ts with typed input
-  -> command.ts: pipe result through reporter
-  -> exit with code 0 (or 1 on error)
+  run(argv)                   src/cli/main.ts
+    detectEnvironment()       Preliminary mode from flags, env and TTY, so early errors render in the right style
+    resolveRoute()            An unknown command throws UsageError (exit 2) with a suggestion
+    --version, --help         Answered without loading config
+    loadConfig()              Never throws; problems go into configInfo.error
+    detectEnvironment()       Final mode, now including config output.* preferences
+    build BtkContext          Config, reporter, prompter, registry, io, signal
+    tool help, --ui           --ui calls launchTui(), which exits 2 without a terminal
+    requiresConfig            Throws configInfo.error (exit 78) unless the command opts out
+    parseArgs()               Throws UsageError (exit 2) on bad input
+    action.run()              Then the json envelope or action.render(), then action.exitCode()
+  exit code                   The boundary prints any error once, in the current mode
 ```
 
 ## BtkContext
 
-Each command receives a context object:
-
 ```typescript
-interface BtkContext {
+type BtkContext = {
   cwd: string;
-  platform: string;
+  platform: NodeJS.Platform;
   arch: string;
   version: string;
-  config: ResolvedBtkConfig;
+  bunVersion: string;
+  env: Record<string, string | undefined>;
+  environment: Environment;      // mode, color, interactive, verbose, reason
+  outputMode: "human" | "ci" | "json";
+  isInteractive: boolean;
+  config: ResolvedConfig;        // merged, defaults applied
+  configInfo: LoadedConfig;      // files, per-key sources, validation error
   reporter: Reporter;
   prompter: Prompter;
-  isInteractive: boolean;
-  outputMode: "human" | "json" | "ci";
-}
+  registry: Registry;
+  io: BtkIO;                     // injectable stdin, stdout, stderr (tests)
+  signal: AbortSignal;           // aborted on Ctrl+C
+};
 ```
 
 ## Error handling
 
-A top-level try/catch in each command adapter distinguishes between `BtkError` (user-facing, print message and exit 1) and unexpected errors (print message, suggest `--verbose` for details).
+`run()` is the only place that catches. A `BtkError`, `UsageError` or `ConfigError` prints its message, details and hint, then exits with its own code. Any other error prints as "Unexpected error" with a hint to rerun with `--verbose` for the stack. In json mode an error is a `{ "ok": false, "error": {...} }` document on stdout.
+
+## TUI navigation
+
+Every screen in the stack stays mounted. Only the top one is visible, and `useScreenActive()` tells input components (SelectList, FileBrowser, OptionsForm) whether their screen is on top, so hidden screens ignore keys. Going back returns to a screen exactly as the user left it, with the same folder, cursor and selection. `nav.popTo(id)` returns to a screen further down the stack, which the image dashboard uses after a run.
 
 ## Dependencies
 
-| Role | Library | Size | Notes |
-|------|---------|------|-------|
-| Command routing | citty | 3KB | TypeScript-first, zero-dep, UnJS ecosystem |
-| Colors/styling | ansis | 3KB | Bun-compatible, correct multi-line ANSI handling |
-| Spinner | nanospinner | 1KB | Degrades to plain text in non-TTY |
-| Interactive prompts | @clack/prompts | ~15KB | Version-pinned, behind abstraction layer |
-| TUI (Phase 7) | Ink 6 + React 19 | ~200KB | Used by Claude Code, Gemini CLI |
+| Role | Library | Notes |
+|------|---------|-------|
+| Validation | zod 4 | Config files, env vars, flags and TUI forms share schemas |
+| Colors and styling | ansis | Behind `Styler`; off in ci and json mode |
+| Interactive prompts | @clack/prompts (pinned) | Behind `Prompter`; loaded lazily |
+| TUI | Ink 6 + React 19 | Loaded lazily, only for `--ui` and `btk ui` |
+
+The spinner and progress bar are ours (`src/output/components/`). They write to injectable streams, use the shared palette and restore the cursor on exit. We dropped nanospinner.

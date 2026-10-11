@@ -1,25 +1,23 @@
 # Plugin system
 
-## Overview
+Plugins change bun-toolkit's behavior through hooks. They arrive in Phase 8 with the markdown renderer, the first tool where people will want more than config values, such as their own themes and templates.
 
-Plugins extend bun-toolkit's behavior through hooks. Introduced in Phase 6 alongside the markdown renderer, which is the first tool that benefits from customization beyond config values.
+Plugins load only from the config file. You can't install them globally, and btk never discovers them on its own, so a project's behavior depends only on its config.
 
-Plugins only load from the config file. They cannot be installed globally or discovered automatically. This keeps behavior predictable.
-
-## Plugin interface
+## Plugin types
 
 ```typescript
-interface BtkPlugin {
+type BtkPlugin = {
   name: string;
   setup(hooks: HookRegistry): void;
-}
+};
 
-interface HookRegistry {
+type HookRegistry = {
   on<T extends HookName>(name: T, handler: HookHandler<T>): void;
-}
+};
 ```
 
-A plugin is a function that returns a `BtkPlugin` object. The `setup` method receives a hook registry and registers handlers.
+A plugin is a function that returns a `BtkPlugin`. btk calls its `setup` method with a hook registry, and the plugin registers its handlers there.
 
 ## Writing a plugin
 
@@ -40,7 +38,7 @@ export default function githubMarkdown(): BtkPlugin {
 
 ## Registering plugins
 
-Plugins are registered in `btk.config.ts`:
+Add plugins in `btk.config.ts`:
 
 ```typescript
 import { defineConfig } from "bun-toolkit";
@@ -53,29 +51,29 @@ export default defineConfig({
 
 ## Available hooks
 
-The hook set starts narrow and expands as tools need it.
+The first release has few hooks, and more arrive as tools need them.
 
-### Phase 6 hooks (markdown)
+### Phase 8 hooks for markdown
 
 | Hook | Arguments | Return | Purpose |
 |------|-----------|--------|---------|
-| `md:preview:theme` | `{ content: string }` | ANSI theme object | Custom terminal preview styling |
-| `md:html:template` | `{ content: string, html: string }` | HTML string | Custom HTML wrapper/template |
+| `md:preview:theme` | `{ content: string }` | ANSI theme object | Custom styling for the terminal preview |
+| `md:html:template` | `{ content: string, html: string }` | HTML string | Custom HTML wrapper or template |
 
 ### Future hooks
 
 | Hook | Phase | Purpose |
 |------|-------|---------|
-| `image:post-process` | Phase 1+ | Run custom transforms after optimization |
-| `convert:format` | Phase 3+ | Register custom format parsers |
+| `image:post-process` | 1 or later | Run custom transforms after optimization |
+| `convert:format` | 3 or later | Register custom format parsers |
 | `output:format` | Any | Custom output renderers |
-| `command:before` | Any | Pre-processing before any command |
-| `command:after` | Any | Post-processing after any command |
+| `command:before` | Any | Run code before any command |
+| `command:after` | Any | Run code after any command |
 
 ## Implementation notes
 
-- `src/plugins/types.ts` defines the `BtkPlugin` and `HookRegistry` interfaces.
-- `src/plugins/loader.ts` iterates over `config.plugins`, calls `setup()` on each, and builds a resolved hook map.
-- Hooks are synchronous by default. Async hooks (like `image:post-process`) return promises and are awaited.
-- If multiple plugins register the same hook, they execute in registration order. The last return value wins for hooks that return a replacement (like `md:html:template`).
-- Plugins run in the same process as bun-toolkit. They have full access to Bun APIs.
+- `src/plugins/types.ts` defines the `BtkPlugin` and `HookRegistry` types.
+- `src/plugins/loader.ts` will call `setup()` on each entry in `config.plugins` and build a map of the registered hooks.
+- Hooks are synchronous by default. Async hooks, such as `image:post-process`, return promises that btk awaits.
+- When several plugins register the same hook, btk runs them in registration order. For hooks that return a replacement, such as `md:html:template`, the last return value wins.
+- Plugins run in the same process as bun-toolkit and can use every Bun API.

@@ -1,105 +1,83 @@
 # CI pipeline
 
-Four GitHub Actions workflows. Each has a clear job.
+Two GitHub Actions workflows live in `.github/workflows/`. Both pin Bun with `BUN_VERSION`, currently 1.4.0.
 
-## test.yml (on pull request)
+## test.yml
 
-Runs on every PR. Fast feedback loop.
+Runs on every pull request and every push to `master`. A new push to the same branch cancels the run in progress.
 
-Steps:
-1. Checkout
-2. Setup Bun (`oven-sh/setup-bun@v2`)
-3. `bun install --frozen-lockfile`
-4. Typecheck (`tsc --noEmit`)
-5. Lint (`oxlint`)
-6. Format check (`biome check` or `oxfmt --check`)
-7. `bun test` (unit + integration against source)
-8. Build for current platform
-9. `bun run test:dist` (integration against compiled binary)
+| Job | Runs on | Steps |
+| --- | --- | --- |
+| `check` | Ubuntu | `bun install --frozen-lockfile`, then `bun run check` (Biome, oxlint, tsc) |
+| `test` | Ubuntu, macOS, Windows | `bun install --frozen-lockfile`, `bun test`, then `bun run test:dist`, which builds the binary for that runner and runs the end-to-end suite against it |
 
-## release.yml (on tag push `v*`)
+## release.yml
 
-Triggered by pushing a version tag. Builds, tests, and publishes everything.
+Runs when you push a tag that starts with `v`:
 
-### Job 1: checks
-- Full test suite (same as test.yml steps 1-7)
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
 
-### Job 2: build-matrix (depends on checks)
-- Matrix strategy, one job per platform:
-  - `darwin-arm64` on `macos-latest`
-  - `darwin-x64` on `macos-13` (or cross-compiled)
-  - `linux-x64` on `ubuntu-latest`
-  - `linux-arm64` cross-compiled on `ubuntu-latest`
-  - `windows-x64` on `windows-latest`
-- Each job:
-  1. Checkout + setup Bun
-  2. `bun build --compile --target=bun-{target} --minify --bytecode ./bin/btk.ts --outfile=dist/btk`
-  3. Run `test:dist` on platforms that can execute natively
-  4. Upload binary as artifact
+| Job | Needs | What it does |
+| --- | --- | --- |
+| `checks` | | Fails unless the tag matches `package.json` (`v0.1.0` for version `0.1.0`), then runs `bun run check` and `bun test` |
+| `build` | `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
+| `release` | `build` | Writes `SHA256SUMS` with `btk hash`, creates the GitHub Release with generated notes, downloads the published files again and runs `btk hash check SHA256SUMS` on them |
+| `homebrew` | `release` | Generates `Formula/bun-toolkit.rb` with `scripts/homebrew-formula.ts` and commits it to `master` |
 
-### Job 3: package (depends on build-matrix)
-- Downloads all binary artifacts
-- Runs `scripts/package-npm.ts` to generate:
-  - Main package (`bun-toolkit`) with `bin.mjs` shim
-  - Platform packages (`@btk/darwin-arm64`, etc.) each with one binary
-- Uploads all packages as artifacts
+The build matrix:
 
-### Job 4: publish-npm (depends on package)
-- `npm publish` for the main package
-- `npm publish` for each platform package
-- Uses `NPM_TOKEN` secret
+| Binary | Runner | End-to-end tests |
+| --- | --- | --- |
+| `btk-darwin-arm64` | `macos-latest` | yes |
+| `btk-darwin-x64` | `macos-latest`, cross-compiled | no |
+| `btk-linux-x64` | `ubuntu-latest` | yes |
+| `btk-linux-arm64` | `ubuntu-latest`, cross-compiled | no |
+| `btk-windows-x64.exe` | `windows-latest` | yes |
 
-### Job 5: publish-github (depends on build-matrix)
-- Creates GitHub Release from the tag
-- Attaches all binaries to the release
-- Auto-generates release notes from commits
+The two cross-compiled binaries aren't run in CI, because they target a different CPU than the runner that builds them. Adding an Intel macOS runner and a Linux ARM runner would cover them.
 
-### Job 6: trigger-homebrew (depends on publish-github)
-- Dispatches the `homebrew.yml` workflow with version and release URL
+## Homebrew
 
-## homebrew.yml (triggered by release.yml)
+This repository is also the Homebrew tap. The formula lives in `Formula/bun-toolkit.rb`, and the `homebrew` job rewrites it after every release, so never edit it by hand.
 
-Updates the Homebrew tap.
+While the repository is private, GitHub serves release files only through its API, with a token. The job notices that the repository is private and passes `--private` to the generator. The formula then downloads through `api.github.com` and sends `HOMEBREW_GITHUB_API_TOKEN`. Once the repository is public, the next release writes plain download URLs and no token is needed.
 
-Steps:
-1. Download release binaries (or compute URLs from the release)
-2. Compute SHA256 for each binary
-3. Run `scripts/update-homebrew.ts` to generate/update the formula
-4. Open a PR to `homebrew-bun-toolkit` tap repository
-5. Auto-merge if tests pass
+To install from the private repository:
 
-## nightly.yml (scheduled, optional)
+```bash
+export HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)
+brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit
+```
 
-Runs on a cron schedule (e.g., daily at 03:00 UTC). Catches upstream Bun breakage early.
+`brew tap` clones the repository with your git credentials, and the token lets Homebrew download the binary. A fine-grained token with read access to this repository's contents works as well as the `gh` token.
 
-Steps:
-1. Checkout
-2. Setup Bun canary (`oven-sh/setup-bun@v2` with `bun-version: canary`)
-3. `bun install`
-4. `bun test`
-5. Build for current platform
-6. `bun run test:dist`
-7. If any step fails, open an issue or notify
+## Secrets
 
-## Required secrets
+Neither workflow needs a secret yet. Both use the built-in `GITHUB_TOKEN`. The `homebrew` job pushes to `master` with it, so a branch protection rule on `master` must allow GitHub Actions to push.
 
-| Secret | Used in | Purpose |
-|--------|---------|---------|
-| `NPM_TOKEN` | release.yml | Publishing to npm |
-| `HOMEBREW_TAP_TOKEN` | homebrew.yml | Opening PRs to the tap repo |
+npm publishing comes once the repository is public. It will publish `@bun-toolkit/cli` and the `@bun-toolkit/<platform>` packages, and needs either an `NPM_TOKEN` secret or npm trusted publishing (see [distribution.md](distribution.md)).
 
 ## Build flags
 
-All compiled binaries use the same flags:
+Every compiled binary goes through `scripts/build.ts`:
 
 ```typescript
 await Bun.build({
   entrypoints: ["./bin/btk.ts"],
-  compile: { outfile, target: target.name },
+  compile: { outfile, target },
   minify: true,
-  bytecode: true,
-  format: "cjs",     // Required for bytecode compilation
+  sourcemap: "linked",
+  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  plugins: [stubDevtools],   // Ink's dev-only react-devtools-core import
 });
 ```
 
-Note: `format: "cjs"` is required when `bytecode: true` is set. The entrypoint (`bin/btk.ts`) should use an IIFE wrapper instead of top-level await.
+The build skips `--bytecode` because Ink and yoga-layout use top-level await, which bytecode compilation rejects (see [distribution.md](distribution.md)). The entrypoint still avoids top-level await, so we can turn bytecode back on if that changes.
+
+## Later
+
+A nightly workflow against Bun canary would catch a breaking Bun change before a release. It isn't built yet.

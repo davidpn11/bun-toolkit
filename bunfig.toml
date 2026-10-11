@@ -1,0 +1,3 @@
+[test]
+# Integration tests spawn the CLI; give them room on slow CI runners.
+timeout = 20000

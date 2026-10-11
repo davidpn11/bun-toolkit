@@ -2,22 +2,22 @@
 
 ## What bun-toolkit is
 
-A single CLI that wraps Bun's native APIs into developer tools. One install, one command namespace, one output style.
+bun-toolkit is one CLI that turns Bun's native APIs into developer tools, with one install, one command name and one output style.
 
-Bun ships with native APIs for image encoding, password hashing, compression, format parsing, cryptographic hashing, and markdown rendering. Each one is fast, zero-dependency, and underused. bun-toolkit turns each API into a CLI command with configuration, batch processing, progress reporting, and consistent output.
+Bun ships native APIs for image encoding, password hashing, compression, format parsing, cryptographic hashing and markdown rendering. They are fast and need no dependencies, but few people use them outside their own code. bun-toolkit makes each API a CLI command with config, batch processing, progress reporting and consistent output.
 
 ## Naming
 
 - Project name: `bun-toolkit`
-- CLI command: `btk` (with `bun-toolkit` as a longer alias)
+- CLI command: `btk`, with `bun-toolkit` as a longer alias
 - npm package: `bun-toolkit`
-- Platform packages: `@btk/darwin-arm64`, `@btk/linux-x64`, etc.
-- Documentation, website, and GitHub repo all use `bun-toolkit`
+- Platform packages: `@btk/darwin-arm64`, `@btk/linux-x64` and so on
+- The documentation, website and GitHub repo all use `bun-toolkit`
 
 ## Commands
 
 ```
-btk image optimize ./assets --format webp --quality 80
+btk image ./assets --format webp --quality 80
 btk convert config.yaml --to json
 btk hash sha256 package.tar.gz
 btk compress --zstd --level 9 bundle.js
@@ -26,25 +26,25 @@ btk md preview README.md
 btk ui
 ```
 
-Each command uses Bun's native APIs. No sharp, no imagemagick, no openssl, no jq, no yq. The compiled binary is self-contained. Install globally, add as a devDependency, or run with `npx`.
+Each command uses Bun's native APIs, so you don't need sharp, ImageMagick, openssl, jq or yq. The compiled binary is self-contained. You can install it globally, add it as a devDependency, or run it with `npx`.
 
 ## Three contexts, one codebase
 
-Always through the CLI, never as a library import.
+People always use bun-toolkit through the CLI, never as a library import.
 
-**Terminal** is the primary target. Colors, icons, spinners, progress bars, formatted output.
+In a terminal, which is the main target, output has colors, icons, spinners, progress bars and aligned tables.
 
-**CI/CD pipelines** get the same commands with adapted output. bun-toolkit detects `CI=true` or a non-TTY environment and switches to plain text. Run with `npx bun-toolkit image optimize` or add as a devDependency and call `btk` from npm scripts, like changesets or lint-staged.
+In CI pipelines the commands stay the same and only the output changes. bun-toolkit detects `CI=true` or a non-TTY environment and prints plain text. Run it with `npx bun-toolkit image ./assets`, or add it as a devDependency and call `btk` from npm scripts the way you would call changesets or lint-staged.
 
-**AI agents** get JSON output by default when `AGENT=true` is set, or when `--json` is passed. Agents run CLI commands and parse the JSON output.
+For AI agents, `AGENT=true` or `--json` makes every command print one JSON document that the agent can parse.
 
 ## Why no programmatic API
 
-`import { Image } from 'bun'` already exists. The raw Bun APIs are the library. bun-toolkit's value is the CLI layer on top: configuration, batch processing, progress reporting, output formatting, and piping between commands.
+`import { Image } from "bun"` already exists, so the raw Bun APIs are the library. bun-toolkit adds what a library doesn't give you: config, batch processing, progress reporting, output formatting and piping between commands.
 
 ## Principles
 
-- The foundation matters more than the feature count.
-- One tool at a time, each on a solid base.
-- Every command shares the same visual language.
-- The output mode is a single decision at startup. Tool code never branches on context.
+- A solid foundation matters more than the number of tools.
+- Build one tool at a time, each on that foundation.
+- Every command uses the same visual language.
+- btk decides the output mode once, at startup. Tool code never checks it.
