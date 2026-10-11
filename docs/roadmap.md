@@ -252,10 +252,10 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 
 ### What ships
 
-- `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `main`, on macOS, Linux and Windows.
+- `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
 - `release.yml` runs when a `v*` tag is pushed. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash`.
-- The npm package `bun-toolkit`, with the `bin.mjs` shim and the five `@btk/*` platform packages. `"private": true` comes off `package.json`.
-- The Homebrew tap, which `homebrew.yml` updates after every release.
+- The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This waits until the repository is public.
+- The Homebrew formula in `Formula/bun-toolkit.rb`, which `release.yml` rewrites after every release.
 
 ### Why now
 
@@ -265,7 +265,7 @@ Five tools work, but the test suite only runs on one Mac, and nobody can install
 
 - A pull request shows the test workflow passing on all three operating systems.
 - Pushing `v0.1.0` creates a GitHub Release with the binaries, and `btk hash check SHA256SUMS` passes against them.
-- On a machine without Bun, `npx bun-toolkit --version`, `npm install -g bun-toolkit` and `brew install bun-toolkit` all give `0.1.0`.
+- On a machine without Bun, `brew install davidpn11/bun-toolkit/bun-toolkit` gives `0.1.0`. Once npm ships, `npx @bun-toolkit/cli --version` and `npm install -g @bun-toolkit/cli` do too.
 
 ---
 

@@ -2,21 +2,28 @@
 
 ## Channels
 
-### npm package (`bun-toolkit`)
+### npm package (`@bun-toolkit/cli`)
 
-npm is the main channel, and people use it three ways:
+npm publishing starts once the repository is public. The unscoped `bun-toolkit` name and the `@btk` scope belong to other npm users, so the packages live in the `bun-toolkit` npm org. People will use them three ways:
 
-- `npm install -g bun-toolkit` puts `btk` on the PATH.
-- `bun add -D bun-toolkit` adds it to a project, so npm scripts can call `btk`.
-- `npx bun-toolkit image ./assets` runs it once in CI without installing.
+- `npm install -g @bun-toolkit/cli` puts `btk` on the PATH.
+- `bun add -D @bun-toolkit/cli` adds it to a project, so npm scripts can call `btk`.
+- `npx @bun-toolkit/cli image ./assets` runs it once in CI without installing.
 
 The package is a CLI, not a library. Its only export is `defineConfig` and the config types, so `btk.config.ts` gets autocomplete.
 
-### Homebrew (`homebrew-bun-toolkit` tap)
+The runtime virtual module serves `import { defineConfig } from "bun-toolkit"`, but an editor resolves types through `node_modules`, where the package will be `@bun-toolkit/cli`. Before publishing, decide whether configs import from `@bun-toolkit/cli` or whether the virtual module also answers to that name. JSON configs avoid the question.
 
-`brew install bun-toolkit` installs from the tap. The formula downloads the binaries from GitHub Releases, and the release pipeline updates it on every release.
+### Homebrew (this repository is the tap)
 
-The formula installs both `btk` and `bun-toolkit` as commands.
+The formula lives in `Formula/bun-toolkit.rb`, and `release.yml` rewrites it after every release. It downloads the binaries from GitHub Releases and installs both `btk` and `bun-toolkit` as commands.
+
+```bash
+brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit
+```
+
+While the repository is private, set `HOMEBREW_GITHUB_API_TOKEN` first (see [ci-pipeline.md](ci-pipeline.md#homebrew)).
 
 ### GitHub Releases
 
@@ -26,28 +33,28 @@ Every tagged release attaches binaries for all platforms. The Homebrew formula d
 
 A `bun-toolkit/setup` action would download the binary and add it to `$PATH`. It differs from `oven-sh/setup-bun`, which installs the Bun runtime.
 
-It helps workflows that run bun-toolkit on every PR, such as image optimization or config validation. For occasional use, `npx bun-toolkit` is enough.
+It helps workflows that run bun-toolkit on every PR, such as image optimization or config validation. For occasional use, `npx @bun-toolkit/cli` is enough.
 
 ## npm package structure
 
 ```
-bun-toolkit                     # Main package
+@bun-toolkit/cli                # Main package
   bin: { "btk": "bin.mjs", "bun-toolkit": "bin.mjs" }
   optionalDependencies:
-    @btk/darwin-arm64
-    @btk/darwin-x64
-    @btk/linux-x64
-    @btk/linux-arm64
-    @btk/windows-x64
+    @bun-toolkit/darwin-arm64
+    @bun-toolkit/darwin-x64
+    @bun-toolkit/linux-x64
+    @bun-toolkit/linux-arm64
+    @bun-toolkit/windows-x64
 
-@btk/darwin-arm64               # Compiled binary only
-@btk/darwin-x64
-@btk/linux-x64
-@btk/linux-arm64
-@btk/windows-x64
+@bun-toolkit/darwin-arm64               # Compiled binary only
+@bun-toolkit/darwin-x64
+@bun-toolkit/linux-x64
+@bun-toolkit/linux-arm64
+@bun-toolkit/windows-x64
 ```
 
-The `bin` field exposes both `btk` and `bun-toolkit`. The `bin.mjs` shim detects the platform and runs the compiled binary from the matching `@btk/*` package.
+The `bin` field exposes both `btk` and `bun-toolkit`. The `bin.mjs` shim detects the platform and runs the compiled binary from the matching `@bun-toolkit/*` package.
 
 npm downloads only the platform package that matches the user's OS and architecture. The others are optional and fail the `os` and `cpu` check.
 
@@ -65,7 +72,7 @@ const platform = process.platform === "win32" ? "windows"
                : process.platform === "darwin" ? "darwin"
                : "linux";
 const arch = process.arch === "arm64" ? "arm64" : "x64";
-const pkg = `@btk/${platform}-${arch}`;
+const pkg = `@bun-toolkit/${platform}-${arch}`;
 
 let binPath;
 try {
@@ -114,11 +121,11 @@ The binary is about 63 MB because it embeds the Bun runtime.
 
 ## Platform package structure
 
-Each `@btk/{platform}-{arch}` package contains:
+Each `@bun-toolkit/{platform}-{arch}` package contains:
 
 ```json
 {
-  "name": "@btk/darwin-arm64",
+  "name": "@bun-toolkit/darwin-arm64",
   "version": "0.1.0",
   "os": ["darwin"],
   "cpu": ["arm64"],

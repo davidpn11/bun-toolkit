@@ -4,7 +4,21 @@ Bun native API straight in your terminal. One CLI (`btk`), one config, one outpu
 
 > Status: Phase 5 is done. The foundation (CLI framework, config, output layer, TUI) and five tools work today: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. The first release (CI, npm and Homebrew) is next, then the documentation site. See [docs/roadmap.md](docs/roadmap.md).
 
-## Install (from source)
+## Install
+
+### Homebrew
+
+The repository is the tap. While it is private, Homebrew needs a GitHub token to download the binary:
+
+```bash
+export HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)
+brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit
+```
+
+Every release also attaches binaries for macOS, Linux and Windows, with a `SHA256SUMS` file. See [docs/ci-pipeline.md](docs/ci-pipeline.md).
+
+### From source
 
 Requires [Bun](https://bun.sh) 1.4+.
 
@@ -50,8 +64,8 @@ btk image info hero.png                    # format, dimensions, size
 btk image --ui                             # pick files, tweak options, watch it run
 
 btk hash ./dist -r > SHA256SUMS            # sha256sum-compatible checksums
-btk hash verify app.tgz 9f86d081…          # exits 1 on a mismatch
-echo hello | btk hash crc32                # standard input
+btk hash check SHA256SUMS                  # exits 1 if a file changed
+printf hello | btk hash verify - 3610a686  # check standard input against a known hash
 
 btk convert config.yaml                    # JSON on stdout
 btk convert data.xml --to yaml -o data.yaml
