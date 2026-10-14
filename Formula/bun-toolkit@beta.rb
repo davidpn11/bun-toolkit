@@ -6,24 +6,29 @@ class BunToolkitATBeta < Formula
   license "MIT"
   conflicts_with "bun-toolkit", because: "both install btk"
 
+  GITHUB_HEADERS = ["Accept: application/octet-stream"].tap do |headers|
+    token = ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "")
+    headers << "Authorization: Bearer #{token}" unless token.empty?
+  end
+
   on_macos do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.0-beta.0/btk-darwin-arm64"
+      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/641069224", headers: GITHUB_HEADERS.dup
       sha256 "9dd7b81db50222d4caab95f697d7298a494ae44a2e59942f14e10d639619641f"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.0-beta.0/btk-darwin-x64"
+      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/641069231", headers: GITHUB_HEADERS.dup
       sha256 "c148277f883ea92b517720cd99fc4e9f0948aab5712ea63def6568bda3607d4d"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.0-beta.0/btk-linux-arm64"
+      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/641069225", headers: GITHUB_HEADERS.dup
       sha256 "e6be80a2b7ced6bc8f5e97f96f6f5343c2aea1ec21aff3577fd29e524a4a849d"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.0-beta.0/btk-linux-x64"
+      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/641069235", headers: GITHUB_HEADERS.dup
       sha256 "e071b07cce07a1c496cfc2e553c62171ed072bfa00442582e0f3a8e5d95acfdb"
     end
   end
