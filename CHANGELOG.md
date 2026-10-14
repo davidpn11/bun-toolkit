@@ -1,5 +1,11 @@
 # bun-toolkit
 
+## 0.2.0-beta.1
+
+### Patch Changes
+
+- [`562b782`](https://github.com/davidpn11/bun-toolkit/commit/562b782e42ac1208d8fe40a878e506ab5f9f872d) Thanks [@davidpn11](https://github.com/davidpn11)! - Releases now ship with a changelog, and pre-releases install with `brew install davidpn11/bun-toolkit/bun-toolkit-beta`. The home screen reads "Bun native APIs straight in your terminal".
+
 ## 0.2.0-beta.0
 
 ### Minor Changes
