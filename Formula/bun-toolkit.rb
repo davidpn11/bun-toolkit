@@ -5,29 +5,24 @@ class BunToolkit < Formula
   version "0.1.0"
   license "MIT"
 
-  GITHUB_HEADERS = [
-    "Accept: application/octet-stream",
-    "Authorization: Bearer #{ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "")}",
-  ]
-
   on_macos do
     on_arm do
-      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/632089916", headers: GITHUB_HEADERS.dup
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-darwin-arm64"
       sha256 "c0d254c197012604524cb1dd0e7196710ee34d9ced8c5bde9696b39450a6900a"
     end
     on_intel do
-      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/632089921", headers: GITHUB_HEADERS.dup
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-darwin-x64"
       sha256 "2568add394c174afc97cad5441021fd5c777bcc0f5c5f2863332041782603a8d"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/632089920", headers: GITHUB_HEADERS.dup
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-linux-arm64"
       sha256 "1c0cef79510bd59145f6aa62e4396262ae61afabef570ec73e9dd4e4b547fdad"
     end
     on_intel do
-      url "https://api.github.com/repos/davidpn11/bun-toolkit/releases/assets/632089919", headers: GITHUB_HEADERS.dup
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-linux-x64"
       sha256 "62418b7fd95ee741c803738c898c1ddd34698164ee15699de0676448154ff390"
     end
   end
