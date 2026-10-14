@@ -1,5 +1,23 @@
 # bun-toolkit
 
+## 0.2.0
+
+### Minor Changes
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`4053ea0`](https://github.com/davidpn11/bun-toolkit/commit/4053ea02d1ad557ecdc0a360b105451a15ef4937) Thanks [@davidpn11](https://github.com/davidpn11)! - add md and serve commands
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`653685d`](https://github.com/davidpn11/bun-toolkit/commit/653685dda94709eeaac8b99d184116b221d0fa1b) Thanks [@davidpn11](https://github.com/davidpn11)! - New `btk serve` tool: `btk serve dist` serves any folder over HTTP and reloads the browser when a file changes, and `btk serve page.html` serves the page's folder and opens it. Folders open their `index.html` or a listing, `--spa` sends unknown routes to `index.html`, `--cors` allows other origins, and `--host 0.0.0.0` makes it reachable from other devices on your network.
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`41b11b2`](https://github.com/davidpn11/bun-toolkit/commit/41b11b29a36d1c39a2b0de7156826721173ebee4) Thanks [@davidpn11](https://github.com/davidpn11)! - Plugins in `btk.config.ts` now run. A plugin can add themes for `btk md` with the `md:theme` hook or replace its HTML page with `md:html:template`, using `definePlugin` and `defineTheme` from `bun-toolkit`. See docs/plugins.md.
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`41b11b2`](https://github.com/davidpn11/bun-toolkit/commit/41b11b29a36d1c39a2b0de7156826721173ebee4) Thanks [@davidpn11](https://github.com/davidpn11)! - New `btk md` tool: `btk md README.md` opens a live-reloading preview in the browser, `btk md CHANGELOG.md --terminal | less -R` renders it for the terminal, `btk md serve docs` serves a whole folder with a sidebar, and `btk md html` writes a standalone page. Pick a look with `--theme`; `btk` and `plain` are built in, and `btk md themes` lists them.
+
+### Patch Changes
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`653685d`](https://github.com/davidpn11/bun-toolkit/commit/653685dda94709eeaac8b99d184116b221d0fa1b) Thanks [@davidpn11](https://github.com/davidpn11)! - Piping btk into a command that stops reading early, such as `btk md CHANGELOG.md --terminal | head`, now ends quietly with exit code 0 instead of printing an EPIPE stack trace.
+
+- [#3](https://github.com/davidpn11/bun-toolkit/pull/3) [`562b782`](https://github.com/davidpn11/bun-toolkit/commit/562b782e42ac1208d8fe40a878e506ab5f9f872d) Thanks [@davidpn11](https://github.com/davidpn11)! - Releases now ship with a changelog, and pre-releases install with `brew install davidpn11/bun-toolkit/bun-toolkit-beta`. The home screen reads "Bun native APIs straight in your terminal".
+
 ## 0.2.0-beta.0
 
 ### Minor Changes
