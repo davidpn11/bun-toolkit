@@ -18,6 +18,7 @@ env:
 jobs:
   plan:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -49,6 +50,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.tag != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -64,12 +66,38 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - { target: bun-darwin-arm64, file: btk-darwin-arm64, os: macos-latest, runs: true }
-          - { target: bun-darwin-x64, file: btk-darwin-x64, os: macos-latest, runs: false }
-          - { target: bun-linux-x64, file: btk-linux-x64, os: ubuntu-latest, runs: true }
-          - { target: bun-linux-arm64, file: btk-linux-arm64, os: ubuntu-latest, runs: false }
-          - { target: bun-windows-x64, file: btk-windows-x64.exe, os: windows-latest, runs: true }
+          - {
+              target: bun-darwin-arm64,
+              file: btk-darwin-arm64,
+              os: macos-latest,
+              runs: true,
+            }
+          - {
+              target: bun-darwin-x64,
+              file: btk-darwin-x64,
+              os: macos-latest,
+              runs: false,
+            }
+          - {
+              target: bun-linux-x64,
+              file: btk-linux-x64,
+              os: ubuntu-latest,
+              runs: true,
+            }
+          - {
+              target: bun-linux-arm64,
+              file: btk-linux-arm64,
+              os: ubuntu-latest,
+              runs: false,
+            }
+          - {
+              target: bun-windows-x64,
+              file: btk-windows-x64.exe,
+              os: windows-latest,
+              runs: true,
+            }
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -91,6 +119,7 @@ jobs:
   release:
     needs: [plan, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     env:

@@ -22,6 +22,7 @@ env:
 jobs:
   formula:
     runs-on: ubuntu-latest
+    timeout-minutes:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
