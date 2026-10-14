@@ -1,6 +1,6 @@
 # CI pipeline
 
-Two GitHub Actions workflows live in `.github/workflows/`. Both pin Bun with `BUN_VERSION`, currently 1.4.0.
+Three GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0.
 
 ## test.yml
 
@@ -25,7 +25,7 @@ git push origin v0.1.0
 | `checks` | | Fails unless the tag matches `package.json` (`v0.1.0` for version `0.1.0`), then runs `bun run check` and `bun test` |
 | `build` | `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
 | `release` | `build` | Writes `SHA256SUMS` with `btk hash`, creates the GitHub Release with generated notes, downloads the published files again and runs `btk hash check SHA256SUMS` on them |
-| `homebrew` | `release` | Generates `Formula/bun-toolkit.rb` with `scripts/homebrew-formula.ts` and commits it to `master` |
+| `homebrew` | `release` | Runs `homebrew.yml` for the new tag |
 
 The build matrix:
 
@@ -39,25 +39,26 @@ The build matrix:
 
 The two cross-compiled binaries aren't run in CI, because they target a different CPU than the runner that builds them. Adding an Intel macOS runner and a Linux ARM runner would cover them.
 
-## Homebrew
+## homebrew.yml
 
-This repository is also the Homebrew tap. The formula lives in `Formula/bun-toolkit.rb`, and the `homebrew` job rewrites it after every release, so never edit it by hand.
-
-While the repository is private, GitHub serves release files only through its API, with a token. The job notices that the repository is private and passes `--private` to the generator. The formula then downloads through `api.github.com` and sends `HOMEBREW_GITHUB_API_TOKEN`. Once the repository is public, the next release writes plain download URLs and no token is needed.
-
-To install from the private repository:
+Writes `Formula/bun-toolkit.rb` for one release tag and commits it to `master`. `release.yml` runs it after every release, and you can run it by hand for an existing tag:
 
 ```bash
-export HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)
-brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
-brew install davidpn11/bun-toolkit/bun-toolkit
+gh workflow run homebrew.yml -f tag=v0.1.0
 ```
 
-`brew tap` clones the repository with your git credentials, and the token lets Homebrew download the binary. A fine-grained token with read access to this repository's contents works as well as the `gh` token.
+This repository is also the Homebrew tap, so the formula lives here. The workflow rewrites it every time, so never edit it by hand. It runs `scripts/homebrew-formula.ts` from the tagged commit, so it also works for a tag whose branch isn't merged.
+
+The workflow checks the repository's visibility each time it runs:
+
+- **Private.** GitHub serves release files only through its API, with a token. The formula downloads through `api.github.com` and sends `HOMEBREW_GITHUB_API_TOKEN` when it's set. `brew tap` clones the repository with your git credentials. A fine-grained token with read access to this repository's contents works as well as `gh auth token`.
+- **Public.** The formula uses plain release download URLs, and nobody needs a token.
+
+After switching the repository to public, run the workflow once for the latest tag, so the formula stops using the API. The steps are in [distribution.md](distribution.md#going-public).
 
 ## Secrets
 
-Neither workflow needs a secret yet. Both use the built-in `GITHUB_TOKEN`. The `homebrew` job pushes to `master` with it, so a branch protection rule on `master` must allow GitHub Actions to push.
+No workflow needs a secret yet. They all use the built-in `GITHUB_TOKEN`. `homebrew.yml` pushes to `master` with it, so a branch protection rule on `master` must allow GitHub Actions to push.
 
 npm publishing comes once the repository is public. It will publish `@bun-toolkit/cli` and the `@bun-toolkit/<platform>` packages, and needs either an `NPM_TOKEN` secret or npm trusted publishing (see [distribution.md](distribution.md)).
 

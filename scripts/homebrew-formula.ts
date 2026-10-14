@@ -5,7 +5,8 @@
  *   bun scripts/homebrew-formula.ts --version 0.1.0 --repo owner/name --assets assets.json --sums SHA256SUMS --private
  *
  * Private repos serve release assets only through the GitHub API, so --private points each url at
- * the API and sends HOMEBREW_GITHUB_API_TOKEN with the download.
+ * the API and sends HOMEBREW_GITHUB_API_TOKEN with the download. The header is left out when the
+ * token is unset, because GitHub answers an empty token with 401 even for a public repo.
  */
 import { parseArgs } from "node:util";
 
@@ -68,10 +69,10 @@ function platformBlock(os: "macos" | "linux", input: FormulaInput): string {
 
 export function renderFormula(input: FormulaInput): string {
   const headers = input.privateDownload
-    ? `  GITHUB_HEADERS = [
-    "Accept: application/octet-stream",
-    "Authorization: Bearer #{ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "")}",
-  ]
+    ? `  GITHUB_HEADERS = ["Accept: application/octet-stream"].tap do |headers|
+    token = ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "")
+    headers << "Authorization: Bearer #{token}" unless token.empty?
+  end
 
 `
     : "";
