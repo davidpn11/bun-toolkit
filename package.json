@@ -25,7 +25,8 @@
     "lint": "oxlint",
     "format": "biome format --write .",
     "check": "biome check . && oxlint && tsc --noEmit",
-    "release:version": "bun scripts/version-packages.ts"
+    "release:version": "bun scripts/version-packages.ts",
+    "release:try": "bun tests/release/run.ts"
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",

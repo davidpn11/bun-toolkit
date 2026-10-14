@@ -185,6 +185,7 @@ bun run test:dist           # build the binary and run the end-to-end suite agai
 bun run check               # Biome, oxlint and tsc
 bunx changeset              # describe your change for the changelog
 bun run release:version     # turn pending changesets into a version, before a release
+bun run release:try beta    # install the published beta in a throwaway container
 ```
 
 Every pull request that changes what users see needs a changeset. [docs/architecture.md](docs/architecture.md) covers how the CLI is built and how to add a tool. [docs/roadmap.md](docs/roadmap.md) has what comes next.

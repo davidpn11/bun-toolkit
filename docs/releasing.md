@@ -47,6 +47,8 @@ The same steps work on `master` (stable) and `beta` (pre-releases):
 
 The push runs `release.yml` on `master` or `prerelease.yml` on `beta`. It sees a version without a tag, then builds the binaries, creates the tag with a GitHub Release whose notes are the changelog entry, and updates the Homebrew formula. Pushes that don't change the version publish nothing.
 
+Once it's out, try it the way a user gets it with `bun run release:try` (stable) or `bun run release:try beta`, in a throwaway container (see [testing.md](testing.md#testing-a-published-release)).
+
 ## Pre-releases on the beta channel
 
 The `beta` branch stays in Changesets pre mode, so every version from it is a pre-release such as `0.2.0-beta.1`. `prerelease.yml` publishes it as a GitHub pre-release and updates `Formula/bun-toolkit-beta.rb`. Stable users never get it.

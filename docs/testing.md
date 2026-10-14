@@ -13,6 +13,7 @@ The tests use `bun:test`. `bun test` runs everything, and `bun run test:dist` bu
 | `tests/integration/registry.test.ts` | What a tool gets from `defineTool()`, checked in-process with the test-only `demo` tool |
 | `tests/integration/<tool>.test.ts` | One file per tool, running the real CLI in-process |
 | `tests/support/` | Helpers, listed below |
+| `tests/release/` | A Homebrew container for trying a published release (see [Testing a published release](#testing-a-published-release)). `bun test` only runs its argument tests |
 
 ## Test support
 
@@ -65,6 +66,38 @@ Each temp project writes its config in a fresh directory, so `import()` caching 
 This catches problems that only appear in compiled builds, such as a missing bundled module, config loading from outside the bundle, or the `bun-toolkit` virtual module.
 
 Without `BTK_BIN`, `dist.test.ts` skips itself so `bun test` stays fast.
+
+## Testing a published release
+
+`bun run release:try` installs a release the way a user gets it, in a throwaway Linux container. It's for checking a release after CI publishes it. It uses Podman when it's installed, otherwise Docker, and `BTK_CONTAINER_ENGINE=podman` or `=docker` picks one. On a Mac, Podman needs its Linux VM running first:
+
+```bash
+brew install podman
+podman machine init
+podman machine start
+```
+
+```bash
+bun run release:try                      # stable, then a shell
+bun run release:try beta                 # the latest pre-release, then a shell
+bun run release:try stable -- btk info   # run one command instead of the shell
+```
+
+The container starts from the `homebrew/brew` image. It taps this repository from GitHub, trusts and installs `bun-toolkit` or `bun-toolkit-beta`, then checks the release:
+
+- `btk --version` and `bun-toolkit --version` both print the version of the installed formula.
+- `brew test` passes. It runs the formula's own test.
+- It prints the CPU architecture, so you can see which binary ran.
+
+Any failed check stops the container with a non-zero exit code. Otherwise you get a `bash` shell with `btk` on the PATH, in `~/workspace`.
+
+Put your own files for manual testing, such as photos, configs or archives, in `tests/release/test_assets/`. Git ignores that folder. When it exists, the container mounts it read-only and copies its contents into `~/workspace`, so commands that write next to their input, like `btk image photo.jpg`, work. Nothing they write reaches your folder, and the copy disappears with the container. Type `exit` or press Ctrl+D to leave; the container is removed when you do. `podman kill` or `docker kill` works too.
+
+A command goes after `--`, and the channel has to come before it, because `bun run` drops a leading `--`. The tap is cloned fresh on every start, so a new release needs no image rebuild.
+
+The container runs on your machine's own CPU, so on an Apple Silicon Mac it tests `btk-linux-arm64`. It doesn't emulate x86_64: Bun binaries crash under QEMU emulation, and the x86_64 Linux binary already runs the full end-to-end suite natively in CI. The macOS binaries also run that suite in CI, and a Homebrew install on your Mac covers the rest.
+
+The files are `tests/release/Dockerfile`, `entrypoint.sh` (install, check, then the shell) and `run.ts` (builds the image and starts the container). `.dockerignore` keeps `test_assets/` out of the image build.
 
 ## Per-tool test checklist
 

@@ -4,12 +4,15 @@ node_modules
 # output
 out
 dist
-release
+/release/
 *.tgz
 
 # code coverage
 coverage
 *.lcov
+
+# Testing files
+tests/release/test_assets/**
 
 # logs
 logs
