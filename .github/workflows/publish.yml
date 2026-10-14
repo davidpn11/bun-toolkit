@@ -1,0 +1,150 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: stable on master, beta on the beta branch (Changesets pre mode)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  BUN_VERSION: 1.4.0
+  BTK_NO_LOCAL_CONFIG: "off"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - name: Open or update the Version PR
+        id: changesets
+        uses: changesets/action@v2
+        with:
+          version-script: bunx changeset version
+          commit-message: ${{ inputs.channel == 'beta' && 'Version Packages (beta)' || 'Version Packages' }}
+          pr-title: ${{ inputs.channel == 'beta' && 'Version Packages (beta)' || 'Version Packages' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Decide whether this commit is a release
+        id: release
+        if: steps.changesets.outputs.has-changesets == 'false'
+        env:
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          version=$(jq -r .version package.json)
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "$tag is already released"
+            exit 0
+          fi
+          case "$version" in *-*) channel=beta ;; *) channel=stable ;; esac
+          if [ "$channel" != "$CHANNEL" ]; then
+            echo "::error::$version is a $channel version, but this branch publishes $CHANNEL releases"
+            exit 1
+          fi
+          bun scripts/changelog-section.ts "$version" > /dev/null
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: plan
+    if: needs.plan.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun test
+
+  build:
+    needs: [plan, checks]
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { target: bun-darwin-arm64, file: btk-darwin-arm64, os: macos-latest, runs: true }
+          - { target: bun-darwin-x64, file: btk-darwin-x64, os: macos-latest, runs: false }
+          - { target: bun-linux-x64, file: btk-linux-x64, os: ubuntu-latest, runs: true }
+          - { target: bun-linux-arm64, file: btk-linux-arm64, os: ubuntu-latest, runs: false }
+          - { target: bun-windows-x64, file: btk-windows-x64.exe, os: windows-latest, runs: true }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/build.ts --target ${{ matrix.target }} --outfile dist/${{ matrix.file }}
+      - name: End-to-end tests against the binary
+        if: matrix.runs
+        run: bun test tests/integration/dist.test.ts
+        env:
+          BTK_BIN: ${{ github.workspace }}/dist/${{ matrix.file }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.file }}
+          path: dist/${{ matrix.file }}
+          if-no-files-found: error
+
+  release:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Checksums
+        working-directory: release
+        run: |
+          chmod +x btk-*
+          ./btk-linux-x64 hash btk-* > SHA256SUMS
+          cat SHA256SUMS
+      - name: Release notes from the changelog
+        run: bun scripts/changelog-section.ts "${TAG#v}" > "$RUNNER_TEMP/notes.md"
+      - name: Tag and create the release
+        run: |
+          gh release create "$TAG" release/* \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            ${{ inputs.channel == 'beta' && '--prerelease' || '' }}
+      - name: Check the published files
+        run: |
+          mkdir published
+          gh release download "$TAG" --dir published
+          chmod +x published/btk-linux-x64
+          published/btk-linux-x64 hash check published/SHA256SUMS
+
+  homebrew:
+    needs: [plan, release]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/homebrew.yml
+    with:
+      tag: ${{ needs.plan.outputs.tag }}

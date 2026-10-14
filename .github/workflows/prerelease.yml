@@ -1,0 +1,20 @@
+name: Pre-release
+
+on:
+  push:
+    branches: [beta]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    uses: ./.github/workflows/publish.yml
+    with:
+      channel: beta

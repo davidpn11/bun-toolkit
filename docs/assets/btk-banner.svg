@@ -30,9 +30,9 @@
   <g font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace">
     <text x="590" y="254" font-size="112" font-weight="800" fill="#FFFFFF" letter-spacing="-4">btk</text>
     <rect x="804" y="174" width="36" height="84" fill="#FF1F8F"/>
-    <text x="594" y="300" font-size="22" fill="#8B93A7">Bun native API straight in your terminal</text>
+    <text x="594" y="300" font-size="22" fill="#8B93A7">Bun native APIs straight in your terminal</text>
     <text x="594" y="372" font-size="22">
-      <tspan fill="#FF1F8F" font-weight="700">❯</tspan><tspan fill="#E6E8EE"> btk image ./photos --to webp</tspan>
+      <tspan fill="#FF1F8F" font-weight="700">❯</tspan><tspan fill="#E6E8EE"> btk image ./photos --format webp</tspan>
     </text>
     <text x="594" y="410" font-size="22">
       <tspan fill="#4ADE80">✔</tspan><tspan fill="#E6E8EE"> 48 files</tspan><tspan fill="#8B93A7"> · 12.4 MB → 3.1 MB · 1.2s</tspan>

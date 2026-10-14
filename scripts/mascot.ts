@@ -102,9 +102,9 @@ const bannerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="
   <g font-family="${FONT}">
     <text x="${textX}" y="${box.y + 150}" font-size="112" font-weight="800" fill="#FFFFFF" letter-spacing="-4">btk</text>
     <rect x="${textX + 214}" y="${box.y + 70}" width="36" height="84" fill="${ACCENT}"/>
-    <text x="${textX + 4}" y="${box.y + 196}" font-size="22" fill="${MUTED}">Bun native API straight in your terminal</text>
+    <text x="${textX + 4}" y="${box.y + 196}" font-size="22" fill="${MUTED}">Bun native APIs straight in your terminal</text>
     <text x="${textX + 4}" y="${box.y + 268}" font-size="22">
-      <tspan fill="${ACCENT}" font-weight="700">❯</tspan><tspan fill="${TEXT}"> btk image ./photos --to webp</tspan>
+      <tspan fill="${ACCENT}" font-weight="700">❯</tspan><tspan fill="${TEXT}"> btk image ./photos --format webp</tspan>
     </text>
     <text x="${textX + 4}" y="${box.y + 306}" font-size="22">
       <tspan fill="#4ADE80">✔</tspan><tspan fill="${TEXT}"> 48 files</tspan><tspan fill="${MUTED}"> · 12.4 MB → 3.1 MB · 1.2s</tspan>

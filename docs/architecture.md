@@ -109,6 +109,51 @@ A command whose result is data, like `btk hash`, `btk convert` and `btk password
 
 Adding the tool to `src/tools/index.ts` is the only wiring.
 
+### Adding a tool
+
+A tool is one folder plus one line in `src/tools/index.ts`:
+
+```ts
+// src/tools/hash/tool.ts
+import { z } from "zod";
+import { defineAction, defineTool, flag, positional } from "../../cli/define.ts";
+import { hashFiles } from "./core.ts";
+
+export const hash = defineTool({
+  name: "hash",
+  description: "Hash files with Bun.CryptoHasher",
+  config: z.object({ algorithm: z.enum(["sha256", "sha512", "blake2b256"]).default("sha256") }),
+  defaultAction: "file",
+  actions: {
+    file: defineAction({
+      description: "Hash one or more files",
+      examples: ["btk hash package.tar.gz --algorithm sha512"],
+      args: {
+        files: positional(z.array(z.string()).min(1), { description: "Files to hash" }),
+        algorithm: flag(z.enum(["sha256", "sha512", "blake2b256"]), {
+          alias: "a",
+          config: "algorithm",
+          description: "Hash algorithm",
+        }),
+      },
+      run: (input, ctx) => hashFiles(input, { signal: ctx.signal }),
+      render: (result, out) => out.table(result.rows),
+    }),
+  },
+  ui: () => import("./ui/Dashboard.tsx"), // optional: enables `btk hash --ui`
+});
+```
+
+That single definition gives you:
+- `btk hash ...` routing, plus `btk hash file ...`
+- help text with defaults and where they came from
+- validated, typo-checked flags
+- `tools.hash` in the config schema and in `defineConfig` types
+- the `BTK_HASH_ALGORITHM` env var
+- JSON output and the `btk ui` home screen entry
+
+Tool dashboards use the components exported from `src/tui/index.ts`, such as `Screen`, `FileBrowser`, `ProgressList`, `ResultTable`, and `OptionsForm`, which builds a form from the same flag specs.
+
 ## Execution lifecycle
 
 ```

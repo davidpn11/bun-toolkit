@@ -1,7 +1,7 @@
 {
   "name": "bun-toolkit",
   "version": "0.1.0",
-  "description": "Bun native API straight in your terminal. One CLI, one config, one output style.",
+  "description": "Bun native APIs straight in your terminal. One CLI, one config, one output style.",
   "type": "module",
   "private": true,
   "license": "MIT",
@@ -35,6 +35,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@types/bun": "latest",
     "@types/react": "^19.3.0",
     "ink-testing-library": "^4.0.0",
