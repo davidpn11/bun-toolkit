@@ -1,6 +1,6 @@
 {
   "name": "bun-toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bun native APIs straight in your terminal. One CLI, one config, one output style.",
   "type": "module",
   "private": true,
