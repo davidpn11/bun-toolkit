@@ -25,6 +25,7 @@ describe("homebrew formula", () => {
     );
     expect(ruby).toContain(`sha256 "${SHA(1)}"`);
     expect(ruby).toContain("HOMEBREW_GITHUB_API_TOKEN");
+    expect(ruby).toContain('headers << "Authorization: Bearer #{token}" unless token.empty?');
     expect(ruby).not.toContain("windows");
   });
 

@@ -2,21 +2,33 @@
 
 Bun native API straight in your terminal. One CLI (`btk`), one config, one output style, and an interactive dashboard for every tool.
 
-> Status: Phase 5 is done. The foundation (CLI framework, config, output layer, TUI) and five tools work today: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. The first release (CI, npm and Homebrew) is next, then the documentation site. See [docs/roadmap.md](docs/roadmap.md).
+> Status: v0.1.0 is out through Homebrew and GitHub Releases. The foundation (CLI framework, config, output layer, TUI) and five tools work: `btk image`, `btk hash`, `btk convert`, `btk password` and `btk compress`/`btk decompress`. The npm package comes next, then the documentation site. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install
 
+> Until the repository is public, run `export HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)` before using Homebrew, and download release files with `gh release download v0.1.0 -R davidpn11/bun-toolkit` instead of `curl`.
+
 ### Homebrew
 
-The repository is the tap. While it is private, Homebrew needs a GitHub token to download the binary:
+This repository is the tap:
 
 ```bash
-export HOMEBREW_GITHUB_API_TOKEN=$(gh auth token)
 brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
 brew install davidpn11/bun-toolkit/bun-toolkit
 ```
 
-Every release also attaches binaries for macOS, Linux and Windows, with a `SHA256SUMS` file. See [docs/ci-pipeline.md](docs/ci-pipeline.md).
+Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If it does, run the `brew trust` command it prints, such as `brew trust --formula davidpn11/bun-toolkit/bun-toolkit`, then install again. `brew upgrade bun-toolkit` picks up new releases.
+
+### Download a binary
+
+Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries for macOS, Linux and Windows, and a `SHA256SUMS` file:
+
+```bash
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-darwin-arm64
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/SHA256SUMS
+grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
+```
 
 ### From source
 

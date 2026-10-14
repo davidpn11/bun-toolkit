@@ -246,7 +246,7 @@ btk compress ./dist --gzip -o dist.tar.gz
 
 ---
 
-## Phase 6: first release, 0.1 (next)
+## Phase 6: first release, 0.1 (in progress)
 
 The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md](distribution.md). This work used to be a list of leftovers at the end of Phase 0. It now has its own phase so it lands before more features do.
 
@@ -255,7 +255,7 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 - `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
 - `release.yml` runs when a `v*` tag is pushed. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash`.
 - The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This waits until the repository is public.
-- The Homebrew formula in `Formula/bun-toolkit.rb`, which `release.yml` rewrites after every release.
+- The Homebrew formula in `Formula/bun-toolkit.rb`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
 
 ### Why now
 
