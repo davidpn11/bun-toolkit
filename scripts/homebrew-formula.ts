@@ -1,6 +1,6 @@
 /**
  * Writes the Homebrew formula for a release into the tap's Formula folder and prints its path.
- * A pre-release version (0.2.0-beta.1) goes to the opt-in bun-toolkit@beta formula, anything else
+ * A pre-release version (0.2.0-beta.1) goes to the opt-in bun-toolkit-beta formula, anything else
  * to bun-toolkit. The two conflict because both install `btk`.
  *
  *   gh release view v0.1.0 --json assets > assets.json
@@ -26,7 +26,7 @@ export type ReleaseAsset = { name: string; url: string };
 
 const FORMULA: Record<Channel, { name: string; className: string }> = {
   stable: { name: "bun-toolkit", className: "BunToolkit" },
-  beta: { name: "bun-toolkit@beta", className: "BunToolkitATBeta" },
+  beta: { name: "bun-toolkit-beta", className: "BunToolkitBeta" },
 };
 
 export function channelFor(version: string): Channel {

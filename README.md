@@ -38,7 +38,7 @@ Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. 
 Pre-releases are a separate formula. Only one of the two can be installed at a time, because both install `btk`:
 
 ```bash
-brew install davidpn11/bun-toolkit/bun-toolkit@beta
+brew install davidpn11/bun-toolkit/bun-toolkit-beta
 ```
 
 ### Download a binary
@@ -174,7 +174,7 @@ btk picks the output mode once, at startup:
 
 ## Releases
 
-Every change is in the [changelog](CHANGELOG.md). Stable releases come from `master`, and pre-releases come from the `beta` branch and install as `bun-toolkit@beta`. [docs/releasing.md](docs/releasing.md) explains how a release is cut.
+Every change is in the [changelog](CHANGELOG.md). Stable releases come from `master`, and pre-releases come from the `beta` branch and install as `bun-toolkit-beta`. [docs/releasing.md](docs/releasing.md) explains how a release is cut.
 
 ## Development
 

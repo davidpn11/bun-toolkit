@@ -1,31 +1,37 @@
 # CI pipeline
 
-Three GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0.
+Five GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0. [releasing.md](releasing.md) covers the release process from a contributor's side.
+
+| Workflow | Trigger | Job |
+| --- | --- | --- |
+| `test.yml` | pull requests, pushes to `master` and `beta` | Lint and test on three operating systems |
+| `release.yml` | pushes to `master` | Runs `publish.yml` for the stable channel |
+| `prerelease.yml` | pushes to `beta` | Runs `publish.yml` for the beta channel |
+| `publish.yml` | called by the two above | The Version PR, then build, release and Homebrew |
+| `homebrew.yml` | called by `publish.yml`, or by hand | Writes the Homebrew formula for one release |
 
 ## test.yml
 
-Runs on every pull request and every push to `master`. A new push to the same branch cancels the run in progress.
+A new push to the same branch cancels the run in progress.
 
 | Job | Runs on | Steps |
 | --- | --- | --- |
 | `check` | Ubuntu | `bun install --frozen-lockfile`, then `bun run check` (Biome, oxlint, tsc) |
 | `test` | Ubuntu, macOS, Windows | `bun install --frozen-lockfile`, `bun test`, then `bun run test:dist`, which builds the binary for that runner and runs the end-to-end suite against it |
 
-## release.yml
+## publish.yml
 
-Runs when you push a tag that starts with `v`:
+`release.yml` calls it with `channel: stable` and `prerelease.yml` with `channel: beta`. Every push to those branches runs it, but most pushes stop after the first job.
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-| Job | Needs | What it does |
+| Job | Runs when | What it does |
 | --- | --- | --- |
-| `checks` | | Fails unless the tag matches `package.json` (`v0.1.0` for version `0.1.0`), then runs `bun run check` and `bun test` |
-| `build` | `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
-| `release` | `build` | Writes `SHA256SUMS` with `btk hash`, creates the GitHub Release with generated notes, downloads the published files again and runs `btk hash check SHA256SUMS` on them |
-| `homebrew` | `release` | Runs `homebrew.yml` for the new tag |
+| `plan` | always | `changesets/action` opens or updates the "Version Packages" PR when the branch has changesets. With none, it checks whether `package.json` holds a version without a tag. If so, it checks that a `-` suffix matches the channel and that `CHANGELOG.md` has an entry, then outputs the tag. |
+| `checks` | a tag is planned | `bun run check` and `bun test` |
+| `build` | after `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
+| `release` | after `build` | Writes `SHA256SUMS` with `btk hash`. Creates the tag and the GitHub Release on the same commit, with the changelog entry as notes and `--prerelease` on the beta channel. Then downloads the published files and runs `btk hash check SHA256SUMS` on them |
+| `homebrew` | after `release` | Runs `homebrew.yml` for the new tag |
+
+The tag is created in the `release` job, together with the release. If a build fails, no tag exists, so the next push to the branch tries again.
 
 The build matrix:
 
@@ -37,30 +43,29 @@ The build matrix:
 | `btk-linux-arm64` | `ubuntu-latest`, cross-compiled | no |
 | `btk-windows-x64.exe` | `windows-latest` | yes |
 
-The two cross-compiled binaries aren't run in CI, because they target a different CPU than the runner that builds them. Adding an Intel macOS runner and a Linux ARM runner would cover them.
+The two cross-compiled binaries aren't run in CI, because they target a different CPU than the runner that builds them.
 
 ## homebrew.yml
 
-Writes `Formula/bun-toolkit.rb` for one release tag and commits it to `master`. `release.yml` runs it after every release, and you can run it by hand for an existing tag:
+Writes the formula for one release tag and commits it to `master`, the branch Homebrew reads. It checks out `master` and runs `scripts/homebrew-formula.ts` from there, so it works for any tag, including tags from `beta`.
+
+The version decides the formula. A version with a `-` suffix, such as `0.2.0-beta.1`, writes `Formula/bun-toolkit-beta.rb`. Anything else writes `Formula/bun-toolkit.rb`. Both download the plain release URLs and conflict with each other, because both install `btk`. Never edit them by hand, because the next release overwrites them.
+
+To rewrite a formula without a release:
 
 ```bash
 gh workflow run homebrew.yml -f tag=v0.1.0
 ```
 
-This repository is also the Homebrew tap, so the formula lives here. The workflow rewrites it every time, so never edit it by hand. It runs `scripts/homebrew-formula.ts` from the tagged commit, so it also works for a tag whose branch isn't merged.
+## Permissions
 
-The workflow checks the repository's visibility each time it runs:
+No workflow needs a secret. They all use the built-in `GITHUB_TOKEN`:
 
-- **Private.** GitHub serves release files only through its API, with a token. The formula downloads through `api.github.com` and sends `HOMEBREW_GITHUB_API_TOKEN` when it's set. `brew tap` clones the repository with your git credentials. A fine-grained token with read access to this repository's contents works as well as `gh auth token`.
-- **Public.** The formula uses plain release download URLs, and nobody needs a token.
+- `publish.yml` needs **Allow GitHub Actions to create and approve pull requests**, under Settings, Actions, General, to open the Version PR.
+- `homebrew.yml` pushes to `master`, so a branch protection rule on `master` must allow GitHub Actions to push.
+- GitHub doesn't start workflows from actions taken with `GITHUB_TOKEN`. So `test.yml` doesn't run on the Version PR, and the formula commit doesn't start `release.yml` again.
 
-After switching the repository to public, run the workflow once for the latest tag, so the formula stops using the API. The steps are in [distribution.md](distribution.md#going-public).
-
-## Secrets
-
-No workflow needs a secret yet. They all use the built-in `GITHUB_TOKEN`. `homebrew.yml` pushes to `master` with it, so a branch protection rule on `master` must allow GitHub Actions to push.
-
-npm publishing comes once the repository is public. It will publish `@bun-toolkit/cli` and the `@bun-toolkit/<platform>` packages, and needs either an `NPM_TOKEN` secret or npm trusted publishing (see [distribution.md](distribution.md)).
+npm publishing comes later. It will publish `@bun-toolkit/cli` and the `@bun-toolkit/<platform>` packages, and needs either an `NPM_TOKEN` secret or npm trusted publishing (see [distribution.md](distribution.md)).
 
 ## Build flags
 

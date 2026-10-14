@@ -4,7 +4,7 @@
 
 ### npm package (`@bun-toolkit/cli`)
 
-npm publishing starts once the repository is public. The unscoped `bun-toolkit` name and the `@btk` scope belong to other npm users, so the packages live in the `bun-toolkit` npm org. People will use them three ways:
+npm publishing comes after the Homebrew channel. The unscoped `bun-toolkit` name and the `@btk` scope belong to other npm users, so the packages live in the `bun-toolkit` npm org. People will use them three ways:
 
 - `npm install -g @bun-toolkit/cli` puts `btk` on the PATH.
 - `bun add -D @bun-toolkit/cli` adds it to a project, so npm scripts can call `btk`.
@@ -16,26 +16,17 @@ The runtime virtual module serves `import { defineConfig } from "bun-toolkit"`, 
 
 ### Homebrew (this repository is the tap)
 
-The formula lives in `Formula/bun-toolkit.rb`, and `homebrew.yml` rewrites it after every release. It downloads the binaries from GitHub Releases and installs both `btk` and `bun-toolkit` as commands.
+`homebrew.yml` rewrites the formulas in `Formula/` after every release. They download the binaries from GitHub Releases and install both `btk` and `bun-toolkit` as commands.
 
 ```bash
 brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
-brew install davidpn11/bun-toolkit/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit        # stable
+brew install davidpn11/bun-toolkit/bun-toolkit-beta   # pre-releases
 ```
 
-Homebrew 5.1 and later ask you to trust formulae from third-party taps, and print the `brew trust` command to run. While the repository is private, set `HOMEBREW_GITHUB_API_TOKEN` first (see [ci-pipeline.md](ci-pipeline.md#homebrewyml)).
+The two formulas conflict, because both install `btk`. Homebrew 5.1 and later ask you to trust formulae from third-party taps, and print the `brew trust` command to run.
 
 Only homebrew-core and homebrew-cask packages appear on formulae.brew.sh and install with a bare `brew install bun-toolkit`. homebrew-core needs a public repository, an open-source license, a stable release, a formula that builds from source, and notability: at least 30 forks, 30 watchers or 75 stars, or 90, 90 or 225 when the owner submits it (see Homebrew's [Package Acceptance Policy](https://docs.brew.sh/Package-Acceptance-Policy)).
-
-### Going public
-
-1. Check that `LICENSE` is on `master`.
-2. Switch the repository to public in its GitHub settings.
-3. Rewrite the formula with plain download URLs: `gh workflow run homebrew.yml -f tag=v0.1.0`, with the latest tag.
-4. Pull `master`, then check the install in a shell without the token: `env -u HOMEBREW_GITHUB_API_TOKEN brew reinstall davidpn11/bun-toolkit/bun-toolkit`.
-5. Delete the "Until the repository is public" note at the top of the README's Install section.
-
-The formula only sends a token when `HOMEBREW_GITHUB_API_TOKEN` is set, so formulas written while the repository was private keep working for anyone who has the variable set. Without the variable, they need step 3.
 
 ### GitHub Releases
 

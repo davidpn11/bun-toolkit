@@ -5,7 +5,7 @@
 ### Minor Changes
 
 - [#2](https://github.com/davidpn11/bun-toolkit/pull/2) [`18e0412`](https://github.com/davidpn11/bun-toolkit/commit/18e0412) Thanks [@davidpn11](https://github.com/davidpn11)! - First pre-release, published to test the beta channel. It has the same CLI as 0.1.0.
-  - Install it with `brew install davidpn11/bun-toolkit/bun-toolkit@beta`. The `bun-toolkit@beta` formula conflicts with `bun-toolkit`, because both install `btk`.
+  - Install it with `brew install davidpn11/bun-toolkit/bun-toolkit-beta`. The `bun-toolkit-beta` formula conflicts with `bun-toolkit`, because both install `btk`.
   - Homebrew formulas download with or without `HOMEBREW_GITHUB_API_TOKEN`, and only send a token when one is set.
   - The repository has an MIT `LICENSE` file.
 

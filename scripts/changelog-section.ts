@@ -22,7 +22,9 @@ async function main(): Promise<void> {
   if (!version) throw new Error("Usage: bun scripts/changelog-section.ts <version>");
   const section = changelogSection(await Bun.file("CHANGELOG.md").text(), version);
   if (!section) {
-    console.error(`CHANGELOG.md has no entry for ${version}. Add a changeset and merge the Version PR first.`);
+    console.error(
+      `CHANGELOG.md has no entry for ${version}. Add a changeset and merge the Version PR first.`,
+    );
     process.exit(1);
   }
   process.stdout.write(`${section}\n`);

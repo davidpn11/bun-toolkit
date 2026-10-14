@@ -29,7 +29,7 @@ describe("homebrew formula", () => {
     expect(channelFor("0.2.0-beta.1")).toBe("beta");
     expect(channelFor("1.0.0-rc.0")).toBe("beta");
     expect(formulaName("0.2.0")).toBe("bun-toolkit");
-    expect(formulaName("0.2.0-alpha.3")).toBe("bun-toolkit@beta");
+    expect(formulaName("0.2.0-alpha.3")).toBe("bun-toolkit-beta");
   });
 
   test("a stable release downloads plain release URLs and conflicts with the beta", () => {
@@ -39,15 +39,15 @@ describe("homebrew formula", () => {
     expect(ruby).toContain('version "1.2.3"');
     expect(ruby).toContain('url "https://github.com/o/r/releases/download/v1.2.3/btk-darwin-arm64"\n');
     expect(ruby).toContain(`sha256 "${SHA(1)}"`);
-    expect(ruby).toContain('conflicts_with "bun-toolkit@beta", because: "both install btk"');
+    expect(ruby).toContain('conflicts_with "bun-toolkit-beta", because: "both install btk"');
     expect(ruby).not.toContain("windows");
     expect(ruby).not.toContain("api.github.com");
   });
 
-  test("a beta release is the BunToolkitATBeta class and conflicts with stable", () => {
+  test("a beta release is the BunToolkitBeta class and conflicts with stable", () => {
     const assets = formulaAssets(release("v1.3.0-beta.0"), parseSums(SUMS));
     const ruby = renderFormula({ version: "1.3.0-beta.0", repo: "o/r", assets });
-    expect(ruby).toContain("class BunToolkitATBeta < Formula");
+    expect(ruby).toContain("class BunToolkitBeta < Formula");
     expect(ruby).toContain('conflicts_with "bun-toolkit", because: "both install btk"');
   });
 
