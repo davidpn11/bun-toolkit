@@ -22,6 +22,7 @@ The tests use `bun:test`. `bun test` runs everything, and `bun run test:dist` bu
 | `streams.ts` | `CaptureStream`, a PassThrough that records output and can pretend to be a TTY; `createIO()`; the `ANSI` matcher |
 | `tmp.ts` | `createTempProject()` makes a temp project with its own global config dir (`BTK_CONFIG_DIR`), so tests never read the real `~/.bun-toolkit`. `emptyDir()` is the default working directory, so no `btk.config.ts` in the repo or its parents leaks in |
 | `cli.ts` | `runBtk()` runs the CLI in-process with captured streams, and `spawnBtk()` spawns the source or `BTK_BIN`. Both take `stdin` to pipe text in |
+| `server.ts` | `freePort()` finds an unused port and `waitForPage()` polls until a server answers, for tests that run `btk md serve` or `btk serve` with an `AbortSignal` |
 | `context.ts` | `createTestContext()` builds a `BtkContext` with default config for TUI and unit tests |
 | `tui.tsx` | `renderTui()` renders a component inside the TUI providers, with `keys` for arrow, enter and esc sequences, `press()` to send them, and `waitFor()` for screens that finish asynchronously |
 | `dashboard.tsx` | `openDashboard(tool, project, text)` opens a tool's dashboard in a temp project, as `btk <tool> --ui` would. It waits for `text` and then for Ink to attach its key listeners, so the first key press isn't lost |

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bun-toolkit</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --accent: #ff1f8f;
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d8dee4;
+  --code-bg: #f6f8fa;
+  --keyword: #cf222e;
+  --type: #0550ae;
+  --string: #116329;
+  --literal: #953800;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #8d96a0;
+    --border: #30363d;
+    --code-bg: #161b22;
+    --keyword: #ff7b72;
+    --type: #79c0ff;
+    --string: #7ee787;
+    --literal: #ffa657;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+main { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.25; margin: 1.6em 0 0.6em; }
+h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
+h1, h2 { color: var(--accent); }
+main > :first-child { margin-top: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+p, ul, ol, blockquote, pre, table { margin: 0 0 1em; }
+img { max-width: 100%; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
+blockquote { margin-left: 0; padding: 0 1em; color: var(--muted); border-left: 4px solid var(--accent); }
+code, pre { font: 0.875em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre code { font: inherit; }
+:not(pre) > code { background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 6px; }
+pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+table { border-collapse: collapse; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 6px 13px; }
+th { font-weight: 600; }
+tr:nth-child(2n) td { background: var(--code-bg); }
+.task-list-item { list-style: none; }
+.task-list-item-checkbox { accent-color: var(--accent); margin: 0 0.4em 0 -1.4em; }
+.tok-keyword { color: var(--keyword); }
+.tok-type { color: var(--type); }
+.tok-string { color: var(--string); }
+.tok-literal { color: var(--literal); }
+.tok-comment { color: var(--muted); font-style: italic; }
+.tok-punctuation { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1 id="bun-toolkit">bun-toolkit</h1>
+<p align="center">
+  <img src="docs/assets/btk-banner.png" alt="The btk mascot, a bun in a hardhat, next to the btk dashboard" width="760">
+</p>
+<p align="center">
+  <strong>Bun native APIs straight in your terminal.</strong><br>
+  One CLI, one config, one output style, and an interactive dashboard for every tool.
+</p>
+<p align="center">
+  <a href="https://github.com/davidpn11/bun-toolkit/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/davidpn11/bun-toolkit?sort=semver"></a>
+  <a href="https://github.com/davidpn11/bun-toolkit/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/davidpn11/bun-toolkit/actions/workflows/test.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/davidpn11/bun-toolkit"></a>
+</p>
+<p><code>btk</code> puts the APIs built into Bun, such as <code>Bun.Image</code>, <code>Bun.CryptoHasher</code>, <code>Bun.YAML</code> and <code>Bun.password</code>, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.</p>
+<ul>
+<li><strong>Six tools:</strong> <code>image</code>, <code>hash</code>, <code>convert</code>, <code>password</code>, <code>compress</code> with <code>decompress</code>, and <code>md</code>.</li>
+<li><strong>One config</strong> in TypeScript or JSON, with global and per-project tiers and <code>BTK_*</code> environment variables.</li>
+<li><strong>Three output modes:</strong> colors in a terminal, plain text in CI, and one JSON document with <code>--json</code>.</li>
+<li><strong>A dashboard for every tool:</strong> <code>btk ui</code> or <code>btk &lt;tool&gt; --ui</code>.</li>
+</ul>
+<h2 id="install">Install</h2>
+<h3 id="homebrew">Homebrew</h3>
+<p>This repository is the tap. Add it once, then install:</p>
+<pre><code class="language-bash">brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit
+</code></pre>
+<p>Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the <code>brew trust</code> command it prints, then install again. <code>brew upgrade bun-toolkit</code> picks up new releases.</p>
+<p>Pre-releases are a separate formula. Only one of the two can be installed at a time, because both install <code>btk</code>:</p>
+<pre><code class="language-bash">brew install davidpn11/bun-toolkit/bun-toolkit-beta
+</code></pre>
+<h3 id="download-a-binary">Download a binary</h3>
+<p>Every <a href="https://github.com/davidpn11/bun-toolkit/releases">release</a> has binaries for macOS, Linux and Windows, plus a <code>SHA256SUMS</code> file:</p>
+<pre><code class="language-bash">curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS
+grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+chmod +x btk-darwin-arm64 &amp;&amp; sudo mv btk-darwin-arm64 /usr/local/bin/btk
+</code></pre>
+<p>Replace <code>darwin-arm64</code> with <code>darwin-x64</code>, <code>linux-x64</code>, <code>linux-arm64</code> or <code>windows-x64.exe</code>.</p>
+<h3 id="from-source">From source</h3>
+<p>Requires <a href="https://bun.sh">Bun</a> 1.4 or later.</p>
+<pre><code class="language-bash">git clone https://github.com/davidpn11/bun-toolkit &amp;&amp; cd bun-toolkit
+bun install
+bun link            # puts btk and bun-toolkit on your PATH
+</code></pre>
+<h2 id="quick-start">Quick start</h2>
+<pre><code class="language-bash">btk info                    # versions, platform, output mode, config status
+btk init                    # create ./btk.config.ts in this project
+btk image hero.png          # hero.webp next to it
+btk hash package.json       # sha256, in sha256sum format
+btk convert config.yaml     # JSON on stdout
+btk ui                      # the dashboard
+</code></pre>
+<p>Every command takes <code>--help</code>, <code>--json</code>, <code>--verbose</code>, <code>--no-color</code> and <code>--config &lt;path&gt;</code>.</p>
+<h2 id="tools">Tools</h2>
+<h3 id="btk-image">btk image</h3>
+<p>Convert, resize and inspect images with <code>Bun.Image</code>, without sharp or ImageMagick. <a href="docs/tools/image.md">Full docs</a></p>
+<pre><code class="language-bash">btk image ./assets -r --format avif -q 60           # a whole tree, as AVIF
+btk image ./photos --preset web --out-dir dist/img  # 1920px wide, q75, into dist/img
+btk image info hero.png --placeholder               # dimensions, size and a ThumbHash
+</code></pre>
+<h3 id="btk-hash">btk hash</h3>
+<p>Hash and verify files with 31 algorithms. The output is <code>sha256sum</code>-compatible, and SRI and HMAC are supported. <a href="docs/tools/hash.md">Full docs</a></p>
+<pre><code class="language-bash">btk hash ./dist -r &gt; SHA256SUMS            # a checksums file
+btk hash check SHA256SUMS                  # exits 1 if a file changed
+printf hello | btk hash verify - 3610a686  # check standard input against a known hash
+</code></pre>
+<h3 id="btk-convert">btk convert</h3>
+<p>Convert between JSON, YAML, TOML, XML, JSON5, JSONC and JSONL. <a href="docs/tools/convert.md">Full docs</a></p>
+<pre><code class="language-bash">btk convert docker-compose.yml | jq &#x27;.services | keys&#x27;
+btk convert tsconfig.json --to yaml -o tsconfig.yaml
+cat logs.jsonl | btk convert --from jsonl
+</code></pre>
+<h3 id="btk-password">btk password</h3>
+<p>Hash, verify and inspect argon2 and bcrypt password hashes. <a href="docs/tools/password.md">Full docs</a></p>
+<pre><code class="language-bash">btk password hash                          # type it twice at a hidden prompt
+echo &quot;$PASSWORD&quot; | btk password verify &quot;$HASH&quot;
+btk password inspect &quot;$HASH&quot;               # algorithm, cost, and whether it needs a rehash
+</code></pre>
+<h3 id="btk-compress-and-btk-decompress">btk compress and btk decompress</h3>
+<p>gzip, zstd, brotli and deflate, plus folder archives. <a href="docs/tools/compress.md">Full docs</a></p>
+<pre><code class="language-bash">btk compress ./dist --each --gzip --brotli  # precompress static files
+btk compress ./site --zstd                  # site.tar.zst
+btk decompress site.tar.zst                 # site/
+</code></pre>
+<h3 id="btk-md">btk md</h3>
+<p>Preview markdown in the browser with live reload, or styled in the terminal, serve a whole docs folder with a sidebar, and render it to HTML. Themes cover both, and plugins can add more. <a href="docs/tools/md.md">Full docs</a></p>
+<pre><code class="language-bash">btk md README.md                            # live preview in the browser
+btk md CHANGELOG.md --terminal | less -R    # styled for the terminal
+btk md serve docs                           # the whole folder, with a sidebar
+btk md html README.md &gt; README.html         # a standalone page
+</code></pre>
+<h2 id="configuration">Configuration</h2>
+<p>btk reads a global config in <code>~/.bun-toolkit/</code> and a project config found by walking up from the current directory. Both can be TypeScript or JSON:</p>
+<pre><code class="language-ts"><span class="tok-comment">// btk.config.ts</span>
+<span class="tok-keyword">import</span> { defineConfig } <span class="tok-keyword">from</span> <span class="tok-string">&quot;bun-toolkit&quot;</span><span class="tok-punctuation">;</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">default</span> defineConfig({
+  tools: {
+    image: { format: <span class="tok-string">&quot;avif&quot;</span>, quality: <span class="tok-literal">70</span>, presets: { hero: { maxWidth: <span class="tok-literal">2560</span> } } },
+    hash: { algorithm: <span class="tok-string">&quot;blake2b512&quot;</span> },
+    convert: { to: <span class="tok-string">&quot;yaml&quot;</span>, indent: <span class="tok-literal">4</span> },
+  },
+})<span class="tok-punctuation">;</span>
+</code></pre>
+<pre><code class="language-json">{ &quot;tools&quot;: { &quot;image&quot;: { &quot;format&quot;: &quot;webp&quot;, &quot;quality&quot;: 80 } } }
+</code></pre>
+<p>Save the JSON form as <code>btk.config.json</code> or <code>bun-toolkit.config.json</code>. It needs nothing installed in the project.</p>
+<p>Precedence, highest first: flags, <code>BTK_&lt;TOOL&gt;_&lt;KEY&gt;</code> environment variables, the project config, the global config, built-in defaults. <code>btk config</code> shows every resolved value and where it came from, and <code>btk config validate</code> exits 78 when a config is invalid. When a tool runs without a project config, btk warns on stderr. <code>noLocalConfig</code> in the global config turns that off or makes it an error. See <a href="docs/config.md">docs/config.md</a>.</p>
+<h2 id="output-modes-and-exit-codes">Output modes and exit codes</h2>
+<p>btk picks the output mode once, at startup:</p>
+<table>
+<thead>
+<tr><th>Mode</th><th>When</th><th>Output</th></tr>
+</thead>
+<tbody>
+<tr><td><code>json</code></td><td><code>--json</code>, <code>BTK_OUTPUT=json</code>, <code>AGENT=true</code>, or <code>output.json</code> in config</td><td>One JSON document on stdout: <code>{ &quot;ok&quot;: true, &quot;command&quot;: &quot;...&quot;, &quot;data&quot;: ... }</code> or <code>{ &quot;ok&quot;: false, &quot;error&quot;: { &quot;code&quot;, &quot;message&quot;, &quot;hint&quot; } }</code></td></tr>
+<tr><td><code>ci</code></td><td><code>CI=true</code>, <code>NO_COLOR</code>, <code>--no-color</code>, <code>TERM=dumb</code>, or stderr not a terminal</td><td>Plain text, no ANSI, tab-separated tables</td></tr>
+<tr><td><code>human</code></td><td>otherwise</td><td>Colors, icons, spinners, progress bars</td></tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr><th>Code</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td>Success</td></tr>
+<tr><td>1</td><td>The command failed</td></tr>
+<tr><td>2</td><td>Usage error: unknown command or option, invalid value, missing argument, no terminal for <code>--ui</code></td></tr>
+<tr><td>78</td><td>Config error: a config file failed to load or validate</td></tr>
+<tr><td>130</td><td>Cancelled with Ctrl+C</td></tr>
+</tbody>
+</table>
+<h2 id="releases">Releases</h2>
+<p>Every change is in the <a href="CHANGELOG.md">changelog</a>. Stable releases come from <code>master</code>, and pre-releases come from the <code>beta</code> branch and install as <code>bun-toolkit-beta</code>. <a href="docs/releasing.md">docs/releasing.md</a> explains how a release is cut.</p>
+<h2 id="development">Development</h2>
+<pre><code class="language-bash">bun run dev -- info         # run from source
+bun test                    # unit, TUI and integration tests
+bun run test:dist           # build the binary and run the end-to-end suite against it
+bun run check               # Biome, oxlint and tsc
+bunx changeset              # describe your change for the changelog
+bun run release:version     # turn pending changesets into a version, before a release
+bun run release:try beta    # install the published beta in a throwaway container
+</code></pre>
+<p>Every pull request that changes what users see needs a changeset. <a href="docs/architecture.md">docs/architecture.md</a> covers how the CLI is built and how to add a tool. <a href="docs/roadmap.md">docs/roadmap.md</a> has what comes next.</p>
+<h2 id="license">License</h2>
+<p><a href="LICENSE">MIT</a></p>
+</main>
+
+</body>
+</html>

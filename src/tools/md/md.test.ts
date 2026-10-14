@@ -1,13 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { appendFileSync } from "node:fs";
-import { join } from "node:path";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { BtkError, UsageError } from "../../errors.ts";
 import { createHooks, noHooks } from "../../plugins/loader.ts";
 import type { BtkPlugin } from "../../plugins/types.ts";
+import { splitFrontMatter } from "./front-matter.ts";
 import { highlight } from "./highlight.ts";
 import { buildPage, pageTitle, renderBody } from "./html/page.ts";
-import { EVENTS_PATH, openCommand, startPreview } from "./serve.ts";
+import { folderBody, listPages, pageHref, renderNav, resolveTarget, titleOf } from "./site.ts";
 import { renderTerminal } from "./terminal/render.ts";
 import { BTK_THEME } from "./theme/builtin.ts";
 import { availableThemes, resolveTheme } from "./theme/resolve.ts";
@@ -22,6 +21,36 @@ function themesFrom(...themes: MdTheme[]) {
   const plugin: BtkPlugin = { name: "test-plugin", setup: (h) => h.on("md:theme", () => themes) };
   return availableThemes(createHooks([plugin], { warn: () => {} }));
 }
+
+describe("front matter", () => {
+  test("YAML between --- lines at the top is split off, and its title read", () => {
+    expect(splitFrontMatter("---\ntitle: Guide\ntags: [a]\n---\n# Body\n")).toEqual({
+      body: "# Body\n",
+      title: "Guide",
+    });
+    expect(splitFrontMatter("\uFEFF---\r\nlayout: page\r\n---\r\ntext")).toEqual({
+      body: "text",
+      title: undefined,
+    });
+    expect(splitFrontMatter("---\n---\ntext").body).toBe("text");
+  });
+
+  test("a block that isn't a YAML mapping stays, so leading rules still render", () => {
+    const rules = "---\n\nJust text.\n\n---\n";
+    expect(splitFrontMatter(rules).body).toBe(rules);
+    expect(splitFrontMatter("---\nkey: [unclosed\n---\nx").body).toStartWith("---");
+    expect(splitFrontMatter("text\n---\na: 1\n---\n").body).toStartWith("text");
+  });
+
+  test("terminal, page and sidebar all skip it, and the title wins over the heading", () => {
+    const source = "---\ntitle: From YAML\n---\n# Heading\n";
+    expect(plainText(source)).toBe("Heading\n───────");
+    expect(buildPage(source, { css: "", fallbackTitle: "f", liveReload: "", nav: "" }, noHooks)).toContain(
+      "<title>From YAML</title>",
+    );
+    expect(titleOf(source, "x.md")).toBe("From YAML");
+  });
+});
 
 describe("highlight", () => {
   test("maps Bun's highlighter colors to token kinds", () => {
@@ -179,7 +208,7 @@ describe("html", () => {
   });
 
   test("the built-in page includes the css; a plugin template replaces it", () => {
-    const options = { css: "body{color:red}", fallbackTitle: "f", liveReload: "<!--reload-->" };
+    const options = { css: "body{color:red}", fallbackTitle: "f", liveReload: "<!--reload-->", nav: "" };
     const page = buildPage("# Hi", options, noHooks);
     expect(page).toStartWith("<!doctype html>");
     expect(page).toContain("<style>body{color:red}</style>");
@@ -192,58 +221,75 @@ describe("html", () => {
     const custom = buildPage("# Hi", options, createHooks([template], { warn: () => {} }));
     expect(custom).toBe('Hi|body{color:red}|<h1 id="hi">Hi</h1>');
   });
+
+  test("a page with navigation gets the sidebar layout", () => {
+    const options = { css: "", fallbackTitle: "f", liveReload: "", nav: "<ul><li>x</li></ul>" };
+    const page = buildPage("# Hi", options, noHooks);
+    expect(page).toContain('<div class="btk-site">\n<nav class="btk-nav"><ul><li>x</li></ul></nav>\n<main>');
+    expect(page).toContain(".btk-site {");
+    expect(buildPage("# Hi", { ...options, nav: "" }, noHooks)).not.toContain("btk-site");
+  });
 });
 
-describe("preview server", () => {
+describe("site", () => {
   let project: TempProject;
   afterEach(() => project?.cleanup());
 
-  test("serves the page, files next to it, and reload events when the file changes", async () => {
+  const site = () => {
     project = createTempProject();
-    const file = project.write("doc.md", "# One");
-    project.write("logo.svg", "<svg/>");
-    const stop = new AbortController();
-    const server = startPreview({
-      file,
-      root: project.dir,
-      port: 0,
-      render: async () => Bun.file(file).text(),
-      signal: stop.signal,
-    });
+    project.write("README.md", "# Home\n");
+    project.write("guide.md", "# The [Guide](x) *page*\n");
+    project.write("tools/b.md", "no heading");
+    project.write("tools/index.md", "# Tools\n");
+    project.write("api/a.md", "# A\n");
+    project.write("node_modules/pkg/README.md", "# Hidden\n");
+    project.write(".changeset/x.md", "# Hidden\n");
+    project.write("logo.png", "png");
+    return project.dir;
+  };
 
-    expect(await (await fetch(server.url)).text()).toBe("# One");
-    expect(await (await fetch(`${server.url}logo.svg`)).text()).toBe("<svg/>");
-    expect((await fetch(`${server.url}%2e%2e/secret`)).status).toBe(404);
-    expect((await fetch(`${server.url}missing.png`)).status).toBe(404);
-
-    const events = await fetch(new URL(EVENTS_PATH, server.url));
-    const reader = (events.body as ReadableStream<Uint8Array>).getReader();
-    await reader.read();
-    appendFileSync(join(project.dir, "doc.md"), "\nmore");
-    expect(await readUntil(reader, "event: reload")).toBe(true);
-
-    await reader.cancel();
-    stop.abort();
-    await server.closed;
+  test("lists pages: root first, index pages first, skipping node_modules and dot folders", async () => {
+    expect(await listPages(site())).toEqual([
+      { path: "README.md", title: "Home" },
+      { path: "guide.md", title: "The Guide page" },
+      { path: "api/a.md", title: "A" },
+      { path: "tools/index.md", title: "Tools" },
+      { path: "tools/b.md", title: "b" },
+    ]);
   });
 
-  test("opens the browser with each platform's command", () => {
-    expect(openCommand("darwin", "u")).toEqual(["open", "u"]);
-    expect(openCommand("win32", "u")).toEqual(["cmd", "/c", "start", "", "u"]);
-    expect(openCommand("linux", "u")).toEqual(["xdg-open", "u"]);
+  test("resolves URLs to pages, folder indexes, listings and redirects", () => {
+    const root = site();
+    project.write("empty/notes.txt", "");
+    expect(resolveTarget(root, "/")).toMatchObject({ kind: "page", path: "README.md" });
+    expect(resolveTarget(root, "/guide.md")).toMatchObject({ kind: "page", path: "guide.md" });
+    expect(resolveTarget(root, "/tools/")).toMatchObject({ kind: "page", path: "tools/index.md" });
+    expect(resolveTarget(root, "/tools")).toEqual({ kind: "redirect", location: "/tools/" });
+    expect(resolveTarget(root, "/api/")).toEqual({ kind: "folder", dir: "api" });
+    expect(resolveTarget(root, "/logo.png")).toBeUndefined();
+    expect(resolveTarget(root, "/missing.md")).toBeUndefined();
+    expect(resolveTarget(root, "/%2e%2e/")).toBeUndefined();
+  });
+
+  test("the sidebar groups pages by folder and marks the current page", async () => {
+    const nav = renderNav(await listPages(site()), "guide.md");
+    expect(nav).toContain('<a href="/guide.md" aria-current="page">The Guide page</a>');
+    expect(nav).toContain(
+      '<span class="btk-nav-folder">tools</span><ul><li><a href="/tools/index.md">Tools</a>',
+    );
+    expect(nav.indexOf("README.md")).toBeLessThan(nav.indexOf("api/a.md"));
+  });
+
+  test("a folder without an index lists its pages", async () => {
+    const body = folderBody("api", await listPages(site()));
+    expect(body).toContain("<h1>api</h1>");
+    expect(body).toContain('<a href="/api/a.md">A</a>');
+    expect(body).not.toContain("guide.md");
+  });
+
+  test("titles fall back to the file name, and links encode each segment", () => {
+    expect(titleOf("text only", "notes/my file.md")).toBe("my file");
+    expect(titleOf("## Not level one\n# Real", "x.md")).toBe("Real");
+    expect(pageHref("notes/my file.md")).toBe("/notes/my%20file.md");
   });
 });
-
-async function readUntil(
-  reader: { read(): Promise<{ value?: Uint8Array; done: boolean }> },
-  text: string,
-): Promise<boolean> {
-  const decoder = new TextDecoder();
-  let seen = "";
-  while (!seen.includes(text)) {
-    const { value, done } = await reader.read();
-    if (done) return false;
-    seen += decoder.decode(value);
-  }
-  return true;
-}

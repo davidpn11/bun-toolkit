@@ -1,3 +1,4 @@
+import { statSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import type { BtkContext } from "../../context.ts";
 import { BtkError, UsageError } from "../../errors.ts";
@@ -22,7 +23,17 @@ export async function readDocument(file: string | undefined, ctx: BtkContext): P
     });
   }
   const path = resolve(ctx.cwd, file);
+  if (isFolder(file, ctx)) {
+    throw new UsageError(`${file} is a folder`, {
+      code: "ERR_NOT_A_FILE",
+      hint: `Pass a markdown file, or serve the folder with btk md serve ${file}`,
+    });
+  }
   return { path, name: basename(path), source: await readText(path, file) };
+}
+
+export function isFolder(path: string, ctx: BtkContext): boolean {
+  return statSync(resolve(ctx.cwd, path), { throwIfNoEntry: false })?.isDirectory() === true;
 }
 
 export async function readText(path: string, shown: string): Promise<string> {

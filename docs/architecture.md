@@ -36,7 +36,8 @@ src/
     convert/                  btk convert (docs/tools/convert.md)
     password/                 btk password (docs/tools/password.md)
     compress/                 btk compress and btk decompress (docs/tools/compress.md)
-    md/                       btk md (docs/tools/md.md): themes, terminal renderer, HTML page, preview server
+    md/                       btk md (docs/tools/md.md): themes, terminal renderer, HTML page, folder preview
+    serve/                    btk serve (docs/tools/serve.md): static files, listings, SPA fallback, network URLs
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
     loader.ts                 Discovery, import or JSON parse, per-file validation, merge, source tracking
@@ -70,6 +71,7 @@ src/
     collect.ts                Turns file, folder and glob arguments into a sorted, de-duplicated file list
     fs.ts                     Directory listing for pickers, atomic writes, file error messages
     pool.ts                   Runs async work with a concurrency limit
+    serve.ts                  Local HTTP server with live reload, path and Host checks; used by btk md and btk serve
     stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
   plugins/
     types.ts                  BtkPlugin and HookMap, the list of hooks (docs/plugins.md)
@@ -99,7 +101,7 @@ Each shipped tool splits its core logic by job instead of using one `core.ts`. `
 
 Tools share three building blocks from `src/shared/`. `collectFiles()` turns arguments into files with an `accept` filter and an `exclude` list. `runPool()` limits concurrency. `readStdin()` and `STDIN` (`-`) handle piped input, and tests feed it through `runBtk(args, { stdin })`.
 
-A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline.
+A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline. When the reader of a pipe exits early, as in `btk md CHANGELOG.md --terminal | head`, btk stops writing and exits 0 without an error. That keeps `set -o pipefail` scripts from failing because `head` stopped on purpose. `bin/btk.ts` handles the `error` event the write produces, and `run()` handles an EPIPE thrown directly.
 
 `btk compress` and `btk decompress` are two tools in the registry that share one folder. `decompress` has no config slice of its own.
 

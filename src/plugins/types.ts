@@ -7,6 +7,8 @@ export type HtmlTemplateInput = {
   css: string;
   /** A `<script>` that reloads the page on save; empty when writing a file. */
   liveReload: string;
+  /** Sidebar links for `btk md serve`; empty for a single file. */
+  nav: string;
 };
 
 export type HookMap = {

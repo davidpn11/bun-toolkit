@@ -22,7 +22,7 @@ describe("createHooks", () => {
     );
     expect(calls).toBe(0);
     hooks.collect("md:theme", undefined);
-    hooks.last("md:html:template", { title: "", body: "", css: "", liveReload: "" });
+    hooks.last("md:html:template", { title: "", body: "", css: "", liveReload: "", nav: "" });
     expect(calls).toBe(1);
   });
 
@@ -44,7 +44,7 @@ describe("createHooks", () => {
   });
 
   test("last returns the last handler's result, or undefined without one", () => {
-    const input = { title: "T", body: "B", css: "", liveReload: "" };
+    const input = { title: "T", body: "B", css: "", liveReload: "", nav: "" };
     const hooks = createHooks(
       [
         plugin("a", (h) => h.on("md:html:template", () => "first")),

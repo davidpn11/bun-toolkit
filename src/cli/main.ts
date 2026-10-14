@@ -3,7 +3,7 @@ import { loadConfig } from "../config/loader.ts";
 import { checkLocalConfig } from "../config/local-config.ts";
 import type { BtkContext, BtkIO } from "../context.ts";
 import { detectEnvironment, type Environment, type EnvironmentInput } from "../env.ts";
-import { BtkError, ExitCode, isBtkError } from "../errors.ts";
+import { BtkError, ExitCode, isBrokenPipe, isBtkError } from "../errors.ts";
 import { createReporter, type Reporter } from "../output/reporter.ts";
 import { createStyler } from "../output/style.ts";
 import { createHooks } from "../plugins/loader.ts";
@@ -166,6 +166,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     }
     return exitCode;
   } catch (error) {
+    if (isBrokenPipe(error)) return ExitCode.Ok;
     reporter.spinner.stop();
     reporter.progress.stop();
     const final =

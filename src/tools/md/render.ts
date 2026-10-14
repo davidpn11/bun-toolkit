@@ -1,10 +1,10 @@
 import type { BtkContext } from "../../context.ts";
 import type { Output } from "../../output/reporter.ts";
-import type { PreviewResult } from "./preview.ts";
-import type { HtmlResult, ThemeRow } from "./tool.ts";
+import type { HtmlResult, PreviewResult, ThemeRow } from "./tool.ts";
 
 export function renderPreview(result: PreviewResult, out: Output, ctx: BtkContext): void {
   if (result.mode === "terminal") out.text(result.output);
+  else if (result.mode === "site") ctx.reporter.log.success(`Stopped serving ${result.root}`);
   else ctx.reporter.log.success(`Stopped the preview of ${result.file}`);
 }
 

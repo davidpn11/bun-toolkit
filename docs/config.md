@@ -69,7 +69,7 @@ JSON configs may contain comments and trailing commas. They can't hold plugins, 
 
 ## Running without a local config
 
-When a tool command (`image`, `hash`, `convert`, `password`, `compress`, `decompress`, `md`, or a tool's `--ui`) finds no project config, btk prints a warning on stderr and runs with the global config or the built-in defaults:
+When a tool command (`image`, `hash`, `convert`, `password`, `compress`, `decompress`, `md`, `serve`, or a tool's `--ui`) finds no project config, btk prints a warning on stderr and runs with the global config or the built-in defaults:
 
 ```
 ⚠ No local config found, using the global config (~/.bun-toolkit/config.ts)
@@ -93,7 +93,7 @@ Nobody writes the `tools` schema by hand. Each tool contributes its slice from t
 ```typescript
 type BtkConfig = {
   // One key per registered tool, typed from the tool's config schema.
-  // Shipped: image, hash, convert, password, compress, md (docs/tools/).
+  // Shipped: image, hash, convert, password, compress, md, serve (docs/tools/).
   tools?: ToolsConfig;
 
   // Output preferences. Flags and env vars still win.
@@ -137,6 +137,7 @@ Every key of every tool's config schema maps to `BTK_<TOOL>_<KEY>`, with camelCa
 | `tools.password.algorithm` | `BTK_PASSWORD_ALGORITHM` |
 | `tools.compress.format` | `BTK_COMPRESS_FORMAT` |
 | `tools.md.theme` | `BTK_MD_THEME` |
+| `tools.serve.port` | `BTK_SERVE_PORT` |
 | `output.json` | `BTK_OUTPUT=json` |
 | `output.verbose` | `BTK_VERBOSE=true` |
 | `noLocalConfig` | `BTK_NO_LOCAL_CONFIG=off` |

@@ -311,6 +311,26 @@ export default defineConfig({ plugins: [plugin()] });`,
       expect(stdout).toBe("  → one\n");
     });
 
+    test("a reader that closes its pipe early ends btk quietly with 0", async () => {
+      const p = fresh();
+      p.write("long.md", "# Title\n\n".concat("A paragraph of text.\n\n".repeat(2000)));
+      for (const args of [
+        ["md", "long.md", "--terminal"],
+        ["info", "--json"],
+      ]) {
+        const proc = Bun.spawn([...btkCommand(), ...args], {
+          cwd: p.dir,
+          env: p.env,
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        await proc.stdout.cancel();
+        const [stderr, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
+        expect(stderr).not.toContain("EPIPE");
+        expect(code).toBe(0);
+      }
+    });
+
     test("ui without a terminal exits 2 with a hint", async () => {
       fresh();
       const { code, stderr } = await btk(["ui"]);

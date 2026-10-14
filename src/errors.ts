@@ -60,3 +60,8 @@ export class ConfigError extends BtkError {
 export function isBtkError(error: unknown): error is BtkError {
   return error instanceof BtkError;
 }
+
+/** The reader of a pipe went away, as when `btk … | head` has read enough. */
+export function isBrokenPipe(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException | null)?.code === "EPIPE";
+}

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { runBtk } from "../support/cli.ts";
+import { freePort, waitForPage } from "../support/server.ts";
 import { ANSI } from "../support/streams.ts";
 import { createTempProject, type TempProject } from "../support/tmp.ts";
 
@@ -186,11 +187,79 @@ describe("btk md", () => {
     expect((await btk(["hash", "README.md"])).code).toBe(0);
   });
 
+  test("serve shows a folder with a sidebar, folder redirects, and stops on Ctrl+C", async () => {
+    const p = setup();
+    p.write("docs/guide.md", "# Guide\n\nSee [home](../README.md).\n");
+    const port = freePort();
+    const stop = new AbortController();
+    const running = runBtk(["md", "serve", "--no-open", "--port", String(port)], {
+      cwd: p.dir,
+      env: p.env,
+      signal: stop.signal,
+    });
+    const base = `http://127.0.0.1:${port}`;
+    const home = await waitForPage(base);
+    expect(home).toContain('<nav class="btk-nav">');
+    expect(home).toContain('<a href="/README.md" aria-current="page">Title</a>');
+    expect(home).toContain('<a href="/docs/guide.md">Guide</a>');
+    expect(await (await fetch(`${base}/docs/guide.md`)).text()).toContain('<a href="../README.md">home</a>');
+    const folder = await fetch(`${base}/docs`, { redirect: "manual" });
+    expect(folder.status).toBe(302);
+    expect(folder.headers.get("location")).toBe("/docs/");
+    expect(await (await fetch(`${base}/docs/`)).text()).toContain("<h1>docs</h1>");
+
+    stop.abort();
+    const { code, stderr } = await running;
+    expect(code).toBe(0);
+    expect(stderr).toContain(`Serving 2 pages from . at ${base}/`);
+    expect(stderr).toContain("Stopped serving .");
+  });
+
+  test("a folder passed to preview is served too; --json returns the site", async () => {
+    const p = setup();
+    p.write("docs/a.md", "# A\n");
+    const port = freePort();
+    const stop = new AbortController();
+    const running = runBtk(["md", "docs", "--no-open", "--port", String(port), "--json"], {
+      cwd: p.dir,
+      env: p.env,
+      signal: stop.signal,
+    });
+    expect(await waitForPage(`http://127.0.0.1:${port}`)).toContain("<h1>docs</h1>");
+    stop.abort();
+    const envelope = JSON.parse((await running).stdout);
+    expect(envelope).toMatchObject({
+      ok: true,
+      command: "md preview",
+      data: { mode: "site", root: "docs", pages: 1, theme: "btk", url: `http://127.0.0.1:${port}/` },
+    });
+  });
+
+  test("folders and files in the wrong place are usage errors; an empty folder fails", async () => {
+    const p = setup();
+    p.write("docs/a.md", "# A\n");
+    p.write("empty/notes.txt", "");
+    const terminal = await btk(["md", "docs", "--terminal"]);
+    expect(terminal.code).toBe(2);
+    expect(terminal.stderr).toContain("--terminal previews one file, not a folder");
+    const html = await btk(["md", "html", "docs"]);
+    expect(html.code).toBe(2);
+    expect(html.stderr).toContain("docs is a folder");
+    const file = await btk(["md", "serve", "README.md"]);
+    expect(file.code).toBe(2);
+    expect(file.stderr).toContain("Not a folder: README.md");
+    expect((await btk(["md", "serve", "nope"])).stderr).toContain("Folder not found: nope");
+    const empty = await btk(["md", "serve", "empty"]);
+    expect(empty.code).toBe(1);
+    expect(empty.stderr).toContain("No markdown files in empty");
+  });
+
   test("help covers the tool and each action", async () => {
     setup();
     const tool = await btk(["md", "--help"]);
     expect(tool.code).toBe(0);
-    for (const action of ["preview", "html", "themes"]) expect(tool.stdout).toContain(action);
+    for (const action of ["preview", "serve", "html", "themes"]) expect(tool.stdout).toContain(action);
+    expect((await btk(["md", "serve", "--help"])).stdout).toContain("--port");
     const preview = (await btk(["md", "preview", "--help"])).stdout;
     for (const flag of ["--theme", "--terminal", "--no-open", "--port", "--columns"])
       expect(preview).toContain(flag);

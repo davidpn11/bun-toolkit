@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Bun native APIs straight in your terminal.</strong><br>
-  One CLI, one config, one output style, and an interactive dashboard for every tool.
+  One CLI, one config, one output style, live previews in your browser, and interactive dashboards.
 </p>
 
 <p align="center">
@@ -15,12 +15,14 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/davidpn11/bun-toolkit"></a>
 </p>
 
-`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML` and `Bun.password`, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.
+`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.
 
-- **Six tools:** `image`, `hash`, `convert`, `password`, `compress` with `decompress`, and `md`.
+- **Seven tools:** `image`, `hash`, `convert`, `password`, `compress` with `decompress`, `md`, and `serve`.
+- **Live previews:** markdown and whole folders open in your browser and reload when you save.
+- **Themes and plugins:** style markdown for the terminal and the browser, and add your own themes from `btk.config.ts`.
 - **One config** in TypeScript or JSON, with global and per-project tiers and `BTK_*` environment variables.
 - **Three output modes:** colors in a terminal, plain text in CI, and one JSON document with `--json`.
-- **A dashboard for every tool:** `btk ui` or `btk <tool> --ui`.
+- **Dashboards** for `image`, `hash`, `convert`, `password` and `compress`: `btk ui` or `btk <tool> --ui`.
 
 ## Install
 
@@ -72,6 +74,8 @@ btk init                    # create ./btk.config.ts in this project
 btk image hero.png          # hero.webp next to it
 btk hash package.json       # sha256, in sha256sum format
 btk convert config.yaml     # JSON on stdout
+btk md README.md            # a live preview in the browser
+btk serve dist              # serve a folder with live reload
 btk ui                      # the dashboard
 ```
 
@@ -131,13 +135,31 @@ btk decompress site.tar.zst                 # site/
 
 ### btk md
 
-Preview markdown in the browser with live reload, or styled in the terminal, and render it to HTML. Themes cover both, and plugins can add more. [Full docs](docs/tools/md.md)
+Preview markdown with `Bun.markdown`: in the browser with live reload, or styled in the terminal with wrapped text, boxed tables and highlighted code. Serve a whole docs folder with a sidebar, or render a standalone HTML page. [Full docs](docs/tools/md.md)
 
 ```bash
 btk md README.md                            # live preview in the browser
 btk md CHANGELOG.md --terminal | less -R    # styled for the terminal
+btk md serve docs                           # the whole folder, with a sidebar and working links
 btk md html README.md > README.html         # a standalone page
+btk md README.md --theme plain --css my.css # pick a theme, add your own styles
+btk md themes                               # built-in themes and the ones plugins add
 ```
+
+Two themes are built in, `btk` (Bun pink, light and dark) and `plain` (no color, ASCII). Front matter is hidden, and its `title` names the page.
+
+### btk serve
+
+Serve any folder over HTTP with live reload: a built site, plain HTML, fixtures. Folder listings, single-page apps and sharing with your network are built in. [Full docs](docs/tools/serve.md)
+
+```bash
+btk serve dist --spa                        # a single-page app
+btk serve site --host 0.0.0.0               # open it from your phone too
+btk serve fixtures --cors --port 8080
+btk serve demo/page.html                    # serves demo/ and opens the page
+```
+
+It only listens on your machine unless you pass `--host`, never serves dotfiles, and doesn't follow symlinks out of the folder. To build an app from source with bundling and hot reload, use Bun's own `bun ./index.html`.
 
 ## Configuration
 
@@ -152,6 +174,8 @@ export default defineConfig({
     image: { format: "avif", quality: 70, presets: { hero: { maxWidth: 2560 } } },
     hash: { algorithm: "blake2b512" },
     convert: { to: "yaml", indent: 4 },
+    md: { theme: "plain", port: 4321 },
+    serve: { spa: true, open: false },
   },
 });
 ```
@@ -163,6 +187,31 @@ export default defineConfig({
 Save the JSON form as `btk.config.json` or `bun-toolkit.config.json`. It needs nothing installed in the project.
 
 Precedence, highest first: flags, `BTK_<TOOL>_<KEY>` environment variables, the project config, the global config, built-in defaults. `btk config` shows every resolved value and where it came from, and `btk config validate` exits 78 when a config is invalid. When a tool runs without a project config, btk warns on stderr. `noLocalConfig` in the global config turns that off or makes it an error. See [docs/config.md](docs/config.md).
+
+## Plugins and themes
+
+Plugins add behavior through hooks, and they load only from your config, never globally. The first hooks belong to `btk md`: `md:theme` adds themes, and `md:html:template` replaces the page around the rendered markdown.
+
+```ts
+// btk.config.ts
+import { defineConfig, definePlugin, defineTheme } from "bun-toolkit";
+
+const ocean = defineTheme({
+  name: "ocean",
+  extends: "btk",
+  terminal: { heading: [{ color: "#3b82f6", bold: true }], glyphs: { bullets: ["▸"] } },
+  css: ":root { --accent: #3b82f6; }",
+});
+
+const oceanPlugin = definePlugin(() => ({
+  name: "ocean",
+  setup: (hooks) => hooks.on("md:theme", () => ocean),
+}));
+
+export default defineConfig({ plugins: [oceanPlugin()], tools: { md: { theme: "ocean" } } });
+```
+
+btk validates every theme a plugin hands over, and an error names the plugin. A broken plugin only affects the commands that use plugins. Plugins work in the compiled binary too. See [docs/plugins.md](docs/plugins.md) for every hook and theme key.
 
 ## Output modes and exit codes
 
@@ -182,6 +231,8 @@ btk picks the output mode once, at startup:
 | 78 | Config error: a config file failed to load or validate |
 | 130 | Cancelled with Ctrl+C |
 
+Data goes to stdout and logs to stderr, so pipes stay clean. When the reader of a pipe stops early, as in `btk md CHANGELOG.md --terminal | head`, btk exits quietly with 0.
+
 ## Releases
 
 Every change is in the [changelog](CHANGELOG.md). Stable releases come from `master`, and pre-releases come from the `beta` branch and install as `bun-toolkit-beta`. [docs/releasing.md](docs/releasing.md) explains how a release is cut.
@@ -190,6 +241,7 @@ Every change is in the [changelog](CHANGELOG.md). Stable releases come from `mas
 
 ```bash
 bun run dev -- info         # run from source
+bun run dev md serve docs   # read these docs in the browser
 bun test                    # unit, TUI and integration tests
 bun run test:dist           # build the binary and run the end-to-end suite against it
 bun run check               # Biome, oxlint and tsc

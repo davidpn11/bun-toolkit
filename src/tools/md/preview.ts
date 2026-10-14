@@ -1,9 +1,8 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import type { BtkContext } from "../../context.ts";
-import { BtkError } from "../../errors.ts";
+import { htmlResponse, serveUntilStopped, watchOneFile } from "../../shared/serve.ts";
 import { type MdDocument, readText } from "./document.ts";
 import { buildPage, LIVE_RELOAD } from "./html/page.ts";
-import { openBrowser, type PreviewServer, startPreview } from "./serve.ts";
 import { renderTerminal } from "./terminal/render.ts";
 import type { ResolvedTheme } from "./theme/types.ts";
 
@@ -35,24 +34,31 @@ function terminalColor(explicit: boolean, ctx: BtkContext): boolean {
   return ctx.reporter.out.style.enabled || (explicit && ctx.environment.color);
 }
 
-/** Serves a live preview until Ctrl+C. */
 export async function browserPreview(
   doc: MdDocument,
   theme: ResolvedTheme,
   settings: BrowserSettings,
   ctx: BtkContext,
 ): Promise<BrowserPreview> {
-  const css = await pageCss(theme, settings.css, ctx);
-  const render = async () => {
+  const root = doc.path ? dirname(doc.path) : ctx.cwd;
+  const page = async (pathname: string) => {
+    if (pathname !== "/") return undefined;
     const source = doc.path ? await readText(doc.path, doc.name) : doc.source;
-    return buildPage(source, { css, fallbackTitle: doc.name, liveReload: LIVE_RELOAD }, ctx.hooks);
+    const css = await pageCss(theme, settings.css, ctx);
+    const options = { css, fallbackTitle: doc.name, liveReload: LIVE_RELOAD, nav: "" };
+    return htmlResponse(buildPage(source, options, ctx.hooks));
   };
-  const server = listen(doc, settings.port, render, ctx);
-  announce(doc, server.url, settings.open, ctx);
-  await server.closed;
-  return { mode: "browser", file: doc.name, theme: theme.name, url: server.url };
+  const watch = doc.path ? watchOneFile(root, doc.path) : undefined;
+  const { url } = await serveUntilStopped(
+    { root, watch, port: settings.port, page },
+    settings.open,
+    ctx,
+    (_, link) => announce(`Previewing ${doc.name} at ${link}`, Boolean(doc.path), ctx),
+  );
+  return { mode: "browser", file: doc.name, theme: theme.name, url };
 }
 
+/** The theme's stylesheet plus `--css`, read on every request so edits show on the next reload. */
 export async function pageCss(
   theme: ResolvedTheme,
   extra: string | undefined,
@@ -62,26 +68,8 @@ export async function pageCss(
   return `${theme.css}\n${await readText(resolve(ctx.cwd, extra), extra)}`;
 }
 
-function listen(
-  doc: MdDocument,
-  port: number,
-  render: () => Promise<string>,
-  ctx: BtkContext,
-): PreviewServer {
-  try {
-    return startPreview({ file: doc.path, root: ctx.cwd, port, render, signal: ctx.signal });
-  } catch (error) {
-    throw new BtkError(`Could not start the preview server on port ${port}`, {
-      code: "ERR_PREVIEW_SERVER",
-      hint: "Another program may be using the port; --port 0 picks a free one",
-      cause: error,
-    });
-  }
-}
-
-function announce(doc: MdDocument, url: string, open: boolean, ctx: BtkContext): void {
+export function announce(message: string, reloads: boolean, ctx: BtkContext): void {
   const { log, style } = ctx.reporter;
-  log.info(`Previewing ${doc.name} at ${style.accent(url)}`);
-  log.info(style.muted(doc.path ? "Reloads when you save · Ctrl+C to stop" : "Ctrl+C to stop"));
-  if (open && !openBrowser(ctx.platform, url)) log.warn("Could not open a browser; open the URL yourself");
+  log.info(message);
+  log.info(style.muted(reloads ? "Reloads when you save · Ctrl+C to stop" : "Ctrl+C to stop"));
 }

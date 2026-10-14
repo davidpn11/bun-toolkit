@@ -43,7 +43,7 @@ Each hook has a kind:
 | Hook | Kind | Receives | Returns | Purpose |
 | --- | --- | --- | --- | --- |
 | `md:theme` | collect | nothing | `MdTheme` or `MdTheme[]` | Add themes for `btk md` |
-| `md:html:template` | replace | `{ title, body, css, liveReload }` | HTML string | Replace the page around the rendered markdown |
+| `md:html:template` | replace | `{ title, body, css, liveReload, nav }` | HTML string | Replace the page around the rendered markdown |
 
 Hooks are synchronous. Plugins run in the same process as bun-toolkit and can use every Bun API.
 
@@ -116,19 +116,19 @@ Every style is `{ color?, bg?, bold?, dim?, italic?, underline?, strikethrough? 
 
 ### Page classes
 
-The page wraps the markdown in `<main>`. Highlighted code uses `tok-keyword`, `tok-type`, `tok-string`, `tok-literal`, `tok-comment` and `tok-punctuation` spans, and task list items have the `task-list-item` class. btk's stylesheet reads its colors from CSS variables such as `--accent`, `--bg`, `--fg`, `--muted`, `--border` and `--code-bg`, so a theme that extends `btk` can recolor the page by setting them.
+The page wraps the markdown in `<main>`. Under `btk md serve`, a `<div class="btk-site">` holds a `<nav class="btk-nav">` sidebar next to it, and folder names in the sidebar use `btk-nav-folder`. Highlighted code uses `tok-keyword`, `tok-type`, `tok-string`, `tok-literal`, `tok-comment` and `tok-punctuation` spans, and task list items have the `task-list-item` class. btk's stylesheet reads its colors from CSS variables such as `--accent`, `--bg`, `--fg`, `--muted`, `--border` and `--code-bg`, so a theme that extends `btk` can recolor the page by setting them.
 
 ## Replacing the page
 
 ```typescript
-hooks.on("md:html:template", ({ title, body, css, liveReload }) => `<!doctype html>
+hooks.on("md:html:template", ({ title, body, css, liveReload, nav }) => `<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>${title}</title><style>${css}</style></head>
-<body><article>${body}</article>${liveReload}</body>
+<body>${nav ? `<aside>${nav}</aside>` : ""}<article>${body}</article>${liveReload}</body>
 </html>`);
 ```
 
-`title` comes from the first level 1 heading, or the file name. `css` is the theme's stylesheet plus `tools.md.css`. Keep `${liveReload}` in the page so the browser preview reloads on save. It is empty for `btk md html`.
+`title` comes from the first level 1 heading, or the file name. `css` is the theme's stylesheet plus `tools.md.css`. Keep `${liveReload}` in the page so the browser preview reloads on save. It is empty for `btk md html`. `nav` is the sidebar for `btk md serve`: a nested `<ul>` of links, with `aria-current="page"` on the current one. It is empty for a single file.
 
 ## Implementation notes
 

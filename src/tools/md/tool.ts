@@ -2,11 +2,21 @@ import { z } from "zod";
 import { defineAction, defineTool, flag, positional } from "../../cli/define.ts";
 import type { BtkContext } from "../../context.ts";
 import { UsageError } from "../../errors.ts";
+import { requireFolder } from "../../shared/fs.ts";
 import { columnsSchema, type MdConfig, mdConfig, portSchema } from "./config.ts";
-import { readDocument } from "./document.ts";
+import { isFolder, readDocument } from "./document.ts";
+import { splitFrontMatter } from "./front-matter.ts";
 import { buildPage, renderBody } from "./html/page.ts";
-import { browserPreview, type PreviewResult, pageCss, terminalPreview } from "./preview.ts";
+import {
+  type BrowserPreview,
+  type BrowserSettings,
+  browserPreview,
+  pageCss,
+  type TerminalPreview,
+  terminalPreview,
+} from "./preview.ts";
 import { renderHtml, renderPreview, renderThemes } from "./render.ts";
+import { type SitePreview, sitePreview } from "./site-preview.ts";
 import { availableThemes, resolveTheme } from "./theme/resolve.ts";
 import { themeNameSchema } from "./theme/schema.ts";
 import type { ResolvedTheme } from "./theme/types.ts";
@@ -15,6 +25,18 @@ const fileArg = positional(z.string().optional(), {
   valueHint: "file",
   description: 'Markdown file; "-" or a pipe reads standard input',
 });
+
+const openFlag = flag(z.boolean(), {
+  config: "open",
+  description: "Open the browser (--no-open prints the URL)",
+});
+const portFlag = flag(portSchema, {
+  alias: "p",
+  config: "port",
+  description: "Server port; 0 picks a free one",
+});
+
+export type PreviewResult = TerminalPreview | BrowserPreview | SitePreview;
 
 const themeFlag = flag(themeNameSchema, {
   alias: "t",
@@ -36,16 +58,20 @@ export const preview = defineAction({
     "btk md preview README.md --terminal",
     "btk md preview CHANGELOG.md --terminal | less -R",
     "btk md preview docs/guide.md --theme plain --no-open",
+    "btk md docs/",
   ],
   args: {
-    file: fileArg,
+    file: positional(z.string().optional(), {
+      valueHint: "file",
+      description: 'Markdown file, or a folder to serve; "-" or a pipe reads standard input',
+    }),
     theme: themeFlag,
     terminal: flag(z.boolean().default(false), {
       description: "Print to the terminal instead of the browser",
     }),
     browser: flag(z.boolean().default(false), { description: "Open the browser even when output is piped" }),
-    open: flag(z.boolean(), { config: "open", description: "Open the browser (--no-open prints the URL)" }),
-    port: flag(portSchema, { alias: "p", config: "port", description: "Server port; 0 picks a free one" }),
+    open: openFlag,
+    port: portFlag,
     columns: flag(columnsSchema.optional(), {
       config: "columns",
       valueHint: "<n>",
@@ -55,10 +81,28 @@ export const preview = defineAction({
     css: cssFlag,
   },
   async run(input, ctx): Promise<PreviewResult> {
+    if (input.file && isFolder(input.file, ctx)) return previewFolder(input.file, input, ctx);
     const inTerminal = wantsTerminal(input.terminal, input.browser, ctx);
     const doc = await readDocument(input.file, ctx);
     const theme = themeFor(input.theme, ctx);
     return inTerminal ? terminalPreview(doc, theme, input, ctx) : browserPreview(doc, theme, input, ctx);
+  },
+  render: renderPreview,
+});
+
+export const serve = defineAction({
+  description: "Serve a folder of markdown with a sidebar and live reload",
+  examples: ["btk md serve", "btk md serve docs", "btk md serve docs --port 4000 --no-open --theme plain"],
+  args: {
+    dir: positional(z.string().default("."), { valueHint: "folder", description: "Folder to serve" }),
+    theme: themeFlag,
+    open: openFlag,
+    port: portFlag,
+    css: cssFlag,
+  },
+  run: (input, ctx): Promise<SitePreview> => {
+    requireFolder(input.dir, ctx.cwd, `To preview one file, run btk md preview ${input.dir}`);
+    return sitePreview(input.dir, themeFor(input.theme, ctx), input, ctx);
   },
   render: renderPreview,
 });
@@ -83,9 +127,10 @@ export const html = defineAction({
   async run(input, ctx): Promise<HtmlResult> {
     const doc = await readDocument(input.file, ctx);
     const theme = themeFor(input.theme, ctx);
-    if (input.fragment) return { file: doc.name, theme: theme.name, html: renderBody(doc.source) };
+    if (input.fragment)
+      return { file: doc.name, theme: theme.name, html: renderBody(splitFrontMatter(doc.source).body) };
     const css = await pageCss(theme, input.css, ctx);
-    const page = buildPage(doc.source, { css, fallbackTitle: doc.name, liveReload: "" }, ctx.hooks);
+    const page = buildPage(doc.source, { css, fallbackTitle: doc.name, liveReload: "", nav: "" }, ctx.hooks);
     return { file: doc.name, theme: theme.name, html: page };
   },
   render: renderHtml,
@@ -111,7 +156,7 @@ export const md = defineTool({
   aliases: ["markdown"],
   config: mdConfig,
   defaultAction: "preview",
-  actions: { preview, html, themes },
+  actions: { preview, serve, html, themes },
 });
 
 export function mdSettings(ctx: BtkContext): MdConfig {
@@ -120,6 +165,20 @@ export function mdSettings(ctx: BtkContext): MdConfig {
 
 function themeFor(name: string, ctx: BtkContext): ResolvedTheme {
   return resolveTheme(name, availableThemes(ctx.hooks));
+}
+
+function previewFolder(
+  dir: string,
+  input: BrowserSettings & { theme: string; terminal: boolean },
+  ctx: BtkContext,
+): Promise<SitePreview> {
+  if (input.terminal) {
+    throw new UsageError("--terminal previews one file, not a folder", {
+      code: "ERR_FLAG_CONFLICT",
+      hint: `Pass a file, or drop --terminal to serve ${dir} in the browser`,
+    });
+  }
+  return sitePreview(dir, themeFor(input.theme, ctx), input, ctx);
 }
 
 /** Piped output and JSON mode get the terminal rendering, since nobody is there to look at a browser. */

@@ -1,12 +1,13 @@
 # btk md
 
-Preview markdown in the browser or in the terminal, and render it to HTML. It uses `Bun.markdown`, a CommonMark and GFM parser written in Rust, so tables, task lists, strikethrough and autolinks work out of the box.
+Preview markdown in the browser or in the terminal, serve a whole folder of it, and render it to HTML. It uses `Bun.markdown`, a CommonMark and GFM parser written in Rust, so tables, task lists, strikethrough and autolinks work out of the box.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
 | `btk md [file]` | Live preview in the browser, or in the terminal when the output is piped. Short for `btk md preview` |
+| `btk md serve [folder]` | Serve every markdown file in a folder, with a sidebar and live reload |
 | `btk md html [file]` | Render a standalone HTML page, or only the body with `--fragment` |
 | `btk md themes` | List the themes, including the ones plugins add |
 
@@ -26,7 +27,7 @@ cat notes.md | btk md --browser         # piped markdown, still in the browser
 btk md README.md --terminal --columns 72 --hyperlinks
 ```
 
-In a terminal, `btk md README.md` serves the page on `127.0.0.1` and opens your browser. The page updates when you save the file and keeps its scroll position. Images and other files next to the markdown file are served too, so relative links work. Press Ctrl+C to stop.
+In a terminal, `btk md README.md` serves the page on `127.0.0.1` and opens your browser. The server only answers requests for `127.0.0.1` and `localhost`. The page updates when you save the file and keeps its scroll position. Images and other files next to the markdown file are served too, so relative links work. Press Ctrl+C to stop.
 
 When stdout is not a terminal, or in json mode, preview prints the terminal rendering instead, because nobody is there to look at a browser. `--terminal` and `--browser` force one or the other. Piped output is plain unless you pass `--terminal`, which keeps the colors for a pager such as `less -R`.
 
@@ -41,7 +42,29 @@ When stdout is not a terminal, or in json mode, preview prints the terminal rend
 | `--hyperlinks` | `hyperlinks` | `false` | Clickable links (OSC 8) in terminals that support them |
 | `--css` | `css` | | Extra stylesheet added after the theme's, relative to the working directory |
 
+Front matter, the YAML block between `---` lines that Jekyll, Hugo and VitePress put at the top of a file, is left out of every output. Its `title` becomes the page title and the sidebar label in `btk md serve`, ahead of the first heading.
+
 In the terminal, code blocks in JavaScript and TypeScript get syntax highlighting from Bun's own highlighter, recolored by the theme. Other languages show as plain text in a frame.
+
+### serve
+
+```bash
+btk md serve                            # every markdown file under the current folder
+btk md serve docs                       # just docs/
+btk md docs/                            # the same: preview serves a folder it is given
+btk md serve docs --port 4000 --no-open --theme plain
+```
+
+`btk md serve` previews a folder of docs the way readers will move through them. Every page gets a sidebar that lists all the markdown files, grouped by folder, with the current page marked. Saving any page, or a stylesheet, reloads the open pages, and new files show up in the sidebar.
+
+- **URLs follow the files.** `docs/tools/hash.md` is at `/tools/hash.md`, so relative links such as `tools/hash.md`, `../README.md` or `config.md#environment-variables` work exactly as they do on GitHub.
+- **Folders open their index.** `/` and every folder show `README.md` (or `readme.md`, or `index.md`) when the folder has one, and a list of the pages under it when it doesn't.
+- **It skips what isn't docs.** `node_modules` and dot folders such as `.git` and `.github` stay out of the sidebar.
+- **Images and other files** in the folder are served as they are. Nothing outside the folder is reachable, including through symlinks, and neither are dotfiles such as `.env`.
+
+It takes `--theme`, `--css`, `--port` and `--no-open`, with the same config keys as preview. Press Ctrl+C to stop. In json mode it prints `{ mode, root, pages, theme, url }` when it stops.
+
+`btk md serve` is a preview, not a site generator: it renders each page when you open it and writes nothing to disk. To serve a folder of HTML or other files as they are, use [`btk serve`](serve.md).
 
 ### html
 
@@ -115,7 +138,7 @@ btk md html README.md --css docs/preview.css > README.html
 
 `--accent` is the same in light and dark. The others have a dark value too, so set them inside `@media (prefers-color-scheme: dark)` to change the dark page.
 
-You can also target elements directly. The markdown sits in `<main>`, highlighted code uses `tok-keyword`, `tok-type`, `tok-string`, `tok-literal`, `tok-comment` and `tok-punctuation` spans, and task list items have the `task-list-item` class:
+You can also target elements directly. The markdown sits in `<main>`, and `btk md serve` puts a `<nav class="btk-nav">` sidebar next to it. Highlighted code uses `tok-keyword`, `tok-type`, `tok-string`, `tok-literal`, `tok-comment` and `tok-punctuation` spans, and task list items have the `task-list-item` class:
 
 ```css
 h1 { font-size: 2.5em; border-bottom: none; }
@@ -145,5 +168,5 @@ Every key also works as an environment variable, such as `BTK_MD_THEME=plain` or
 | Code | When |
 | --- | --- |
 | 0 | Rendered, or the preview stopped with Ctrl+C |
-| 1 | The file or stylesheet is missing, a plugin failed, or the port is taken |
-| 2 | An unknown theme, conflicting flags, or no input |
+| 1 | The file or stylesheet is missing, a served folder has no markdown, a plugin failed, or the port is taken |
+| 2 | An unknown theme, conflicting flags, no input, or a folder where a file is expected (and the reverse) |
