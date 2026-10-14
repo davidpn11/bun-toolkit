@@ -294,22 +294,25 @@ It reads plain markdown without required frontmatter, and relative links such as
 
 ---
 
-## Phase 8: markdown renderer and plugin system
+## Phase 8: markdown renderer and plugin system (in progress)
 
 Bun API: `Bun.markdown`, a CommonMark and GFM parser written in Rust.
 
 ### Commands
 
-- `btk md preview <file>` renders markdown in the terminal with ANSI styling.
-- `btk md html <file>` renders markdown to HTML.
+- `btk md preview <file>` opens a live-reloading page in the browser, or renders for the terminal when the output is piped.
+- `btk md html <file>` renders a standalone HTML page, or only the body with `--fragment`.
+- `btk md themes` lists the built-in themes and the ones plugins add.
 
 ### What it does
 
-`preview` shows headings, code blocks, tables and links with terminal styling. `html` writes HTML.
+The browser preview serves the page on `127.0.0.1`, reloads it when the file is saved and serves the images next to the markdown. The terminal rendering wraps to the terminal width and draws tables, task lists, quotes and framed code blocks.
+
+Themes style both outputs: per-element terminal styles and characters, plus a stylesheet for the page. `btk` and `plain` are built in. JavaScript and TypeScript code blocks get syntax highlighting from Bun's own highlighter, recolored by the theme.
 
 ### Why it matters
 
-Few CLIs render markdown in the terminal. This phase also adds the plugin system, because markdown is the first tool where people will want their own themes and templates.
+Few CLIs render markdown in the terminal. This phase also adds the plugin system, because markdown is the first tool where people will want their own themes and templates. Plugins add themes through the `md:theme` hook and replace the page through `md:html:template` ([docs/plugins.md](plugins.md)).
 
 ### Plugin example
 
@@ -319,6 +322,7 @@ import githubMarkdown from "btk-plugin-github-md";
 
 export default defineConfig({
   plugins: [githubMarkdown()],
+  tools: { md: { theme: "github" } },
 });
 ```
 
@@ -327,8 +331,14 @@ export default defineConfig({
 ```bash
 btk md preview README.md
 btk md html README.md > output.html
-btk md preview CHANGELOG.md | less -R
+btk md preview CHANGELOG.md --terminal | less -R
+btk md README.md --theme plain --terminal
 ```
+
+### How we'll check it
+
+- `bun test` covers the renderers, themes, the plugin loader and the preview server, and `bun run test:dist` loads a plugin in the compiled binary.
+- It ships on the beta channel first, so `bun run release:try beta -- btk md themes` lists the themes.
 
 ---
 

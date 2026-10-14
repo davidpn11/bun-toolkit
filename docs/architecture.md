@@ -36,6 +36,7 @@ src/
     convert/                  btk convert (docs/tools/convert.md)
     password/                 btk password (docs/tools/password.md)
     compress/                 btk compress and btk decompress (docs/tools/compress.md)
+    md/                       btk md (docs/tools/md.md): themes, terminal renderer, HTML page, preview server
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
     loader.ts                 Discovery, import or JSON parse, per-file validation, merge, source tracking
@@ -44,7 +45,7 @@ src/
     merge.ts                  Layered deep merge that records each key's source
     format-issues.ts          Turns zod issues into "path  message" lines with suggestions
     paths.ts                  Global dir and walk-up project discovery
-    virtual-module.ts         Serves `import { defineConfig } from "bun-toolkit"` at runtime
+    virtual-module.ts         Serves `import { defineConfig, definePlugin, defineTheme } from "bun-toolkit"` at runtime
     define.ts                 defineConfig()
   context.ts                  BtkContext
   env.ts                      Output mode detection
@@ -70,8 +71,11 @@ src/
     fs.ts                     Directory listing for pickers, atomic writes, file error messages
     pool.ts                   Runs async work with a concurrency limit
     stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
-  plugins/types.ts            BtkPlugin type (the loader arrives in Phase 8)
-  public.ts                   Package export: defineConfig and types
+  plugins/
+    types.ts                  BtkPlugin and HookMap, the list of hooks (docs/plugins.md)
+    loader.ts                 Builds ctx.hooks from config.plugins; runs setup() on the first hook call
+    define.ts                 definePlugin() and defineTheme()
+  public.ts                   Package export: defineConfig, definePlugin, defineTheme and types
 tests/
   support/                    Streams, temp projects, in-process and spawned CLI runners, test context,
                               Ink and dashboard helpers, image fixtures, and the test-only `demo` tool

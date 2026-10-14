@@ -4,6 +4,7 @@ import type { ResolvedConfig } from "./config/schema.ts";
 import type { Environment, OutputMode } from "./env.ts";
 import type { Reporter } from "./output/reporter.ts";
 import type { InStream, OutStream } from "./output/stream.ts";
+import type { Hooks } from "./plugins/types.ts";
 import type { Prompter } from "./prompt/prompter.ts";
 
 export type BtkIO = {
@@ -24,6 +25,8 @@ export type BtkContext = {
   isInteractive: boolean;
   config: ResolvedConfig;
   configInfo: LoadedConfig;
+  /** Hooks registered by `config.plugins`. */
+  hooks: Hooks;
   reporter: Reporter;
   prompter: Prompter;
   registry: Registry;

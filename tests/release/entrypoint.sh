@@ -50,6 +50,14 @@ check_release() {
   brew test "$TAP/$formula" > /dev/null || fail "brew test $TAP/$formula failed"
   pass "brew test passes"
 
+  if btk md --help > /dev/null 2>&1; then
+    actual=$(printf '# Hi\n\n- one\n' | btk md preview --terminal --theme plain)
+    [ "$actual" = "$(printf '# Hi\n----\n\n  * one')" ] || fail "btk md preview printed: $actual"
+    pass "btk md preview renders markdown"
+  else
+    pass "Skipped btk md: this release doesn't have it yet"
+  fi
+
   local binary
   binary=$(readlink -f "$(command -v btk)")
   if command -v file > /dev/null; then

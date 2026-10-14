@@ -6,6 +6,7 @@ import { detectEnvironment, type Environment, type EnvironmentInput } from "../e
 import { BtkError, ExitCode, isBtkError } from "../errors.ts";
 import { createReporter, type Reporter } from "../output/reporter.ts";
 import { createStyler } from "../output/style.ts";
+import { createHooks } from "../plugins/loader.ts";
 import { createPrompter } from "../prompt/prompter.ts";
 import { tools } from "../tools/index.ts";
 import { launchTui } from "../tui/launch.ts";
@@ -96,6 +97,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
       isInteractive: environment.interactive,
       config: configInfo.config,
       configInfo,
+      hooks: createHooks(configInfo.config.plugins, reporter.log),
       reporter,
       prompter: createPrompter({
         interactive: environment.interactive,

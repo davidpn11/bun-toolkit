@@ -288,6 +288,29 @@ export function defineCliSuite(label: string): void {
       expect(await Bun.password.verify("s3cret", stdout.trim())).toBe(true);
     });
 
+    test("md preview renders a pipe for the terminal", async () => {
+      const p = fresh();
+      const { code, stdout } = await spawnBtk(["md"], { cwd: p.dir, env: p.env, stdin: "# Hi\n\n- one\n" });
+      expect(code).toBe(0);
+      expect(stdout).toBe("Hi\n──\n\n  • one\n");
+    });
+
+    test("a plugin importing bun-toolkit adds an md theme", async () => {
+      const p = fresh();
+      p.write("README.md", "- one\n");
+      p.write(
+        "btk.config.ts",
+        `import { defineConfig, definePlugin, defineTheme } from "bun-toolkit";
+const arrows = defineTheme({ name: "arrows", terminal: { glyphs: { bullets: ["→"] } } });
+const plugin = definePlugin(() => ({ name: "arrows", setup: (hooks) => hooks.on("md:theme", () => arrows) }));
+export default defineConfig({ plugins: [plugin()] });`,
+      );
+      expect((await btk(["md", "themes"])).stdout).toContain("arrows");
+      const { code, stdout } = await btk(["md", "README.md", "--theme", "arrows"]);
+      expect(code).toBe(0);
+      expect(stdout).toBe("  → one\n");
+    });
+
     test("ui without a terminal exits 2 with a hint", async () => {
       fresh();
       const { code, stderr } = await btk(["ui"]);

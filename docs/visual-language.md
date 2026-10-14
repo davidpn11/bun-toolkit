@@ -67,7 +67,7 @@ btk has one accent color, Bun's pink `#FF1F8F` (`--c-accent` on bun.com). It mar
 
 Everything else uses the terminal's named colors so output matches the user's color scheme: `green` for success, `red` for errors, `yellow` for warnings and `gray` for secondary text. Size changes follow the same scale everywhere: green above 20% smaller, yellow for 0 to 20%, red when a file grew.
 
-`src/output/palette.ts` holds the accent, the Ink color names and the icons (`✔ ✖ ⚠ ℹ • → ❯ ◆`). The CLI uses them through `Styler` (`s.accent()`, `s.success()` and so on), and the TUI imports `colors` and `icons` directly. Colors are not configurable.
+`src/output/palette.ts` holds the accent, the Ink color names and the icons (`✔ ✖ ⚠ ℹ • → ❯ ◆`). The CLI uses them through `Styler` (`s.accent()`, `s.success()` and so on), and the TUI imports `colors` and `icons` directly. Colors are not configurable. The one exception is `btk md`, whose output is the document itself: its themes style the rendered markdown, and the built-in `btk` theme uses the same accent ([docs/tools/md.md](tools/md.md#themes)).
 
 ## Exit codes
 

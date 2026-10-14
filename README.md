@@ -17,7 +17,7 @@
 
 `btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML` and `Bun.password`, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.
 
-- **Five tools:** `image`, `hash`, `convert`, `password`, and `compress` with `decompress`.
+- **Six tools:** `image`, `hash`, `convert`, `password`, `compress` with `decompress`, and `md`.
 - **One config** in TypeScript or JSON, with global and per-project tiers and `BTK_*` environment variables.
 - **Three output modes:** colors in a terminal, plain text in CI, and one JSON document with `--json`.
 - **A dashboard for every tool:** `btk ui` or `btk <tool> --ui`.
@@ -127,6 +127,16 @@ gzip, zstd, brotli and deflate, plus folder archives. [Full docs](docs/tools/com
 btk compress ./dist --each --gzip --brotli  # precompress static files
 btk compress ./site --zstd                  # site.tar.zst
 btk decompress site.tar.zst                 # site/
+```
+
+### btk md
+
+Preview markdown in the browser with live reload, or styled in the terminal, and render it to HTML. Themes cover both, and plugins can add more. [Full docs](docs/tools/md.md)
+
+```bash
+btk md README.md                            # live preview in the browser
+btk md CHANGELOG.md --terminal | less -R    # styled for the terminal
+btk md html README.md > README.html         # a standalone page
 ```
 
 ## Configuration
