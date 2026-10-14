@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       channel:
-        description: stable on master, beta on the beta branch (Changesets pre mode)
+        description: stable on master, beta on the beta branch
         type: string
         required: true
 
@@ -18,9 +18,6 @@ env:
 jobs:
   plan:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -28,26 +25,16 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-      - run: bun install --frozen-lockfile
-      - name: Open or update the Version PR
-        id: changesets
-        uses: changesets/action@v2
-        with:
-          version-script: bunx changeset version
-          commit-message: ${{ inputs.channel == 'beta' && 'Version Packages (beta)' || 'Version Packages' }}
-          pr-title: ${{ inputs.channel == 'beta' && 'Version Packages (beta)' || 'Version Packages' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Decide whether this commit is a release
         id: release
-        if: steps.changesets.outputs.has-changesets == 'false'
         env:
           CHANNEL: ${{ inputs.channel }}
         run: |
           version=$(jq -r .version package.json)
           tag="v$version"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
-            echo "$tag is already released"
+            pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+            echo "$tag is already released. Changesets waiting for the next release: $pending"
             exit 0
           fi
           case "$version" in *-*) channel=beta ;; *) channel=stable ;; esac

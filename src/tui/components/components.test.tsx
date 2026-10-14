@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { createTestContext } from "../../../tests/support/context.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
-import { keys, renderTui, tick } from "../../../tests/support/tui.tsx";
+import { keys, renderTui, tick, waitFor } from "../../../tests/support/tui.tsx";
 import { flag, positional } from "../../cli/define.ts";
 import type { BtkContext } from "../../context.ts";
 import { fieldsFromArgs, initialValues, labelFor } from "../form-fields.ts";
@@ -92,9 +92,9 @@ describe("<FileBrowser>", () => {
     const root = setup();
     const ui = renderTui(ctx, <FileBrowser root={root} extensions={[".png"]} onSubmit={() => {}} />);
     await ui.press(keys.down, keys.enter); // ".." is first, then "sub/"
-    expect(ui.frame()).toContain("c.png");
+    await waitFor(ui.frame, "c.png");
     await ui.press(keys.left);
-    expect(ui.frame()).toContain("❯   sub/");
+    await waitFor(ui.frame, "❯   sub/");
     ui.unmount();
   });
 

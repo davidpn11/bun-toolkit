@@ -7,7 +7,7 @@ Five GitHub Actions workflows live in `.github/workflows/`. They all pin Bun wit
 | `test.yml` | pull requests, pushes to `master` and `beta` | Lint and test on three operating systems |
 | `release.yml` | pushes to `master` | Runs `publish.yml` for the stable channel |
 | `prerelease.yml` | pushes to `beta` | Runs `publish.yml` for the beta channel |
-| `publish.yml` | called by the two above | The Version PR, then build, release and Homebrew |
+| `publish.yml` | called by the two above | Build, release and Homebrew, when the version is new |
 | `homebrew.yml` | called by `publish.yml`, or by hand | Writes the Homebrew formula for one release |
 
 ## test.yml
@@ -21,11 +21,11 @@ A new push to the same branch cancels the run in progress.
 
 ## publish.yml
 
-`release.yml` calls it with `channel: stable` and `prerelease.yml` with `channel: beta`. Every push to those branches runs it, but most pushes stop after the first job.
+`release.yml` calls it with `channel: stable` and `prerelease.yml` with `channel: beta`. Every push to those branches runs it, but only a push that changes the version in `package.json` publishes. You make that change locally with `bun run release:version` (see [releasing.md](releasing.md)).
 
 | Job | Runs when | What it does |
 | --- | --- | --- |
-| `plan` | always | `changesets/action` opens or updates the "Version Packages" PR when the branch has changesets. With none, it checks whether `package.json` holds a version without a tag. If so, it checks that a `-` suffix matches the channel and that `CHANGELOG.md` has an entry, then outputs the tag. |
+| `plan` | always | Checks whether `package.json` holds a version without a tag. If so, it checks that a `-` suffix matches the channel and that `CHANGELOG.md` has an entry, then outputs the tag. Otherwise it logs how many changesets are waiting. |
 | `checks` | a tag is planned | `bun run check` and `bun test` |
 | `build` | after `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
 | `release` | after `build` | Writes `SHA256SUMS` with `btk hash`. Creates the tag and the GitHub Release on the same commit, with the changelog entry as notes and `--prerelease` on the beta channel. Then downloads the published files and runs `btk hash check SHA256SUMS` on them |
@@ -47,7 +47,7 @@ The two cross-compiled binaries aren't run in CI, because they target a differen
 
 ## homebrew.yml
 
-Writes the formula for one release tag and commits it to `master`, the branch Homebrew reads. It checks out `master` and runs `scripts/homebrew-formula.ts` from there, so it works for any tag, including tags from `beta`.
+Writes the formula for one release tag and commits it to `master`, the branch Homebrew reads. It runs `scripts/homebrew-formula.ts` from the commit that started the workflow, and writes the result into a second checkout of `master`. A beta published from `beta` therefore uses `beta`'s script, and a manual run uses `master`'s.
 
 The version decides the formula. A version with a `-` suffix, such as `0.2.0-beta.1`, writes `Formula/bun-toolkit-beta.rb`. Anything else writes `Formula/bun-toolkit.rb`. Both download the plain release URLs and conflict with each other, because both install `btk`. Never edit them by hand, because the next release overwrites them.
 
@@ -61,9 +61,8 @@ gh workflow run homebrew.yml -f tag=v0.1.0
 
 No workflow needs a secret. They all use the built-in `GITHUB_TOKEN`:
 
-- `publish.yml` needs **Allow GitHub Actions to create and approve pull requests**, under Settings, Actions, General, to open the Version PR.
 - `homebrew.yml` pushes to `master`, so a branch protection rule on `master` must allow GitHub Actions to push.
-- GitHub doesn't start workflows from actions taken with `GITHUB_TOKEN`. So `test.yml` doesn't run on the Version PR, and the formula commit doesn't start `release.yml` again.
+- GitHub doesn't start workflows from pushes made with `GITHUB_TOKEN`, so the formula commit doesn't start `release.yml` again.
 
 npm publishing comes later. It will publish `@bun-toolkit/cli` and the `@bun-toolkit/<platform>` packages, and needs either an `NPM_TOKEN` secret or npm trusted publishing (see [distribution.md](distribution.md)).
 

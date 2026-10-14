@@ -28,8 +28,10 @@ jobs:
       TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
+          path: tap
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
@@ -43,16 +45,17 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --assets "$RUNNER_TEMP/assets.json" \
             --sums "$RUNNER_TEMP/SHA256SUMS" \
-            --out Formula)
+            --out tap/Formula)
           echo "path=$path" >> "$GITHUB_OUTPUT"
           cat "$path"
       - name: Commit the formula to the default branch
+        working-directory: tap
         env:
           FORMULA: ${{ steps.formula.outputs.path }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$FORMULA"
+          git add "${FORMULA#tap/}"
           git diff --cached --quiet && exit 0
           git commit -m "$(basename "$FORMULA" .rb) ${TAG#v} formula"
           git push

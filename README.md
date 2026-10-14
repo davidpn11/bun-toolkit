@@ -184,6 +184,7 @@ bun test                    # unit, TUI and integration tests
 bun run test:dist           # build the binary and run the end-to-end suite against it
 bun run check               # Biome, oxlint and tsc
 bunx changeset              # describe your change for the changelog
+bun run release:version     # turn pending changesets into a version, before a release
 ```
 
 Every pull request that changes what users see needs a changeset. [docs/architecture.md](docs/architecture.md) covers how the CLI is built and how to add a tool. [docs/roadmap.md](docs/roadmap.md) has what comes next.

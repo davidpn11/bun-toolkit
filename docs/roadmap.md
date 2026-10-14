@@ -253,7 +253,7 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 ### What ships
 
 - `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
-- `release.yml` and `prerelease.yml` publish when a Changesets Version PR merges. They build the five platform binaries, run `test:dist` wherever the runner can execute them, and attach the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
+- `release.yml` and `prerelease.yml` publish when a push to `master` or `beta` changes the version, which `bun run release:version` does from the pending changesets. They build the five platform binaries, run `test:dist` wherever the runner can execute them, and attach the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
 - The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This comes after the Homebrew channel.
 - The Homebrew formulas `bun-toolkit` and `bun-toolkit-beta` in `Formula/`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
 - Changesets for versions and `CHANGELOG.md`, with stable releases from `master` and pre-releases from `beta` (see [releasing.md](releasing.md)).

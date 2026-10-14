@@ -24,7 +24,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "format": "biome format --write .",
-    "check": "biome check . && oxlint && tsc --noEmit"
+    "check": "biome check . && oxlint && tsc --noEmit",
+    "release:version": "bun scripts/version-packages.ts"
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
