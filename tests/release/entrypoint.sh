@@ -39,9 +39,13 @@ check_release() {
   step "Checking the release"
   expected=$(brew list --versions "$formula" | awk '{ print $2 }')
 
+  if [ -n "${BTK_EXPECTED_VERSION:-}" ] && [ "$expected" != "$BTK_EXPECTED_VERSION" ]; then
+    fail "The $formula formula installs $expected, but the latest release is $BTK_EXPECTED_VERSION. The formula update may have failed; rerun it with: gh workflow run homebrew.yml -f tag=v$BTK_EXPECTED_VERSION"
+  fi
+
   actual=$(btk --version)
   [ "$actual" = "$expected" ] || fail "btk --version printed $actual, the formula says $expected"
-  pass "btk --version is $actual"
+  pass "btk --version is $actual${BTK_EXPECTED_VERSION:+, the latest release}"
 
   actual=$(bun-toolkit --version)
   [ "$actual" = "$expected" ] || fail "bun-toolkit --version printed $actual, the formula says $expected"

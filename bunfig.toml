@@ -1,3 +1,7 @@
 [test]
 # Integration tests spawn the CLI; give them room on slow CI runners.
 timeout = 20000
+
+[run]
+# Run package scripts and tools on Bun, even ones whose shebang asks for node.
+bun = true

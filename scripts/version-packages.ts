@@ -29,7 +29,7 @@ function githubToken(): string {
 }
 
 assertPushed();
-const versioned = Bun.spawnSync(["bunx", "changeset", "version"], {
+const versioned = Bun.spawnSync(["bun", "changeset", "version"], {
   env: { ...process.env, GITHUB_TOKEN: githubToken() },
   stdio: ["inherit", "inherit", "inherit"],
 });

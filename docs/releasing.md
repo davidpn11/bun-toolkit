@@ -12,7 +12,7 @@ bun-toolkit uses [Changesets](https://github.com/changesets/changesets) to versi
 Every pull request that changes what users see needs a changeset:
 
 ```bash
-bunx changeset
+bun changeset
 ```
 
 Pick the bump, then write one or two sentences for the changelog:
@@ -45,7 +45,9 @@ The same steps work on `master` (stable) and `beta` (pre-releases):
    git add -A && git commit -m "Release v0.2.0" && git push
    ```
 
-The push runs `release.yml` on `master` or `prerelease.yml` on `beta`. It sees a version without a tag, then builds the binaries, creates the tag with a GitHub Release whose notes are the changelog entry, and updates the Homebrew formula. Pushes that don't change the version publish nothing.
+The push runs `release.yml` on `master` or `prerelease.yml` on `beta`. It sees a version without a tag, then builds the binaries, creates the tag with a GitHub Release whose notes are the changelog entry, and updates the Homebrew formula.
+
+**Merging is not releasing.** A push that doesn't change the version publishes nothing, even when it brings in changesets. Merging a feature branch into `beta` or `master` only adds changesets; `bun run release:version` turns them into a version. When a run publishes nothing while changesets are waiting, the workflow shows a "Nothing published" warning and a job summary with the count, so a green run doesn't hide it. `bun run release:try` warns about the same thing before it installs.
 
 Once it's out, try it the way a user gets it with `bun run release:try` (stable) or `bun run release:try beta`, in a throwaway container (see [testing.md](testing.md#testing-a-published-release)).
 
@@ -58,24 +60,24 @@ The `beta` branch stays in Changesets pre mode, so every version from it is a pr
 ```bash
 git checkout master && git pull
 git checkout -b beta
-bunx changeset pre enter beta
+bun changeset pre enter beta
 git add .changeset/pre.json && git commit -m "Enter beta pre-release mode"
 git push -u origin beta
 ```
 
-**Ship betas.** Open pull requests against `beta`, each with a changeset. When you want a beta out, run `bun run release:version` on `beta`, then commit and push. Each run produces the next number: `-beta.0`, `-beta.1`, and so on.
+**Ship betas.** Open pull requests against `beta`, each with a changeset. Merging them doesn't publish anything. When you want a beta out, pull `beta`, run `bun run release:version` on it, then commit and push. Each run produces the next number: `-beta.0`, `-beta.1`, and so on.
 
 **Finish the cycle.** Leave pre mode on `beta`, then merge `beta` into `master`:
 
 ```bash
 git checkout beta && git pull
-bunx changeset pre exit
+bun changeset pre exit
 git add .changeset/pre.json && git commit -m "Exit beta pre-release mode" && git push
 ```
 
 Open a pull request from `beta` into `master` and merge it. Then run `bun run release:version` on `master`, which turns the beta's changesets into the stable entry, such as `0.2.0`. Commit and push, then delete the `beta` branch.
 
-`-alpha.N` and `-rc.N` work the same way with `bunx changeset pre enter alpha` or `pre enter rc`. They all publish to `bun-toolkit-beta`.
+`-alpha.N` and `-rc.N` work the same way with `bun changeset pre enter alpha` or `pre enter rc`. They all publish to `bun-toolkit-beta`.
 
 ## Install a beta
 

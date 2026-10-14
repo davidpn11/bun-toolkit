@@ -245,7 +245,7 @@ bun run dev md serve docs   # read these docs in the browser
 bun test                    # unit, TUI and integration tests
 bun run test:dist           # build the binary and run the end-to-end suite against it
 bun run check               # Biome, oxlint and tsc
-bunx changeset              # describe your change for the changelog
+bun changeset               # describe your change for the changelog
 bun run release:version     # turn pending changesets into a version, before a release
 bun run release:try beta    # install the published beta in a throwaway container
 ```

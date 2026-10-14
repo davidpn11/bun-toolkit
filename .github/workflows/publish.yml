@@ -22,7 +22,7 @@ jobs:
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
@@ -35,7 +35,14 @@ jobs:
           tag="v$version"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
             pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
-            echo "$tag is already released. Changesets waiting for the next release: $pending"
+            if [ "$pending" -gt 0 ]; then
+              message="$tag is already released, so nothing was published. $pending changesets are waiting: run bun run release:version on this branch, then commit and push."
+              echo "::warning title=Nothing published::$message"
+              printf '### Nothing published\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "$tag is already released, and no changesets are waiting."
+              printf '### Nothing to publish\n\n%s is already released, and no changesets are waiting.\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
+            fi
             exit 0
           fi
           case "$version" in *-*) channel=beta ;; *) channel=stable ;; esac
@@ -45,6 +52,7 @@ jobs:
           fi
           bun scripts/changelog-section.ts "$version" > /dev/null
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          printf '### Publishing %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
 
   checks:
     needs: plan
@@ -52,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
@@ -99,7 +107,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
@@ -110,7 +118,7 @@ jobs:
         run: bun test tests/integration/dist.test.ts
         env:
           BTK_BIN: ${{ github.workspace }}/dist/${{ matrix.file }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.file }}
           path: dist/${{ matrix.file }}
@@ -127,11 +135,11 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG: ${{ needs.plan.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: release
           merge-multiple: true

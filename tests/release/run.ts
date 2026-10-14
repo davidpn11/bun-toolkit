@@ -2,8 +2,9 @@
  * `bun run release:try [stable|beta] [-- command...]`
  * `bun run` drops a leading `--`, so a command needs the channel before it: `stable -- btk info`.
  *
- * Installs the published release in a fresh Homebrew container, checks it, then opens a shell (or
- * runs the command). The container is removed when the shell exits. Uses Podman when it's
+ * Asks GitHub which release is the latest on the channel and warns when the branch has changes that
+ * aren't released yet. Then installs the published release in a fresh Homebrew container, checks that
+ * it is that latest release, and opens a shell (or runs the command). The container is removed when the shell exits. Uses Podman when it's
  * installed, otherwise Docker; BTK_CONTAINER_ENGINE picks one. See docs/testing.md.
  */
 
@@ -16,6 +17,24 @@ export type TryOptions = {
   channel: Channel;
   command: string[];
 };
+
+export type ChannelStatus = {
+  /** Latest published version on the channel, without the `v`. */
+  published: string | undefined;
+  /** `package.json` version on the channel's branch. */
+  branchVersion: string;
+  /** Changesets on the branch that no release includes yet. */
+  pending: number;
+};
+
+/** Resolves to undefined when the URL doesn't exist, such as a branch without a `.changeset` folder. */
+export type FetchJson = (url: string) => Promise<unknown>;
+
+type Release = { tag_name: string; prerelease: boolean; draft: boolean };
+type DirEntry = { name: string; type: string };
+
+const REPO = "davidpn11/bun-toolkit";
+const BRANCHES: Record<Channel, string> = { stable: "master", beta: "beta" };
 
 const USAGE =
   "Usage: bun run release:try [stable|beta] [-- command...]. To run a command, name the channel first, as in: bun run release:try stable -- btk info";
@@ -38,6 +57,80 @@ export function pickEngine(override: string | undefined, installed: (name: Engin
   if (installed("podman")) return "podman";
   if (installed("docker")) return "docker";
   throw new Error("Install Podman (brew install podman) or Docker to try a release in a container.");
+}
+
+export async function channelStatus(channel: Channel, fetchJson: FetchJson): Promise<ChannelStatus> {
+  const branch = BRANCHES[channel];
+  const [releases, pkg, changesets] = await Promise.all([
+    fetchJson(`https://api.github.com/repos/${REPO}/releases?per_page=30`) as Promise<Release[]>,
+    fetchJson(`https://raw.githubusercontent.com/${REPO}/${branch}/package.json`) as Promise<{
+      version: string;
+    }>,
+    fetchJson(`https://api.github.com/repos/${REPO}/contents/.changeset?ref=${branch}`) as Promise<
+      DirEntry[] | undefined
+    >,
+  ]);
+  const latest = releases.find((release) => !release.draft && release.prerelease === (channel === "beta"));
+  return {
+    published: latest?.tag_name.replace(/^v/, ""),
+    branchVersion: pkg.version,
+    pending: (changesets ?? []).filter(
+      (e) => e.type === "file" && e.name.endsWith(".md") && e.name !== "README.md",
+    ).length,
+  };
+}
+
+/** What to tell the user before installing: the latest release, and anything on the branch that isn't in it. */
+export function describeStatus(
+  channel: Channel,
+  status: ChannelStatus,
+): { info: string[]; warnings: string[] } {
+  const branch = BRANCHES[channel];
+  const info = [
+    status.published ? `Latest ${channel} release: v${status.published}` : `No ${channel} release yet`,
+  ];
+  if (status.branchVersion !== status.published) {
+    return {
+      info,
+      warnings: [
+        `${branch} is at v${status.branchVersion}, which isn't released yet. Check the publish workflow run on ${branch}; it may still be running or may have failed.`,
+      ],
+    };
+  }
+  if (status.pending > 0) {
+    const what = status.pending === 1 ? "1 changeset is" : `${status.pending} changesets are`;
+    return {
+      info,
+      warnings: [
+        `${what} waiting on ${branch} and not in any release. Run bun run release:version on ${branch}, then commit and push to publish them.`,
+      ],
+    };
+  }
+  return { info, warnings: [] };
+}
+
+async function fetchGitHubJson(url: string): Promise<unknown> {
+  const token = process.env.GITHUB_TOKEN;
+  const response = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (response.status === 404) return undefined;
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} from ${url}`);
+  return response.json();
+}
+
+/** Prints the channel's state and returns the version the container should end up with, when GitHub answered. */
+async function checkChannel(channel: Channel): Promise<string | undefined> {
+  try {
+    const status = await channelStatus(channel, fetchGitHubJson);
+    const { info, warnings } = describeStatus(channel, status);
+    for (const line of info) console.log(line);
+    for (const line of warnings) console.warn(`\x1b[33m⚠ ${line}\x1b[0m`);
+    return status.published;
+  } catch (error) {
+    console.warn(
+      `\x1b[33m⚠ Couldn't ask GitHub for the latest ${channel} release: ${(error as Error).message}\x1b[0m`,
+    );
+    return undefined;
+  }
 }
 
 function run(engine: Engine, args: string[], quiet = false): number {
@@ -66,20 +159,22 @@ function assetsMount(): string[] {
   return existsSync(ASSETS) ? ["-v", `${ASSETS}:/assets:ro`] : [];
 }
 
-function runContainer(engine: Engine, options: TryOptions): number {
+function runContainer(engine: Engine, options: TryOptions, expected: string | undefined): number {
   const interactive = options.command.length === 0 ? ["-it"] : [];
   const command = options.command.length > 0 ? ["--", ...options.command] : [];
-  const args = ["run", "--rm", ...interactive, ...assetsMount(), IMAGE, options.channel, ...command];
+  const env = expected ? ["-e", `BTK_EXPECTED_VERSION=${expected}`] : [];
+  const args = ["run", "--rm", ...interactive, ...env, ...assetsMount(), IMAGE, options.channel, ...command];
   return run(engine, args);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   try {
     const options = parseTryArgs(Bun.argv.slice(2));
     const engine = pickEngine(process.env.BTK_CONTAINER_ENGINE, (name) => Bun.which(name) !== null);
+    const expected = await checkChannel(options.channel);
     requireRunning(engine);
     buildImage(engine);
-    const code = runContainer(engine, options);
+    const code = runContainer(engine, options, expected);
     if (code === 0 && options.command.length === 0) console.log("\x1b[2mContainer removed.\x1b[0m");
     process.exit(code);
   } catch (error) {
@@ -88,4 +183,4 @@ function main(): void {
   }
 }
 
-if (import.meta.main) main();
+if (import.meta.main) await main();

@@ -84,6 +84,13 @@ bun run release:try beta                 # the latest pre-release, then a shell
 bun run release:try stable -- btk info   # run one command instead of the shell
 ```
 
+Before it starts the container, `release:try` asks GitHub for three things: the latest published release on the channel, the version in `package.json` on the channel's branch (`master` or `beta`), and the changesets waiting on that branch. It prints the latest release and warns when the branch is ahead of it:
+
+- **Changesets waiting:** they were merged, but no `bun run release:version` turned them into a release, so the container installs the older release.
+- **A version that isn't published:** the version was bumped and pushed, but the publish workflow is still running or failed.
+
+It passes the latest version into the container, which fails when the formula installs anything else, for example when the Homebrew formula update failed. Without network access to GitHub it warns and skips these checks. Set `GITHUB_TOKEN` if you hit GitHub's rate limit.
+
 The container starts from the `homebrew/brew` image. It taps this repository from GitHub, trusts and installs `bun-toolkit` or `bun-toolkit-beta`, then checks the release:
 
 - `btk --version` and `bun-toolkit --version` both print the version of the installed formula.
