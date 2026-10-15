@@ -1,7 +1,35 @@
 import banner from "@docs/assets/btk-banner.png";
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { type DocPage, docsRoute, toolPages, urlOf } from "@/lib/pages";
+
+type Highlight = { title: string; body: ReactNode };
+
+const highlights: Highlight[] = [
+  {
+    title: "Your defaults, everywhere",
+    body: (
+      <>
+        Set your preferences once in <code>~/.bun-toolkit</code> and they follow you into every project. Each
+        repo can fine-tune them in <code>btk.config.ts</code>, and a flag always has the final say.
+      </>
+    ),
+  },
+  {
+    title: "Ready in seconds",
+    body: (
+      <>
+        One binary, with no runtime to install next to it. <code>btk init</code> writes a typed config for
+        you, and every command explains itself with <code>--help</code>.
+      </>
+    ),
+  },
+  {
+    title: "At home anywhere",
+    body: "Rich output in your terminal, clean text in CI, and structured JSON for scripts and agents, all from the same command.",
+  },
+];
 
 const install = [
   "brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit",
@@ -16,8 +44,8 @@ function Hero() {
         Bun native APIs, straight in your <span className="text-fd-primary">terminal</span>.
       </h1>
       <p className="max-w-2xl text-fd-muted-foreground">
-        One CLI, one config, one output style, live previews in your browser, and interactive dashboards.
-        Ships as a single binary, so it needs neither Bun nor Node.
+        A modern toolkit for images, hashes, data formats, passwords, compression, markdown and local servers.
+        Set your defaults once, fine-tune them per project, and take it anywhere as a single binary.
       </p>
       <div className="flex gap-3">
         <Link href={docsRoute} className="rounded-full bg-fd-primary px-5 py-2 font-medium text-white">
@@ -47,6 +75,19 @@ function Install() {
   );
 }
 
+function Highlights() {
+  return (
+    <section className="grid w-full gap-6 sm:grid-cols-3">
+      {highlights.map((highlight) => (
+        <div key={highlight.title}>
+          <h2 className="font-semibold">{highlight.title}</h2>
+          <p className="mt-2 text-sm text-fd-muted-foreground">{highlight.body}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function ToolCard({ tool }: { tool: DocPage }) {
   return (
     <Link
@@ -64,6 +105,7 @@ export default function HomePage() {
     <main className="mx-auto flex w-full max-w-5xl flex-col items-center gap-12 px-4 py-16">
       <Hero />
       <Install />
+      <Highlights />
       <section className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {toolPages.map((tool) => (
           <ToolCard key={tool.file} tool={tool} />

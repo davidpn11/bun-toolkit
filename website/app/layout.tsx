@@ -8,7 +8,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   metadataBase: new URL("https://bun-toolkit.davidpn.com"),
   title: { default: "bun-toolkit", template: "%s · bun-toolkit" },
-  description: "Bun native APIs straight in your terminal. One CLI, one config, one output style.",
+  description:
+    "Bun native APIs straight in your terminal. A modern, configurable CLI that ships as a single binary.",
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {

@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Bun native APIs straight in your terminal.</strong><br>
-  One CLI, one config, one output style, live previews in your browser, and interactive dashboards.<br>
+  A modern CLI that fits the way you work: global defaults, per-project config, live previews and interactive dashboards.<br>
   <a href="https://bun-toolkit.davidpn.com">bun-toolkit.davidpn.com</a>
 </p>
 

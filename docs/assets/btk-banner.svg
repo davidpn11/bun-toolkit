@@ -18,7 +18,7 @@
   <text x="52" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="22">
     <tspan fill="#FF1F8F" font-weight="700">◆ bun-toolkit</tspan><tspan fill="#8B93A7"> ❯ </tspan><tspan fill="#E6E8EE">home</tspan>
   </text>
-  <text x="1228" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="20" fill="#8B93A7" text-anchor="end">v0.1.0 · bun 1.4</text>
+  <text x="1228" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="20" fill="#8B93A7" text-anchor="end">v0.2.1 · bun 1.4</text>
 
   <rect x="48" y="104" width="1184" height="446" rx="18" fill="#101016" stroke="#FF1F8F" stroke-width="2.5"/>
   <ellipse cx="313" cy="331.5" rx="300" ry="220" fill="url(#glow)"/>
@@ -37,7 +37,7 @@
     <text x="594" y="410" font-size="22">
       <tspan fill="#4ADE80">✔</tspan><tspan fill="#E6E8EE"> 48 files</tspan><tspan fill="#8B93A7"> · 12.4 MB → 3.1 MB · 1.2s</tspan>
     </text>
-    <text x="594" y="448" font-size="22" fill="#8B93A7">• one CLI · one config · one output style</text>
+    <text x="594" y="448" font-size="22" fill="#8B93A7">• All Bun tools, configured your way</text>
   </g>
 
   <text y="594" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="20"><tspan x="66" fill="#FFFFFF" font-weight="700">↑↓</tspan><tspan fill="#8B93A7"> move</tspan><tspan x="192" fill="#FFFFFF" font-weight="700">enter</tspan><tspan fill="#8B93A7"> open</tspan><tspan x="355.79999999999995" fill="#FFFFFF" font-weight="700">?</tspan><tspan fill="#8B93A7"> help</tspan><tspan x="469.19999999999993" fill="#FFFFFF" font-weight="700">q</tspan><tspan fill="#8B93A7"> quit</tspan></text>

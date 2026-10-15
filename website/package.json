@@ -1,5 +1,5 @@
 {
-  "name": "bun-toolkit-website",
+  "name": "@bun-toolkit/website",
   "private": true,
   "type": "module",
   "scripts": {

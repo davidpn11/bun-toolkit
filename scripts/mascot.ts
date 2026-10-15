@@ -109,7 +109,7 @@ const bannerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="
     <text x="${textX + 4}" y="${box.y + 306}" font-size="22">
       <tspan fill="#4ADE80">✔</tspan><tspan fill="${TEXT}"> 48 files</tspan><tspan fill="${MUTED}"> · 12.4 MB → 3.1 MB · 1.2s</tspan>
     </text>
-    <text x="${textX + 4}" y="${box.y + 344}" font-size="22" fill="${MUTED}">• one CLI · one config · one output style</text>
+    <text x="${textX + 4}" y="${box.y + 344}" font-size="22" fill="${MUTED}">• All Bun tools, configured your way</text>
   </g>
 
   <text y="${box.y + box.h + 44}" font-family="${FONT}" font-size="20">${hintSpans}</text>
