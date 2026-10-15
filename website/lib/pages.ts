@@ -1,10 +1,12 @@
 import type { Node, Root } from "fumadocs-core/page-tree";
+import pkg from "../../package.json" with { type: "json" };
 
 export type DocPage = { file: string; title: string; description: string };
 export type Section = { title: string; pages: DocPage[] };
 
 export const docsRoute = "/docs";
 export const repoUrl = "https://github.com/davidpn11/bun-toolkit";
+export const bunVersion = pkg.packageManager.replace(/^bun@/, "");
 
 const indexFile = "getting-started.md";
 
@@ -52,6 +54,16 @@ export const toolPages: DocPage[] = [
 export const sections: Section[] = [
   { title: "Guide", pages: guidePages },
   { title: "Tools", pages: toolPages },
+  {
+    title: "Project",
+    pages: [
+      {
+        file: "roadmap-summary.md",
+        title: "Roadmap",
+        description: "Where btk is today and what comes next.",
+      },
+    ],
+  },
 ];
 
 const pages = sections.flatMap((section) => section.pages);

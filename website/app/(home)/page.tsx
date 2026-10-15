@@ -2,7 +2,7 @@ import banner from "@docs/assets/btk-banner.png";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { type DocPage, docsRoute, toolPages, urlOf } from "@/lib/pages";
+import { bunVersion, type DocPage, docsRoute, toolPages, urlOf } from "@/lib/pages";
 
 type Highlight = { title: string; body: ReactNode };
 
@@ -40,6 +40,12 @@ function Hero() {
   return (
     <section className="flex flex-col items-center gap-6 text-center">
       <Image src={banner} alt="The btk mascot, a bun in a hardhat, next to the btk dashboard" priority />
+      <Link
+        href={`${docsRoute}#bun-version`}
+        className="rounded-full border px-3 py-1 text-sm text-fd-muted-foreground hover:border-fd-primary"
+      >
+        Built on <span className="font-medium text-fd-primary">Bun {bunVersion}</span>
+      </Link>
       <h1 className="text-4xl font-bold">
         Bun native APIs, straight in your <span className="text-fd-primary">terminal</span>.
       </h1>

@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { ACCENT } from "../src/output/palette.ts";
 import { mascotPixels } from "../src/tui/mascot.ts";
-import { VERSION } from "../src/version.ts";
+import { BUN_VERSION, VERSION } from "../src/version.ts";
 
 const { values } = parseArgs({ args: Bun.argv.slice(2), options: { png: { type: "boolean" } } });
 
@@ -90,7 +90,7 @@ const bannerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="
   <text x="${box.x + 4}" y="74" font-family="${FONT}" font-size="22">
     <tspan fill="${ACCENT}" font-weight="700">◆ bun-toolkit</tspan><tspan fill="${MUTED}"> ❯ </tspan><tspan fill="${TEXT}">home</tspan>
   </text>
-  <text x="${W - box.x - 4}" y="74" font-family="${FONT}" font-size="20" fill="${MUTED}" text-anchor="end">v${VERSION} · bun 1.4</text>
+  <text x="${W - box.x - 4}" y="74" font-family="${FONT}" font-size="20" fill="${MUTED}" text-anchor="end">v${VERSION} · bun ${BUN_VERSION}</text>
 
   <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="18" fill="#101016" stroke="${ACCENT}" stroke-width="2.5"/>
   <ellipse cx="${artX + (SW * CELL) / 2}" cy="${artY + (SH * CELL) / 2 + 10}" rx="300" ry="220" fill="url(#glow)"/>

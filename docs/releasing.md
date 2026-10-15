@@ -113,6 +113,17 @@ brew install davidpn11/bun-toolkit/bun-toolkit
 
 `bun run release:try beta` installs the latest beta in a throwaway container instead (see [testing.md](testing.md#testing-a-published-release)).
 
+## Moving to a new Bun version
+
+btk follows every Bun release. To move to one:
+
+1. Set `packageManager` in `package.json` to the new version, such as `"bun@1.5.0"`. CI picks it up from there.
+2. Install it locally (`bun upgrade`), then run `bun run check`, `bun test` and `bun run test:dist`.
+3. Read the Bun release notes. Fix commands whose behavior changed, and plan commands for new APIs.
+4. Replace the version in the README and `docs/getting-started.md`. `src/version.test.ts` fails until they match.
+5. Regenerate the banner with `bun scripts/mascot.ts --png`.
+6. Add a changeset that says which Bun version btk moved to. `bun run release:version` writes "Built on Bun <version>." under the new changelog entry.
+
 ## When something goes wrong
 
 - **A release job failed.** The tag is only created together with the release, so nothing is half-published. Fix the problem and re-run the failed jobs, or push again.

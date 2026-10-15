@@ -16,7 +16,7 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/davidpn11/bun-toolkit"></a>
 </p>
 
-`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.
+`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary built on **Bun 1.4.0**, so it needs neither Bun nor Node on the machine that runs it.
 
 - **Seven tools:** `image`, `hash`, `convert`, `password`, `compress` with `decompress`, `md`, and `serve`.
 - **Live previews:** markdown and whole folders open in your browser and reload when you save.
@@ -59,7 +59,7 @@ Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows
 
 ### From source
 
-Requires [Bun](https://bun.sh) 1.4 or later.
+Requires [Bun](https://bun.sh) 1.4.0, the version btk is built on.
 
 ```bash
 git clone https://github.com/davidpn11/bun-toolkit && cd bun-toolkit
@@ -234,6 +234,12 @@ btk picks the output mode once, at startup:
 
 Data goes to stdout and logs to stderr, so pipes stay clean. When the reader of a pipe stops early, as in `btk md CHANGELOG.md --terminal | head`, btk exits quietly with 0.
 
+## Bun version
+
+btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.0**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the banner and `btk info` show it, and every changelog entry names it.
+
+When Bun ships a new version, btk follows. We move to it, update these docs, adjust the commands whose behavior changed, and add commands for the APIs it brings. The binary carries its own Bun runtime, so upgrading btk is all you need to get there.
+
 ## Releases
 
 Every change is in the [changelog](CHANGELOG.md). Stable releases come from merging a versioned pull request into `master`. Betas are published from any branch with the **Publish beta** workflow and install as `bun-toolkit-beta`. Every PR gets a **Release check** summary that says what merging releases. [docs/releasing.md](docs/releasing.md) explains the flow.
@@ -252,7 +258,7 @@ gh workflow run beta.yml --ref <branch>   # publish a beta of a branch
 bun run release:try beta    # install the published beta in a throwaway container
 ```
 
-The documentation site lives in `website/`, a separate Next.js app that reads `docs/`. Run it with `cd website && bun install && bun run dev`. [docs/roadmap.md](docs/roadmap.md#phase-7-documentation-site-built) explains how it works.
+The documentation site lives in `website/`, a separate Next.js app that reads `docs/`. Run it with `cd website && bun install && bun run dev`. [docs/roadmap.md](docs/roadmap.md#phase-7-documentation-site-done) explains how it works.
 
 Every pull request that changes what users see needs a changeset. [docs/architecture.md](docs/architecture.md) covers how the CLI is built and how to add a tool. [docs/roadmap.md](docs/roadmap.md) has what comes next.
 

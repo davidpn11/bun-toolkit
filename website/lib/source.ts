@@ -19,7 +19,14 @@ function schemaFor(path: string) {
 const docs = defineDocs({
   dir: "../docs",
   docs: {
-    files: ["getting-started.md", "config.md", "visual-language.md", "plugins.md", "tools/*.md"],
+    files: [
+      "getting-started.md",
+      "config.md",
+      "visual-language.md",
+      "plugins.md",
+      "roadmap-summary.md",
+      "tools/*.md",
+    ],
     schema: (ctx) => schemaFor(ctx.path),
     mdxOptions: applyMdxPreset({ remarkPlugins: (plugins) => [remarkMdLinks, ...plugins] }),
   },

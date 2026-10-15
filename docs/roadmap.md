@@ -8,9 +8,9 @@
 | 3 | `btk convert` | Done |
 | 4 | `btk password` | Done |
 | 5 | `btk compress` and `btk decompress` | Done |
-| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | In progress |
-| 7 | Documentation site | Built |
-| 8 | `btk md`, themes, the plugin system, and `btk serve` | Built, shipping as a beta first |
+| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | Done |
+| 7 | Documentation site | Done |
+| 8 | `btk md`, themes, the plugin system, and `btk serve` | Done |
 | 9 | TUI polish | Planned |
 | 10 | More tools and follow-ups | Ideas |
 
@@ -260,7 +260,7 @@ btk compress ./dist --gzip -o dist.tar.gz
 
 ---
 
-## Phase 6: first release, 0.1 (in progress)
+## Phase 6: first release, 0.1 (done)
 
 The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md](distribution.md). This work used to be a list of leftovers at the end of Phase 0. It now has its own phase so it lands before more features do.
 
@@ -285,7 +285,7 @@ Five tools work, but the test suite only runs on one Mac, and nobody can install
 
 ---
 
-## Phase 7: documentation site (built)
+## Phase 7: documentation site (done)
 
 The docs stay markdown files in `docs/` that read well on GitHub. A Fumadocs site in `website/` builds from the same files, and `pages.yml` publishes it to GitHub Pages at [bun-toolkit.davidpn.com](https://bun-toolkit.davidpn.com) on every push to `master`.
 
@@ -315,7 +315,7 @@ It reads markdown from any folder, so the docs keep their GitHub-friendly layout
 
 ---
 
-## Phase 8: markdown, themes, plugins and btk serve (built, shipping as a beta first)
+## Phase 8: markdown, themes, plugins and btk serve (done)
 
 Bun APIs: `Bun.markdown`, a CommonMark and GFM parser written in Rust, for rendering; `Bun.serve` and `Bun.file` for the live previews; `Bun.YAML` for front matter.
 
