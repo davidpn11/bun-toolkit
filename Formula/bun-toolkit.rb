@@ -2,28 +2,30 @@
 class BunToolkit < Formula
   desc "Bun's native APIs in your terminal: images, hashes, data formats and more"
   homepage "https://github.com/davidpn11/bun-toolkit"
-  version "0.1.0"
+  version "0.2.1"
   license "MIT"
+
+  conflicts_with "bun-toolkit-beta", because: "both install btk"
 
   on_macos do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-darwin-arm64"
-      sha256 "c0d254c197012604524cb1dd0e7196710ee34d9ced8c5bde9696b39450a6900a"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.1/btk-darwin-arm64"
+      sha256 "1d1db953cb1d0bb07b2ea9c973139ca14c8f4f530ca09b885f89ed6b10d705a1"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-darwin-x64"
-      sha256 "2568add394c174afc97cad5441021fd5c777bcc0f5c5f2863332041782603a8d"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.1/btk-darwin-x64"
+      sha256 "30c772796fdc3ba1de4bc9c16bcc623cf6a00c505665aa85385ab0845fa97f20"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-linux-arm64"
-      sha256 "1c0cef79510bd59145f6aa62e4396262ae61afabef570ec73e9dd4e4b547fdad"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.1/btk-linux-arm64"
+      sha256 "0e32ab23218b821e7247687dc72240b113773c6ced830de31c376da4dd9ac263"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.1.0/btk-linux-x64"
-      sha256 "62418b7fd95ee741c803738c898c1ddd34698164ee15699de0676448154ff390"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.2.1/btk-linux-x64"
+      sha256 "06e201ddeb27818c214f0b8dbe9d04bc1805f3ab93d3b7e095c67426921555c6"
     end
   end
 
