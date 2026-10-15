@@ -95,13 +95,20 @@ export function SelectList<V>({
               </Box>
             ) : null}
             <Box columnGap={1}>
-              <Text color={colors.accent}>{active ? icons.pointer : " "}</Text>
-              <Text color={color} bold={active && !item.disabled}>
-                {item.label}
-                <Text color={colors.muted}>{tag}</Text>
-                {" ".repeat(Math.max(0, labelWidth - item.label.length - tag.length))}
-              </Text>
-              {item.description ? <Text color={colors.muted}>{item.description}</Text> : null}
+              <Box flexShrink={0}>
+                <Text color={colors.accent}>{active ? icons.pointer : " "}</Text>
+              </Box>
+              <Box flexShrink={0} width={labelWidth}>
+                <Text color={color} bold={active && !item.disabled}>
+                  {item.label}
+                  <Text color={colors.muted}>{tag}</Text>
+                </Text>
+              </Box>
+              {item.description ? (
+                <Box flexShrink={1}>
+                  <Text color={colors.muted}>{item.description}</Text>
+                </Box>
+              ) : null}
             </Box>
           </Box>
         );

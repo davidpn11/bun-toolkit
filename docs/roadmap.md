@@ -359,6 +359,11 @@ Bun APIs: `Bun.markdown`, a CommonMark and GFM parser written in Rust, for rende
 - `--spa` answers unknown routes with the root `index.html`, `--cors` allows any origin, and `--host 0.0.0.0` shares the folder with your network, printing the LAN URLs and a warning. `--port` and `--no-open` work as in md, and config keys mirror the flags.
 - It complements `bun ./index.html`, which bundles an app from source with hot reload: `btk serve` sends files as they are and runs from the binary without Bun.
 
+**Dashboards**
+
+- `btk md --ui` lists the markdown files in the folder and renders the picked one in the terminal with the theme.
+- `btk serve --ui` serves the folder, shows the URL and options, and lists requests as they arrive. Leaving the screen stops the server.
+
 **One server for both, with security checks**
 
 - `btk md` and `btk serve` share one server in `src/shared/serve.ts`.
@@ -410,9 +415,8 @@ btk serve demo/page.html
 
 ## Phase 9: TUI polish
 
-The TUI foundation shipped in Phase 0, and the file tools bring their own dashboards. Phase 9 works on the app as a whole once several tools exist.
+The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. Phase 9 works on the app as a whole once several tools exist.
 
-- Dashboards for `md` and `serve`, which shipped without one. `md` can reuse `TextViewer` for the terminal rendering, and `serve` can show requests as they arrive.
 - `btk` with no arguments opens `btk ui` in an interactive terminal.
 - Flows that span tools, such as converting a file and then hashing the result.
 - A history of results within a session.

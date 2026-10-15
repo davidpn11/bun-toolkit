@@ -157,6 +157,7 @@ export const md = defineTool({
   config: mdConfig,
   defaultAction: "preview",
   actions: { preview, serve, html, themes },
+  ui: () => import("./ui/Dashboard.tsx"),
 });
 
 export function mdSettings(ctx: BtkContext): MdConfig {

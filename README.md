@@ -22,7 +22,7 @@
 - **Themes and plugins:** style markdown for the terminal and the browser, and add your own themes from `btk.config.ts`.
 - **One config** in TypeScript or JSON, with global and per-project tiers and `BTK_*` environment variables.
 - **Three output modes:** colors in a terminal, plain text in CI, and one JSON document with `--json`.
-- **Dashboards** for `image`, `hash`, `convert`, `password` and `compress`: `btk ui` or `btk <tool> --ui`.
+- **A dashboard for every tool:** `btk ui` or `btk <tool> --ui`.
 
 ## Install
 

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { defineAction, defineTool, flag, positional } from "../../cli/define.ts";
 import type { BtkContext } from "../../context.ts";
 import type { Output } from "../../output/reporter.ts";
-import { hostSchema, portSchema, serveConfig } from "./config.ts";
+import { hostSchema, portSchema, type ServeConfig, serveConfig } from "./config.ts";
 import { type ServeResult, servePath } from "./server.ts";
 
 export const run = defineAction({
@@ -43,7 +43,12 @@ export const serve = defineTool({
   config: serveConfig,
   defaultAction: "run",
   actions: { run },
+  ui: () => import("./ui/Dashboard.tsx"),
 });
+
+export function serveSettings(ctx: BtkContext): ServeConfig {
+  return ctx.config.tools.serve as ServeConfig;
+}
 
 function renderServe(result: ServeResult, _out: Output, ctx: BtkContext): void {
   ctx.reporter.log.success(`Stopped serving ${result.root}`);

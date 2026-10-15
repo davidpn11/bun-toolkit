@@ -83,6 +83,10 @@ btk md themes
 btk md themes --json | jq -r '.data[].name'
 ```
 
+## Dashboard
+
+`btk md --ui`, or **md** on the `btk ui` home screen, lists the markdown files in the current folder. Pick one to read it in the terminal, rendered with your theme. ↑↓ and pgup/pgdn scroll, and esc goes back to the list.
+
 ## Themes
 
 A theme styles both outputs:
