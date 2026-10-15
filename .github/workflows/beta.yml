@@ -1,12 +1,11 @@
-name: Pre-release
+name: Publish beta
 
+# Run it on a branch: Actions → Publish beta → Run workflow, or `gh workflow run beta.yml --ref <branch>`.
 on:
-  push:
-    branches: [beta]
   workflow_dispatch:
 
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-beta
   cancel-in-progress: false
 
 permissions:

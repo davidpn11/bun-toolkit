@@ -6,6 +6,7 @@
       "!dist",
       "!coverage",
       "!**/node_modules",
+      "!.claude/worktrees",
       "!website/.next",
       "!website/.source",
       "!website/out",

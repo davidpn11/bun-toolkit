@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, mock, test } from "bun:test";
 import { join } from "node:path";
+import { Box } from "ink";
 import { z } from "zod";
 import { createTestContext } from "../../../tests/support/context.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
@@ -48,6 +49,33 @@ describe("<SelectList>", () => {
     await ui.press(...Array(6).fill(keys.down));
     expect(ui.frame()).toContain("❯ Item 6");
     expect(ui.frame()).toContain("↑ 2 more");
+    ui.unmount();
+  });
+
+  test("in a narrow column, labels keep their width and long descriptions wrap under their own column", () => {
+    const rows = [
+      { value: 1, label: "image", description: "Convert, compress and inspect images" },
+      {
+        value: 2,
+        label: "md",
+        tag: "cli only",
+        disabled: true,
+        description: "Preview markdown in the browser or terminal, and render it to HTML",
+      },
+      { value: 3, label: "serve", tag: "cli only", disabled: true, description: "Serve a folder over HTTP" },
+    ];
+    const ui = renderTui(
+      ctx,
+      <Box width={60}>
+        <SelectList items={rows} onSelect={() => {}} />
+      </Box>,
+    );
+    const lines = ui.frame().split("\n");
+    const descriptionColumn = (text: string) => lines.find((line) => line.includes(text))?.indexOf(text);
+    expect(lines.find((line) => line.includes("md [cli only]"))?.indexOf("md")).toBe(2);
+    expect(descriptionColumn("Preview")).toBe(descriptionColumn("Convert"));
+    expect(descriptionColumn("Serve a")).toBe(descriptionColumn("Convert"));
+    expect(lines.find((line) => line.includes("HTML"))?.search(/\S/)).toBe(descriptionColumn("Convert"));
     ui.unmount();
   });
 

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       channel:
-        description: stable on master, beta on the beta branch
+        description: stable from master, or beta from any branch
         type: string
         required: true
 
@@ -18,41 +18,92 @@ env:
 jobs:
   plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     outputs:
-      tag: ${{ steps.release.outputs.tag }}
+      tag: ${{ steps.stable.outputs.tag || steps.beta.outputs.tag }}
+      version: ${{ steps.stable.outputs.version || steps.beta.outputs.version }}
+      notes: ${{ steps.stable.outputs.notes || steps.beta.outputs.notes }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-      - name: Decide whether this commit is a release
-        id: release
-        env:
-          CHANNEL: ${{ inputs.channel }}
+      - name: Decide whether this commit is a stable release
+        id: stable
+        if: inputs.channel == 'stable'
         run: |
+          if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+            echo "::error::Stable releases only come from master. To publish this branch, run the Publish beta workflow instead."
+            exit 1
+          fi
           version=$(jq -r .version package.json)
           tag="v$version"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
             pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
             if [ "$pending" -gt 0 ]; then
-              message="$tag is already released, so nothing was published. $pending changesets are waiting: run bun run release:version on this branch, then commit and push."
+              message="$tag is already released, so nothing was published. $pending changesets were merged without a version: run bun run release:version on a branch and open a PR."
               echo "::warning title=Nothing published::$message"
               printf '### Nothing published\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "$tag is already released, and no changesets are waiting."
               printf '### Nothing to publish\n\n%s is already released, and no changesets are waiting.\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
             fi
             exit 0
           fi
-          case "$version" in *-*) channel=beta ;; *) channel=stable ;; esac
-          if [ "$channel" != "$CHANNEL" ]; then
-            echo "::error::$version is a $channel version, but this branch publishes $CHANNEL releases"
+          case "$version" in *-*)
+            echo "::error::$version is a pre-release version. Master only releases stable versions; betas come from the Publish beta workflow."
+            exit 1 ;;
+          esac
+          bun scripts/changelog-section.ts "$version" > "$RUNNER_TEMP/notes.md"
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "notes<<BTK_NOTES_EOF"
+            cat "$RUNNER_TEMP/notes.md"
+            echo "BTK_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+          printf '### Publishing %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install dependencies for the changeset CLI
+        if: inputs.channel == 'beta'
+        run: bun install --frozen-lockfile
+      - name: Work out the beta version
+        id: beta
+        if: inputs.channel == 'beta'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+          if [ "$pending" -gt 0 ]; then
+            # Like a real release, but only on this throwaway checkout: nothing is committed.
+            bun changeset version
+          fi
+          base=$(jq -r .version package.json)
+          case "$base" in *-*)
+            echo "::error::package.json says $base. Betas need a stable base version; if .changeset/pre.json exists, run bun changeset pre exit."
+            exit 1 ;;
+          esac
+          if [ "$pending" -eq 0 ] && git ls-remote --exit-code --tags origin "refs/tags/v$base" > /dev/null; then
+            message="$BRANCH has no changesets and v$base is already released, so there is nothing new to put in a beta. Add a changeset with bun changeset and push."
+            echo "::error title=Nothing to publish::$message"
+            printf '### Nothing to publish\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          bun scripts/changelog-section.ts "$version" > /dev/null
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          printf '### Publishing %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
+          version=$(bun scripts/beta-version.ts "$base")
+          {
+            echo "Beta of v$base from \`$BRANCH\` ($(git rev-parse --short HEAD)). Install it with \`brew install davidpn11/bun-toolkit/bun-toolkit-beta\`."
+            echo
+            bun scripts/changelog-section.ts "$base" 2> /dev/null || true
+          } > "$RUNNER_TEMP/notes.md"
+          {
+            echo "tag=v$version"
+            echo "version=$version"
+            echo "notes<<BTK_NOTES_EOF"
+            cat "$RUNNER_TEMP/notes.md"
+            echo "BTK_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+          printf '### Publishing beta v%s from `%s`\n\nInstall it with `brew install davidpn11/bun-toolkit/bun-toolkit-beta`, or check it with `bun run release:try beta`.\n' "$version" "$BRANCH" >> "$GITHUB_STEP_SUMMARY"
 
   checks:
     needs: plan
@@ -112,6 +163,9 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
       - run: bun install --frozen-lockfile
+      - name: Stamp the beta version
+        if: inputs.channel == 'beta'
+        run: bun scripts/set-version.ts ${{ needs.plan.outputs.version }}
       - run: bun scripts/build.ts --target ${{ matrix.target }} --outfile dist/${{ matrix.file }}
       - name: End-to-end tests against the binary
         if: matrix.runs
@@ -149,8 +203,10 @@ jobs:
           chmod +x btk-*
           ./btk-linux-x64 hash btk-* > SHA256SUMS
           cat SHA256SUMS
-      - name: Release notes from the changelog
-        run: bun scripts/changelog-section.ts "${TAG#v}" > "$RUNNER_TEMP/notes.md"
+      - name: Release notes
+        env:
+          NOTES: ${{ needs.plan.outputs.notes }}
+        run: printf '%s\n' "$NOTES" > "$RUNNER_TEMP/notes.md"
       - name: Tag and create the release
         run: |
           gh release create "$TAG" release/* \

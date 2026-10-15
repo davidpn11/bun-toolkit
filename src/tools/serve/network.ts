@@ -3,7 +3,6 @@ import { isLoopback } from "../../shared/serve.ts";
 
 const WILDCARDS = new Set(["0.0.0.0", "::"]);
 
-/** URLs other devices can use: one per network address for a wildcard host, the host itself otherwise, none on loopback. */
 export function networkUrls(host: string, port: number): string[] {
   if (isLoopback(host)) return [];
   if (!WILDCARDS.has(host)) return [url(host, port)];

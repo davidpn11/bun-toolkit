@@ -2,10 +2,8 @@
  * `bun run release:try [stable|beta] [-- command...]`
  * `bun run` drops a leading `--`, so a command needs the channel before it: `stable -- btk info`.
  *
- * Asks GitHub which release is the latest on the channel and warns when the branch has changes that
- * aren't released yet. Then installs the published release in a fresh Homebrew container, checks that
- * it is that latest release, and opens a shell (or runs the command). The container is removed when the shell exits. Uses Podman when it's
- * installed, otherwise Docker; BTK_CONTAINER_ENGINE picks one. See docs/testing.md.
+ * Installs the latest published release in a throwaway Homebrew container. Uses Podman when it's installed,
+ * otherwise Docker; BTK_CONTAINER_ENGINE picks one. See docs/testing.md.
  */
 
 import { existsSync } from "node:fs";
@@ -21,9 +19,8 @@ export type TryOptions = {
 export type ChannelStatus = {
   /** Latest published version on the channel, without the `v`. */
   published: string | undefined;
-  /** `package.json` version on the channel's branch. */
-  branchVersion: string;
-  /** Changesets on the branch that no release includes yet. */
+  /** `package.json` version on master; stable only, since betas come from any branch. */
+  masterVersion?: string;
   pending: number;
 };
 
@@ -34,7 +31,6 @@ type Release = { tag_name: string; prerelease: boolean; draft: boolean };
 type DirEntry = { name: string; type: string };
 
 const REPO = "davidpn11/bun-toolkit";
-const BRANCHES: Record<Channel, string> = { stable: "master", beta: "beta" };
 
 const USAGE =
   "Usage: bun run release:try [stable|beta] [-- command...]. To run a command, name the channel first, as in: bun run release:try stable -- btk info";
@@ -60,49 +56,47 @@ export function pickEngine(override: string | undefined, installed: (name: Engin
 }
 
 export async function channelStatus(channel: Channel, fetchJson: FetchJson): Promise<ChannelStatus> {
-  const branch = BRANCHES[channel];
-  const [releases, pkg, changesets] = await Promise.all([
-    fetchJson(`https://api.github.com/repos/${REPO}/releases?per_page=30`) as Promise<Release[]>,
-    fetchJson(`https://raw.githubusercontent.com/${REPO}/${branch}/package.json`) as Promise<{
+  const releases = (await fetchJson(
+    `https://api.github.com/repos/${REPO}/releases?per_page=30`,
+  )) as Release[];
+  const latest = releases.find((release) => !release.draft && release.prerelease === (channel === "beta"));
+  const published = latest?.tag_name.replace(/^v/, "");
+  if (channel === "beta") return { published, pending: 0 };
+  const [pkg, changesets] = await Promise.all([
+    fetchJson(`https://raw.githubusercontent.com/${REPO}/master/package.json`) as Promise<{
       version: string;
     }>,
-    fetchJson(`https://api.github.com/repos/${REPO}/contents/.changeset?ref=${branch}`) as Promise<
+    fetchJson(`https://api.github.com/repos/${REPO}/contents/.changeset?ref=master`) as Promise<
       DirEntry[] | undefined
     >,
   ]);
-  const latest = releases.find((release) => !release.draft && release.prerelease === (channel === "beta"));
-  return {
-    published: latest?.tag_name.replace(/^v/, ""),
-    branchVersion: pkg.version,
-    pending: (changesets ?? []).filter(
-      (e) => e.type === "file" && e.name.endsWith(".md") && e.name !== "README.md",
-    ).length,
-  };
+  const pending = (changesets ?? []).filter(
+    (e) => e.type === "file" && e.name.endsWith(".md") && e.name !== "README.md",
+  ).length;
+  return { published, masterVersion: pkg.version, pending };
 }
 
-/** What to tell the user before installing: the latest release, and anything on the branch that isn't in it. */
 export function describeStatus(
   channel: Channel,
   status: ChannelStatus,
 ): { info: string[]; warnings: string[] } {
-  const branch = BRANCHES[channel];
   const info = [
     status.published ? `Latest ${channel} release: v${status.published}` : `No ${channel} release yet`,
   ];
-  if (status.branchVersion !== status.published) {
+  if (status.masterVersion && status.masterVersion !== status.published) {
     return {
       info,
       warnings: [
-        `${branch} is at v${status.branchVersion}, which isn't released yet. Check the publish workflow run on ${branch}; it may still be running or may have failed.`,
+        `master is at v${status.masterVersion}, which isn't released yet. Check the Release workflow run on master; it may still be running or may have failed.`,
       ],
     };
   }
   if (status.pending > 0) {
-    const what = status.pending === 1 ? "1 changeset is" : `${status.pending} changesets are`;
+    const what = status.pending === 1 ? "1 changeset was" : `${status.pending} changesets were`;
     return {
       info,
       warnings: [
-        `${what} waiting on ${branch} and not in any release. Run bun run release:version on ${branch}, then commit and push to publish them.`,
+        `${what} merged into master without a version, so no release includes them. Run bun run release:version on a branch and open a PR.`,
       ],
     };
   }
@@ -117,7 +111,6 @@ async function fetchGitHubJson(url: string): Promise<unknown> {
   return response.json();
 }
 
-/** Prints the channel's state and returns the version the container should end up with, when GitHub answered. */
 async function checkChannel(channel: Channel): Promise<string | undefined> {
   try {
     const status = await channelStatus(channel, fetchGitHubJson);
@@ -159,10 +152,19 @@ function assetsMount(): string[] {
   return existsSync(ASSETS) ? ["-v", `${ASSETS}:/assets:ro`] : [];
 }
 
+/**
+ * `run -t` sets TERM=xterm, which tools read as 16 colors, so Bun pink turns into the terminal's magenta.
+ * xterm-256color exists in every terminfo, unlike TERMs such as xterm-ghostty, and COLORTERM carries truecolor.
+ */
+export function terminalEnv(env: Record<string, string | undefined>): string[] {
+  const colorterm = env.COLORTERM ? ["-e", `COLORTERM=${env.COLORTERM}`] : [];
+  return ["-e", "TERM=xterm-256color", ...colorterm];
+}
+
 function runContainer(engine: Engine, options: TryOptions, expected: string | undefined): number {
   const interactive = options.command.length === 0 ? ["-it"] : [];
   const command = options.command.length > 0 ? ["--", ...options.command] : [];
-  const env = expected ? ["-e", `BTK_EXPECTED_VERSION=${expected}`] : [];
+  const env = [...terminalEnv(process.env), ...(expected ? ["-e", `BTK_EXPECTED_VERSION=${expected}`] : [])];
   const args = ["run", "--rm", ...interactive, ...env, ...assetsMount(), IMAGE, options.channel, ...command];
   return run(engine, args);
 }

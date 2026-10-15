@@ -7,6 +7,7 @@ export type TextViewerProps = {
   text: string;
   height: number;
   isFocused?: boolean;
+  gutter?: boolean;
 };
 
 export const TEXT_VIEWER_HINTS = [
@@ -14,7 +15,7 @@ export const TEXT_VIEWER_HINTS = [
   { key: "pgup/pgdn", label: "page" },
 ];
 
-export function TextViewer({ text, height, isFocused = true }: TextViewerProps) {
+export function TextViewer({ text, height, isFocused = true, gutter = true }: TextViewerProps) {
   const screenActive = useScreenActive();
   const lines = text.replace(/\n$/, "").split("\n");
   const maxOffset = Math.max(0, lines.length - height);
@@ -39,12 +40,12 @@ export function TextViewer({ text, height, isFocused = true }: TextViewerProps) 
   );
 
   const visible = lines.slice(offset, offset + height);
-  const gutter = String(lines.length).length;
+  const gutterWidth = String(lines.length).length;
   return (
     <Box flexDirection="column">
       {visible.map((line, i) => (
         <Box key={`${offset + i}`} columnGap={1}>
-          <Text color={colors.muted}>{String(offset + i + 1).padStart(gutter)}</Text>
+          {gutter ? <Text color={colors.muted}>{String(offset + i + 1).padStart(gutterWidth)}</Text> : null}
           <Text wrap="truncate-end">{line || " "}</Text>
         </Box>
       ))}

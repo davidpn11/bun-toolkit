@@ -13,7 +13,6 @@ const ENTITIES: Record<string, string> = {
   "&#39;": "'",
 };
 
-/** Only added when the page has a sidebar. */
 const SITE_LAYOUT_CSS = `
 .btk-site { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
 .btk-site > main { min-width: 0; width: 100%; }
@@ -68,7 +67,6 @@ export function buildPage(source: string, options: PageOptions, hooks: Hooks): s
   return wrapBody(renderBody(body), options, hooks, title);
 }
 
-/** A page around HTML that is already rendered, such as a folder listing. */
 export function wrapBody(
   body: string,
   options: PageOptions,

@@ -1,5 +1,11 @@
 # bun-toolkit
 
+## 0.2.1
+
+### Patch Changes
+
+- improvements to beta release
+
 ## 0.2.0
 
 ### Minor Changes

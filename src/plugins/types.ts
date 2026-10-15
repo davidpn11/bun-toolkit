@@ -38,8 +38,6 @@ export type HookResult<T extends HookName> = {
 };
 
 export type Hooks = {
-  /** Every handler's result, in registration order. */
   collect<T extends HookName>(name: T, input: HookInput<T>): HookResult<T>[];
-  /** The last handler's result, or undefined when no plugin registered one. */
   last<T extends HookName>(name: T, input: HookInput<T>): HookResult<T> | undefined;
 };
