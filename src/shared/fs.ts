@@ -1,5 +1,6 @@
 import { mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
-import { dirname, extname, join } from "node:path";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { BtkError, UsageError } from "../errors.ts";
 
 export type DirEntry = {
   name: string;
@@ -40,6 +41,20 @@ export function listDirectory(dir: string, options: ListOptions = {}): DirEntry[
     ...entries.filter((e) => e.isDirectory).sort(byName),
     ...entries.filter((e) => !e.isDirectory).sort(byName),
   ];
+}
+
+export function displayPath(path: string, cwd: string): string {
+  const rel = relative(cwd, path);
+  if (rel === "") return ".";
+  return rel.startsWith("..") || isAbsolute(rel) ? path : rel;
+}
+
+export function requireFolder(path: string, cwd: string, hint: string): string {
+  const absolute = resolve(cwd, path);
+  const stat = statSync(absolute, { throwIfNoEntry: false });
+  if (!stat) throw new BtkError(`Folder not found: ${path}`, { code: "ENOENT" });
+  if (!stat.isDirectory()) throw new UsageError(`Not a folder: ${path}`, { code: "ERR_NOT_A_FOLDER", hint });
+  return absolute;
 }
 
 export async function writeFileAtomic(path: string, data: string | Uint8Array): Promise<void> {

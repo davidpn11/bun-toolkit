@@ -36,6 +36,8 @@ src/
     convert/                  btk convert (docs/tools/convert.md)
     password/                 btk password (docs/tools/password.md)
     compress/                 btk compress and btk decompress (docs/tools/compress.md)
+    md/                       btk md (docs/tools/md.md): themes, terminal renderer, HTML page, folder preview
+    serve/                    btk serve (docs/tools/serve.md): static files, listings, SPA fallback, network URLs
   config/
     schema.ts                 BtkConfig types, derived from the registry, and the runtime schemas
     loader.ts                 Discovery, import or JSON parse, per-file validation, merge, source tracking
@@ -44,7 +46,7 @@ src/
     merge.ts                  Layered deep merge that records each key's source
     format-issues.ts          Turns zod issues into "path  message" lines with suggestions
     paths.ts                  Global dir and walk-up project discovery
-    virtual-module.ts         Serves `import { defineConfig } from "bun-toolkit"` at runtime
+    virtual-module.ts         Serves `import { defineConfig, definePlugin, defineTheme } from "bun-toolkit"` at runtime
     define.ts                 defineConfig()
   context.ts                  BtkContext
   env.ts                      Output mode detection
@@ -69,9 +71,13 @@ src/
     collect.ts                Turns file, folder and glob arguments into a sorted, de-duplicated file list
     fs.ts                     Directory listing for pickers, atomic writes, file error messages
     pool.ts                   Runs async work with a concurrency limit
+    serve.ts                  Local HTTP server with live reload, path and Host checks; used by btk md and btk serve
     stdio.ts                  Reads piped stdin; detects when stdout is redirected into an input file
-  plugins/types.ts            BtkPlugin type (the loader arrives in Phase 8)
-  public.ts                   Package export: defineConfig and types
+  plugins/
+    types.ts                  BtkPlugin and HookMap, the list of hooks (docs/plugins.md)
+    loader.ts                 Builds ctx.hooks from config.plugins; runs setup() on the first hook call
+    define.ts                 definePlugin() and defineTheme()
+  public.ts                   Package export: defineConfig, definePlugin, defineTheme and types
 tests/
   support/                    Streams, temp projects, in-process and spawned CLI runners, test context,
                               Ink and dashboard helpers, image fixtures, and the test-only `demo` tool
@@ -95,7 +101,7 @@ Each shipped tool splits its core logic by job instead of using one `core.ts`. `
 
 Tools share three building blocks from `src/shared/`. `collectFiles()` turns arguments into files with an `accept` filter and an `exclude` list. `runPool()` limits concurrency. `readStdin()` and `STDIN` (`-`) handle piped input, and tests feed it through `runBtk(args, { stdin })`.
 
-A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline.
+A command whose result is data, like `btk hash`, `btk convert` and `btk password hash`, writes only that data to stdout and sends headers, progress and summaries to stderr through `ctx.reporter.log`. That keeps `btk hash … > SUMS` and `btk convert … | jq` clean. Binary data, such as `btk compress` output, goes through `out.raw()`, which writes bytes without a trailing newline. When the reader of a pipe exits early, as in `btk md CHANGELOG.md --terminal | head`, btk stops writing and exits 0 without an error. That keeps `set -o pipefail` scripts from failing because `head` stopped on purpose. `bin/btk.ts` handles the `error` event the write produces, and `run()` handles an EPIPE thrown directly.
 
 `btk compress` and `btk decompress` are two tools in the registry that share one folder. `decompress` has no config slice of its own.
 
@@ -108,6 +114,51 @@ A command whose result is data, like `btk hash`, `btk convert` and `btk password
 - A flag that declares `config: "<key>"` falls back to `tools.<name>.<key>`, which gives it the full flag, env, project, global, default chain.
 
 Adding the tool to `src/tools/index.ts` is the only wiring.
+
+### Adding a tool
+
+A tool is one folder plus one line in `src/tools/index.ts`:
+
+```ts
+// src/tools/hash/tool.ts
+import { z } from "zod";
+import { defineAction, defineTool, flag, positional } from "../../cli/define.ts";
+import { hashFiles } from "./core.ts";
+
+export const hash = defineTool({
+  name: "hash",
+  description: "Hash files with Bun.CryptoHasher",
+  config: z.object({ algorithm: z.enum(["sha256", "sha512", "blake2b256"]).default("sha256") }),
+  defaultAction: "file",
+  actions: {
+    file: defineAction({
+      description: "Hash one or more files",
+      examples: ["btk hash package.tar.gz --algorithm sha512"],
+      args: {
+        files: positional(z.array(z.string()).min(1), { description: "Files to hash" }),
+        algorithm: flag(z.enum(["sha256", "sha512", "blake2b256"]), {
+          alias: "a",
+          config: "algorithm",
+          description: "Hash algorithm",
+        }),
+      },
+      run: (input, ctx) => hashFiles(input, { signal: ctx.signal }),
+      render: (result, out) => out.table(result.rows),
+    }),
+  },
+  ui: () => import("./ui/Dashboard.tsx"), // optional: enables `btk hash --ui`
+});
+```
+
+That single definition gives you:
+- `btk hash ...` routing, plus `btk hash file ...`
+- help text with defaults and where they came from
+- validated, typo-checked flags
+- `tools.hash` in the config schema and in `defineConfig` types
+- the `BTK_HASH_ALGORITHM` env var
+- JSON output and the `btk ui` home screen entry
+
+Tool dashboards use the components exported from `src/tui/index.ts`, such as `Screen`, `FileBrowser`, `ProgressList`, `ResultTable`, and `OptionsForm`, which builds a form from the same flag specs.
 
 ## Execution lifecycle
 

@@ -53,7 +53,7 @@ export function Home() {
 
   return (
     <Screen
-      subtitle="Bun native API straight in your terminal"
+      subtitle="Bun native APIs straight in your terminal"
       hints={[
         { key: "↑↓", label: "move" },
         { key: "enter", label: "open" },

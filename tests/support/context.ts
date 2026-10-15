@@ -4,6 +4,7 @@ import { loadConfig } from "../../src/config/loader.ts";
 import type { BtkContext } from "../../src/context.ts";
 import { detectEnvironment } from "../../src/env.ts";
 import { createReporter } from "../../src/output/reporter.ts";
+import { createHooks } from "../../src/plugins/loader.ts";
 import { createPrompter } from "../../src/prompt/prompter.ts";
 import { VERSION } from "../../src/version.ts";
 import { createIO } from "./streams.ts";
@@ -25,6 +26,7 @@ export async function createTestContext(
     stdoutIsTTY: true,
     stderrIsTTY: true,
   });
+  const reporter = createReporter({ mode: "human", stdout: io.stdout, stderr: io.stderr });
   return {
     cwd,
     platform: process.platform,
@@ -37,7 +39,8 @@ export async function createTestContext(
     isInteractive: true,
     config: configInfo.config,
     configInfo,
-    reporter: createReporter({ mode: "human", stdout: io.stdout, stderr: io.stderr }),
+    hooks: createHooks(configInfo.config.plugins, reporter.log),
+    reporter,
     prompter: createPrompter({ interactive: false, canAskSecret: false }),
     registry,
     io,

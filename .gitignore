@@ -4,11 +4,15 @@ node_modules
 # output
 out
 dist
+/release/
 *.tgz
 
 # code coverage
 coverage
 *.lcov
+
+# Testing files
+tests/release/test_assets/**
 
 # logs
 logs
@@ -32,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Claude Code session worktrees
+.claude/worktrees/

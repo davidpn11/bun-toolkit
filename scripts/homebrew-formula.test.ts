@@ -1,13 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { formulaAssets, PLATFORMS, parseSums, type ReleaseAsset, renderFormula } from "./homebrew-formula.ts";
+import {
+  channelFor,
+  formulaAssets,
+  formulaName,
+  PLATFORMS,
+  parseSums,
+  type ReleaseAsset,
+  renderFormula,
+} from "./homebrew-formula.ts";
 
 const SHA = (n: number) => String(n).repeat(64);
 const SUMS = PLATFORMS.map((p, i) => `${SHA(i + 1)}  btk-${p}`).join("\n");
-const RELEASE: ReleaseAsset[] = [...PLATFORMS, "windows-x64.exe"].map((p, i) => ({
-  name: `btk-${p}`,
-  url: `https://github.com/o/r/releases/download/v1.2.3/btk-${p}`,
-  apiUrl: `https://api.github.com/repos/o/r/releases/assets/${100 + i}`,
-}));
+const release = (tag: string): ReleaseAsset[] =>
+  [...PLATFORMS, "windows-x64.exe"].map((p) => ({
+    name: `btk-${p}`,
+    url: `https://github.com/o/r/releases/download/${tag}/btk-${p}`,
+  }));
 
 describe("homebrew formula", () => {
   test("parseSums reads sha256sum lines, including binary mode", () => {
@@ -16,28 +24,35 @@ describe("homebrew formula", () => {
     expect(sums.get("btk-windows-x64.exe")).toBe(SHA(2));
   });
 
-  test("a private release downloads through the API with the token header", () => {
-    const assets = formulaAssets(RELEASE, parseSums(SUMS), true);
-    const ruby = renderFormula({ version: "1.2.3", repo: "o/r", assets, privateDownload: true });
-    expect(ruby).toContain('version "1.2.3"');
-    expect(ruby).toContain(
-      'url "https://api.github.com/repos/o/r/releases/assets/100", headers: GITHUB_HEADERS.dup',
-    );
-    expect(ruby).toContain(`sha256 "${SHA(1)}"`);
-    expect(ruby).toContain("HOMEBREW_GITHUB_API_TOKEN");
-    expect(ruby).toContain('headers << "Authorization: Bearer #{token}" unless token.empty?');
-    expect(ruby).not.toContain("windows");
+  test("pre-release versions go to the beta formula", () => {
+    expect(channelFor("0.2.0")).toBe("stable");
+    expect(channelFor("0.2.0-beta.1")).toBe("beta");
+    expect(channelFor("1.0.0-rc.0")).toBe("beta");
+    expect(formulaName("0.2.0")).toBe("bun-toolkit");
+    expect(formulaName("0.2.0-alpha.3")).toBe("bun-toolkit-beta");
   });
 
-  test("a public release uses plain download URLs", () => {
-    const assets = formulaAssets(RELEASE, parseSums(SUMS), false);
-    const ruby = renderFormula({ version: "1.2.3", repo: "o/r", assets, privateDownload: false });
+  test("a stable release downloads plain release URLs and conflicts with the beta", () => {
+    const assets = formulaAssets(release("v1.2.3"), parseSums(SUMS));
+    const ruby = renderFormula({ version: "1.2.3", repo: "o/r", assets });
+    expect(ruby).toContain("class BunToolkit < Formula");
+    expect(ruby).toContain('version "1.2.3"');
     expect(ruby).toContain('url "https://github.com/o/r/releases/download/v1.2.3/btk-darwin-arm64"\n');
-    expect(ruby).not.toContain("GITHUB_HEADERS");
+    expect(ruby).toContain(`sha256 "${SHA(1)}"`);
+    expect(ruby).toContain('conflicts_with "bun-toolkit-beta", because: "both install btk"');
+    expect(ruby).not.toContain("windows");
+    expect(ruby).not.toContain("api.github.com");
+  });
+
+  test("a beta release is the BunToolkitBeta class and conflicts with stable", () => {
+    const assets = formulaAssets(release("v1.3.0-beta.0"), parseSums(SUMS));
+    const ruby = renderFormula({ version: "1.3.0-beta.0", repo: "o/r", assets });
+    expect(ruby).toContain("class BunToolkitBeta < Formula");
+    expect(ruby).toContain('conflicts_with "bun-toolkit", because: "both install btk"');
   });
 
   test("a missing binary or checksum fails instead of writing a broken formula", () => {
-    expect(() => formulaAssets(RELEASE.slice(1), parseSums(SUMS), false)).toThrow("btk-darwin-arm64");
-    expect(() => formulaAssets(RELEASE, new Map(), false)).toThrow("checksum");
+    expect(() => formulaAssets(release("v1").slice(1), parseSums(SUMS))).toThrow("btk-darwin-arm64");
+    expect(() => formulaAssets(release("v1"), new Map())).toThrow("checksum");
   });
 });

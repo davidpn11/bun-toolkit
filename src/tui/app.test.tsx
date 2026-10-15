@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { render } from "ink-testing-library";
 import { createTestContext } from "../../tests/support/context.ts";
 import { demoTool, testRegistry } from "../../tests/support/fake-tool.ts";
-import { keys, tick } from "../../tests/support/tui.tsx";
+import { keys, tick, waitFor } from "../../tests/support/tui.tsx";
 import { createRegistry } from "../cli/define.ts";
 import { defaultRegistry } from "../cli/main.ts";
 import { builtins } from "../commands/index.ts";
@@ -100,16 +100,14 @@ describe("<TuiApp>", () => {
     expect(app.frame()).toContain("❯ demo");
     expect(app.frame()).toContain("A fake tool for tests");
     await app.press(keys.enter);
-    await tick(100);
+    await waitFor(app.frame, "demo dashboard · level 5");
     expect(app.frame()).toContain("Home ❯ demo");
-    expect(app.frame()).toContain("demo dashboard · level 5");
     app.unmount();
   });
 
   test("a tool screen can be the initial screen (btk <tool> --ui)", async () => {
     const app = await renderApp({ tools: "demo", initial: toolScreen(demoTool) });
-    await tick(100);
-    expect(app.frame()).toContain("demo dashboard");
+    await waitFor(app.frame, "demo dashboard");
     expect(app.frame()).not.toContain("esc back");
     app.unmount();
   });

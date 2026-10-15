@@ -1,5 +1,19 @@
 # Roadmap
 
+| Phase | What | Status |
+| --- | --- | --- |
+| 0 | Foundation: CLI framework, config, output modes, TUI, tests, build | Done |
+| 1 | `btk image` | Done |
+| 2 | `btk hash` | Done |
+| 3 | `btk convert` | Done |
+| 4 | `btk password` | Done |
+| 5 | `btk compress` and `btk decompress` | Done |
+| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | In progress |
+| 7 | Documentation site | Planned |
+| 8 | `btk md`, themes, the plugin system, and `btk serve` | Built, shipping as a beta first |
+| 9 | TUI polish | Planned |
+| 10 | More tools and follow-ups | Ideas |
+
 ## Phase 0: foundation (done)
 
 Phase 0 built the project skeleton, CLI framework, config system (global and project), output layer, TUI foundation, test setup and build scripts. After it, adding a tool means one folder and one line in the registry.
@@ -253,9 +267,11 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 ### What ships
 
 - `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
-- `release.yml` runs when a `v*` tag is pushed. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash`.
-- The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This waits until the repository is public.
-- The Homebrew formula in `Formula/bun-toolkit.rb`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
+- `release.yml` publishes when a merge into `master` changes the version, which `bun run release:version` does on the branch before the merge. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
+- `beta.yml` publishes a beta of any branch on demand, numbered `-beta.N` from the existing tags, and `release-check.yml` tells every PR what merging releases.
+- The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This comes after the Homebrew channel.
+- The Homebrew formulas `bun-toolkit` and `bun-toolkit-beta` in `Formula/`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
+- Changesets for versions and `CHANGELOG.md`, with stable releases from `master` and betas from any branch (see [releasing.md](releasing.md)).
 
 ### Why now
 
@@ -283,7 +299,7 @@ The docs stay markdown files in `docs/` that read well on GitHub. VitePress buil
 
 ### Why VitePress
 
-It reads plain markdown without required frontmatter, and relative links such as `tools/image.md` work both on GitHub and on the site, so every page is written once. Starlight and Docusaurus want their own folder layout and frontmatter, which makes the files read worse on GitHub. Building the site with `btk md html` stays an experiment for after Phase 8.
+It reads plain markdown without required frontmatter, and relative links such as `tools/image.md` work both on GitHub and on the site, so every page is written once. Starlight and Docusaurus want their own folder layout and frontmatter, which makes the files read worse on GitHub. Phase 8's `btk md serve docs` previews the same files with working links, but it writes nothing, so publishing stays with VitePress. A static `btk md build` is listed under Phase 10.
 
 ### How we'll check it
 
@@ -293,22 +309,70 @@ It reads plain markdown without required frontmatter, and relative links such as
 
 ---
 
-## Phase 8: markdown renderer and plugin system
+## Phase 8: markdown, themes, plugins and btk serve (built, shipping as a beta first)
 
-Bun API: `Bun.markdown`, a CommonMark and GFM parser written in Rust.
+Bun APIs: `Bun.markdown`, a CommonMark and GFM parser written in Rust, for rendering; `Bun.serve` and `Bun.file` for the live previews; `Bun.YAML` for front matter.
 
 ### Commands
 
-- `btk md preview <file>` renders markdown in the terminal with ANSI styling.
-- `btk md html <file>` renders markdown to HTML.
+- `btk md preview <file>` opens a live-reloading page in the browser, or renders for the terminal when the output is piped or `--terminal` is passed. `btk md <file>` is short for it, and a folder argument serves the folder.
+- `btk md serve [folder]` serves every markdown file in a folder with a sidebar, folder index pages and live reload.
+- `btk md html <file>` writes a standalone themed page, or only the body with `--fragment`.
+- `btk md themes` lists the built-in themes and the ones plugins add.
+- `btk serve [path]` serves any folder, or a file's folder with that page opened, over HTTP with live reload.
 
-### What it does
+### What shipped
 
-`preview` shows headings, code blocks, tables and links with terminal styling. `html` writes HTML.
+**Markdown preview**
+
+- The browser preview runs on `127.0.0.1`, opens your browser, and updates the page on save without losing the scroll position. Images and other files next to the markdown are served, so relative links work.
+- The terminal rendering wraps to the terminal width (up to 100 columns, or `--columns`) and draws boxed tables with column alignment, nested and numbered lists, task lists, quotes, rules and framed code blocks. `--hyperlinks` turns links into clickable OSC 8 links.
+- Piped output is plain. `--terminal` keeps the colors for a pager such as `less -R`. JSON mode returns the rendering as data.
+- JavaScript and TypeScript code blocks get syntax highlighting in both outputs, from Bun's own highlighter, recolored by the theme.
+- `btk md html` pages are self-contained. Headings get `id`s, and GFM's tag filter turns `<script>` and `<iframe>` into text.
+- Front matter is left out of every output, and its `title` names the page and its sidebar entry.
+
+**Folder preview**
+
+- `btk md serve docs` lists every page in a sidebar grouped by folder and marks the current one.
+- URLs follow the file paths, so links such as `tools/hash.md` and `../README.md#install` work as they do on GitHub.
+- Folders open their `README.md` or `index.md`, or a list of their pages. `/docs` redirects to `/docs/`.
+- Saving any page or stylesheet reloads open pages, and new files appear in the sidebar. `node_modules` and dot folders are skipped.
+
+**Themes**
+
+- A theme styles both outputs: element styles and characters for the terminal (bullets, task markers, heading prefixes, the quote bar, rules, box corners), and a stylesheet for the page.
+- `btk` (Bun pink, light and dark) and `plain` (no color, ASCII, a serif page) are built in. Pick one with `--theme`, `tools.md.theme` or `BTK_MD_THEME`.
+- A theme can `extend` another and change only what it needs. `--css` or `tools.md.css` adds a stylesheet without writing a theme, and the `btk` page reads its colors from CSS variables.
+- Colors turn off with `NO_COLOR`, `--no-color` or `CI`, and the theme's characters still apply.
+
+**Plugin system**
+
+- Plugins in `plugins: [...]` run their `setup(hooks)` the first time a command asks for a hook, so a broken plugin only breaks the commands that use plugins. Errors name the plugin.
+- Hooks are either collect hooks, where every handler contributes, or replace hooks, where the last handler wins. `md:theme` (collect) adds themes. `md:html:template` (replace) replaces the page and receives the title, body, stylesheet, reload script and sidebar.
+- `definePlugin` and `defineTheme` come from `"bun-toolkit"` at runtime, so plugins work in the compiled binary. Every plugin theme is validated, and invalid keys and colors are reported with the theme and plugin name.
+
+**btk serve**
+
+- Serves any folder as it is. Folders open `index.html` or a listing with folder-first order, sizes and `../`. Content types come from `Bun.file`, and responses send `Cache-Control: no-cache`.
+- Adds a reload script to every HTML page and reloads open pages when any file changes.
+- `--spa` answers unknown routes with the root `index.html`, `--cors` allows any origin, and `--host 0.0.0.0` shares the folder with your network, printing the LAN URLs and a warning. `--port` and `--no-open` work as in md, and config keys mirror the flags.
+- It complements `bun ./index.html`, which bundles an app from source with hot reload: `btk serve` sends files as they are and runs from the binary without Bun.
+
+**One server for both, with security checks**
+
+- `btk md` and `btk serve` share one server in `src/shared/serve.ts`.
+- Requests stay inside the served folder: no `..` escapes, no symlinks that lead out, and no dotfiles such as `.env`, even on Windows with `\` in the URL.
+- On loopback the server only answers `127.0.0.1` and `localhost`, which blocks DNS rebinding. When exposed, it also answers IP addresses and the machine's name.
+- When file watching can't start, as with a very large folder on Linux, btk warns and keeps serving without reloads.
+
+**Every command**
+
+- Piping btk into a reader that stops early, such as `| head`, now exits quietly with 0 instead of printing an EPIPE stack trace. Exiting 0 keeps `set -o pipefail` scripts working, as ripgrep does.
 
 ### Why it matters
 
-Few CLIs render markdown in the terminal. This phase also adds the plugin system, because markdown is the first tool where people will want their own themes and templates.
+Few CLIs render markdown in the terminal, and fewer preview it in the browser with the same theme. Markdown is also the first tool where people want more than config values, which is why the plugin system arrives here. The preview server turned out to be generic, so it ships a second time as `btk serve` instead of staying an md detail.
 
 ### Plugin example
 
@@ -318,23 +382,37 @@ import githubMarkdown from "btk-plugin-github-md";
 
 export default defineConfig({
   plugins: [githubMarkdown()],
+  tools: { md: { theme: "github" } },
 });
 ```
+
+[docs/plugins.md](plugins.md) shows how to write one.
 
 ### Examples
 
 ```bash
-btk md preview README.md
-btk md html README.md > output.html
-btk md preview CHANGELOG.md | less -R
+btk md README.md
+btk md CHANGELOG.md --terminal | less -R
+btk md serve docs
+btk md html README.md --css print.css > README.html
+btk md README.md --theme plain --terminal --columns 72
+btk serve dist --spa
+btk serve site --host 0.0.0.0
+btk serve demo/page.html
 ```
 
----
+### How we checked it
+
+- `bun test` covers the renderers, highlighting, themes and their validation, front matter, the plugin loader, the shared server (path, symlink, dotfile and Host checks, live reload, watch failures), folder serving, `btk serve`, and quiet exits on closed pipes.
+- `bun run test:dist` runs the end-to-end suite against the compiled binary, including a plugin that imports `definePlugin` and `defineTheme` and a pipe closed early.
+- `btk md serve docs` shows every page in `docs/` with working links. Checked by hand in the browser, at desktop and phone widths.
+- It ships as a beta first, published from its branch with `gh workflow run beta.yml --ref feature/md`: `bun run release:try beta -- btk md themes` lists the themes, and the release container renders a markdown file.
 
 ## Phase 9: TUI polish
 
-The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. Phase 9 works on the app as a whole once several tools exist.
+The TUI foundation shipped in Phase 0, and the file tools bring their own dashboards. Phase 9 works on the app as a whole once several tools exist.
 
+- Dashboards for `md` and `serve`, which shipped without one. `md` can reuse `TextViewer` for the terminal rendering, and `serve` can show requests as they arrive.
 - `btk` with no arguments opens `btk ui` in an interactive terminal.
 - Flows that span tools, such as converting a file and then hashing the result.
 - A history of results within a session.
@@ -351,3 +429,12 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 - `btk transpile` turns a TypeScript or JSX file into JavaScript.
 - `btk semver` compares and validates semantic versions.
 - Interactive examples on the documentation site.
+- `btk md build` writes a folder of markdown out as a static site, the way `btk md serve` shows it.
+- Shell tab completion: `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
+
+### Open questions from Phase 8
+
+- `btk md serve` and `btk serve` wait for Ctrl+C even in json mode, so an agent running them with `AGENT=true` waits forever. They could refuse to start in json mode unless asked.
+- Pages with a strict Content-Security-Policy block the injected reload script, so live reload silently stops on them.
+- HTML that isn't UTF-8 can be mangled when the reload script is added.
+- `btk serve` answers `POST` and `PUT` with the file instead of `405`, and the `/folder` → `/folder/` redirect drops the query string.

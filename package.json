@@ -1,7 +1,7 @@
 {
   "name": "bun-toolkit",
-  "version": "0.1.0",
-  "description": "Bun native API straight in your terminal. One CLI, one config, one output style.",
+  "version": "0.2.1",
+  "description": "Bun native APIs straight in your terminal. One CLI, one config, one output style.",
   "type": "module",
   "private": true,
   "license": "MIT",
@@ -24,7 +24,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "format": "biome format --write .",
-    "check": "biome check . && oxlint && tsc --noEmit"
+    "check": "biome check . && oxlint && tsc --noEmit",
+    "release:version": "bun scripts/version-packages.ts",
+    "release:try": "bun tests/release/run.ts"
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
@@ -35,6 +37,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@types/bun": "latest",
     "@types/react": "^19.3.0",
     "ink-testing-library": "^4.0.0",
