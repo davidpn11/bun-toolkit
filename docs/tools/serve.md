@@ -25,6 +25,7 @@ btk serve fixtures --cors               # let pages on other origins fetch these
 - **Live reload.** btk adds a small script to every HTML page it serves, before `</body>`. When any file in the folder changes, open pages reload. Changes in `node_modules` and dot folders don't count.
 - **Single-page apps.** With `--spa`, a path that has no file extension and matches no file, such as `/settings/profile`, gets the root `index.html`, so client-side routing works on reload. Missing assets such as `/logo.png` still return 404.
 - **Fresh files.** Every response has `Cache-Control: no-cache`, so a reload never shows a stale copy.
+- **Resumable downloads.** Files carry a `Last-Modified` header and answer range requests, so a large download that stops halfway picks up where it left off, and video and audio can seek. If the file changed in the meantime, the client gets the whole new file instead.
 - **When watching fails,** for example when a very large folder runs into the operating system's watch limit, btk warns and keeps serving. Reload the page yourself.
 
 Press Ctrl+C to stop. In json mode it prints `{ root, url, host, port, network }` when it stops.

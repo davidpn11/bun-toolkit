@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && bun --check"
   },
   "dependencies": {
     "fumadocs-core": "16.17.3",

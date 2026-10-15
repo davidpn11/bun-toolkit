@@ -13,16 +13,16 @@
     ".": "./src/public.ts"
   },
   "types": "./src/public.ts",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.3",
   "scripts": {
     "dev": "bun bin/btk.ts",
     "test": "bun test",
     "test:dist": "bun scripts/test-dist.ts",
     "build": "bun scripts/build.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun --check",
     "lint": "oxlint",
     "format": "biome format --write .",
-    "check": "biome check . && oxlint && tsc --noEmit",
+    "check": "biome check . && oxlint && bun --check",
     "release:version": "bun scripts/version-packages.ts",
     "release:try": "bun tests/release/run.ts"
   },

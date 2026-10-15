@@ -18,7 +18,7 @@
   <text x="52" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="22">
     <tspan fill="#FF1F8F" font-weight="700">◆ bun-toolkit</tspan><tspan fill="#8B93A7"> ❯ </tspan><tspan fill="#E6E8EE">home</tspan>
   </text>
-  <text x="1228" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="20" fill="#8B93A7" text-anchor="end">v0.2.1 · bun 1.4.0</text>
+  <text x="1228" y="74" font-family="'SF Mono', 'JetBrains Mono', Menlo, monospace" font-size="20" fill="#8B93A7" text-anchor="end">v0.2.1 · bun 1.4.3</text>
 
   <rect x="48" y="104" width="1184" height="446" rx="18" fill="#101016" stroke="#FF1F8F" stroke-width="2.5"/>
   <ellipse cx="313" cy="331.5" rx="300" ry="220" fill="url(#glow)"/>
