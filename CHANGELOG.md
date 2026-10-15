@@ -2,11 +2,15 @@
 
 ## 0.2.1
 
+Built on Bun 1.4.0.
+
 ### Patch Changes
 
 - improvements to beta release
 
 ## 0.2.0
+
+Built on Bun 1.4.0.
 
 ### Minor Changes
 
@@ -26,6 +30,8 @@
 
 ## 0.2.0-beta.0
 
+Built on Bun 1.4.0.
+
 ### Minor Changes
 
 - [#2](https://github.com/davidpn11/bun-toolkit/pull/2) [`18e0412`](https://github.com/davidpn11/bun-toolkit/commit/18e0412) Thanks [@davidpn11](https://github.com/davidpn11)! - First pre-release, published to test the beta channel. It has the same CLI as 0.1.0.
@@ -34,6 +40,8 @@
   - The repository has an MIT `LICENSE` file.
 
 ## 0.1.0
+
+Built on Bun 1.4.0.
 
 ### Minor Changes
 
