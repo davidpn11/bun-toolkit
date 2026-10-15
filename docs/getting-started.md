@@ -1,0 +1,74 @@
+# Getting started
+
+`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary, so it needs neither Bun nor Node on the machine that runs it.
+
+## Install
+
+### Homebrew
+
+The GitHub repository is the tap. Add it once, then install:
+
+```bash
+brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
+brew install davidpn11/bun-toolkit/bun-toolkit
+```
+
+Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. Pre-releases install as `bun-toolkit-beta`.
+
+### Download a binary
+
+Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries for macOS, Linux and Windows, plus a `SHA256SUMS` file:
+
+```bash
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS
+grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
+```
+
+Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`.
+
+### From source
+
+Requires [Bun](https://bun.sh) 1.4 or later.
+
+```bash
+git clone https://github.com/davidpn11/bun-toolkit && cd bun-toolkit
+bun install
+bun link
+```
+
+## Check the install
+
+```bash
+btk info
+```
+
+`btk info` prints the versions, the platform, the output mode and whether a config was found.
+
+## Add a project config
+
+```bash
+btk init
+```
+
+This creates `btk.config.ts` in the current folder, where you set per-tool defaults for the project. `btk init --global` creates your personal defaults in `~/.bun-toolkit/` instead. See [Configuration](config.md).
+
+## A first command per tool
+
+```bash
+btk image hero.png          # hero.webp next to it
+btk hash package.json       # sha256, in sha256sum format
+btk convert config.yaml     # JSON on stdout
+btk password hash           # type it twice at a hidden prompt
+btk compress ./dist --zstd  # dist.tar.zst
+btk md README.md            # a live preview in the browser
+btk serve dist              # serve a folder with live reload
+btk ui                      # the dashboard
+```
+
+Every command takes `--help`, `--json`, `--verbose`, `--no-color` and `--config <path>`. Each tool has its own page: [image](tools/image.md), [hash](tools/hash.md), [convert](tools/convert.md), [password](tools/password.md), [compress](tools/compress.md), [md](tools/md.md) and [serve](tools/serve.md).
+
+## Output modes
+
+btk prints colors and progress in a terminal, plain text in CI or when piped, and a single JSON document with `--json` or `AGENT=true`. Data goes to stdout and logs to stderr, so pipes stay clean. See [Output modes](visual-language.md).

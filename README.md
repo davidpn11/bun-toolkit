@@ -6,7 +6,8 @@
 
 <p align="center">
   <strong>Bun native APIs straight in your terminal.</strong><br>
-  One CLI, one config, one output style, live previews in your browser, and interactive dashboards.
+  One CLI, one config, one output style, live previews in your browser, and interactive dashboards.<br>
+  <a href="https://bun-toolkit.davidpn.com">bun-toolkit.davidpn.com</a>
 </p>
 
 <p align="center">
@@ -249,6 +250,8 @@ bun changeset               # describe your change for the changelog
 bun run release:version     # turn pending changesets into a version, before a release
 bun run release:try beta    # install the published beta in a throwaway container
 ```
+
+The documentation site lives in `website/`, a separate Next.js app that reads `docs/`. Run it with `cd website && bun install && bun run dev`. [docs/roadmap.md](docs/roadmap.md#phase-7-documentation-site-built) explains how it works.
 
 Every pull request that changes what users see needs a changeset. [docs/architecture.md](docs/architecture.md) covers how the CLI is built and how to add a tool. [docs/roadmap.md](docs/roadmap.md) has what comes next.
 

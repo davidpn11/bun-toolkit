@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["dist", "coverage"],
+  "ignorePatterns": ["dist", "coverage", "website/.next", "website/.source", "website/out"],
   "rules": {
     "typescript/consistent-type-definitions": ["error", "type"]
   }
