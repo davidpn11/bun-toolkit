@@ -26,8 +26,11 @@ export type LiveServerOptions = {
   headers?: Record<string, string>;
   /** Called when file watching can't start or stops working; the server keeps serving without reloads. */
   onWatchError?: (error: unknown) => void;
+  onRequest?: (request: ServedRequest) => void;
   signal: AbortSignal;
 };
+
+export type ServedRequest = { method: string; path: string; status: number };
 
 export type LiveServer = {
   url: string;
@@ -176,7 +179,9 @@ async function route(
     server.timeout(request, 0);
     return eventStream(clients);
   }
-  return withHeaders(await respond(options, pathname), options.headers);
+  const response = withHeaders(await respond(options, pathname), options.headers);
+  options.onRequest?.({ method: request.method, path: pathname, status: response.status });
+  return response;
 }
 
 async function respond(options: LiveServerOptions, pathname: string): Promise<Response> {
