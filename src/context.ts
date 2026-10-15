@@ -25,7 +25,6 @@ export type BtkContext = {
   isInteractive: boolean;
   config: ResolvedConfig;
   configInfo: LoadedConfig;
-  /** Hooks registered by `config.plugins`. */
   hooks: Hooks;
   reporter: Reporter;
   prompter: Prompter;

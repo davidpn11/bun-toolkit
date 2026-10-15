@@ -10,10 +10,7 @@ export type ServeTarget =
 
 const INDEX = "index.html";
 
-/**
- * What a URL serves: a file, a folder's `index.html` or listing, or a redirect that adds the trailing `/`
- * so relative links inside the folder resolve. With `spa`, unknown paths without an extension get the root `index.html`.
- */
+/** Folders without a trailing `/` redirect, so relative links inside them resolve. */
 export function resolveRequest(root: string, pathname: string, spa: boolean): ServeTarget {
   const path = pathInside(root, pathname);
   const stat = path ? statSync(path, { throwIfNoEntry: false }) : undefined;

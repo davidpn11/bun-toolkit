@@ -33,7 +33,6 @@ export async function listPages(root: string): Promise<SitePage[]> {
   return pages.sort(comparePages);
 }
 
-/** What a URL points at: a markdown page, a folder's index page or listing, or a redirect to add the trailing `/`. */
 export function resolveTarget(root: string, pathname: string): SiteTarget | undefined {
   const path = pathInside(root, pathname);
   const stat = path ? statSync(path, { throwIfNoEntry: false }) : undefined;
@@ -73,7 +72,6 @@ export function renderNav(pages: readonly SitePage[], current: string | undefine
   return `<ul>${items.join("")}</ul>`;
 }
 
-/** The page for a folder without a README.md or index.md: a list of the pages under it. */
 export function folderBody(dir: string, pages: readonly SitePage[], heading = dir): string {
   const inside = pages.filter((page) => !dir || page.path.startsWith(`${dir}/`));
   const items = inside.map(
@@ -104,7 +102,6 @@ function groupByFolder(pages: readonly SitePage[]): Map<string, SitePage[]> {
   return groups;
 }
 
-/** Root pages first, then folders alphabetically; inside a folder its index page comes first. */
 function comparePages(a: SitePage, b: SitePage): number {
   const [dirA, dirB] = [folderOf(a.path), folderOf(b.path)];
   if (dirA !== dirB) return dirA === "" ? -1 : dirB === "" ? 1 : dirA.localeCompare(dirB);

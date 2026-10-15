@@ -11,7 +11,6 @@ import { isHtml, resolveRequest } from "./resolve.ts";
 export type ServeSettings = { port: number; host: string; open: boolean; spa: boolean; cors: boolean };
 export type ServeResult = { root: string; url: string; host: string; port: number; network: string[] };
 
-/** Serves a folder, or a file's folder with that file as the page to open. */
 export async function servePath(
   path: string,
   settings: ServeSettings,

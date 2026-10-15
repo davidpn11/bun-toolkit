@@ -1,11 +1,34 @@
 # Releasing
 
-bun-toolkit uses [Changesets](https://github.com/changesets/changesets) to version releases and write `CHANGELOG.md`. You run one command to turn the pending changesets into a version, then push. CI does the rest: it tags the commit, builds the binaries, publishes the GitHub Release and updates Homebrew. You never edit the version in `package.json`, tag a commit or create a release by hand. [ci-pipeline.md](ci-pipeline.md) has the workflow details.
+bun-toolkit uses [Changesets](https://github.com/changesets/changesets) to version releases and write `CHANGELOG.md`. Everything happens in pull requests into `master`, the only release branch:
 
-| Channel | Branch | Versions | Homebrew formula |
+- **Stable:** version your branch before you merge, and the merge releases it.
+- **Beta:** publish a beta of any branch whenever you want to try it.
+
+CI tags the commit, builds the binaries, publishes the GitHub Release and updates Homebrew. You never tag a commit or create a release by hand. [ci-pipeline.md](ci-pipeline.md) has the workflow details.
+
+| Channel | Comes from | Versions | Homebrew formula |
 | --- | --- | --- | --- |
-| Stable | `master` | `0.2.0` | `bun-toolkit` |
-| Beta | `beta` | `0.2.0-beta.1` | `bun-toolkit-beta` |
+| Stable | merging a versioned PR into `master` | `0.2.0` | `bun-toolkit` |
+| Beta | **Publish beta**, run on any branch | `0.2.0-beta.2` | `bun-toolkit-beta` |
+
+## The short version
+
+On your branch:
+
+```bash
+bun changeset                # describe the change
+bun run release:version      # turn the changesets into the next version
+git add -A && git commit -m "Release v0.2.0" && git push
+```
+
+Open the PR. Its **Release check** summary says "Merging releases v0.2.0". Merge it, and the Release workflow publishes `v0.2.0`.
+
+To try it before merging, publish a beta of the branch:
+
+```bash
+gh workflow run beta.yml --ref your-branch
+```
 
 ## Describe your change
 
@@ -27,57 +50,52 @@ Before 1.0, use `minor` for breaking changes too.
 
 The command writes a Markdown file to `.changeset/`. Commit it with your change. Write the summary for users, for example: "`btk hash check` reads BSD-style checksum lines". For changes users don't see, such as a refactor or a docs typo, skip the changeset.
 
-## Cut a release
+## Release on merge
 
-The same steps work on `master` (stable) and `beta` (pre-releases):
-
-1. Merge the pull requests with changesets, then pull the branch.
-2. Turn the changesets into a version:
+1. On your branch, turn the changesets into a version:
 
    ```bash
    bun run release:version
    ```
 
    This runs `changeset version`: it bumps `package.json`, writes the `CHANGELOG.md` entry and deletes the consumed changesets. The changelog links each entry to its pull request and author through the GitHub API, so the command uses `GITHUB_TOKEN` or your `gh` login, and refuses to run while you have unpushed commits.
-3. Review `CHANGELOG.md` and reword it if needed, then commit and push:
+2. Review `CHANGELOG.md` and reword it if needed, then commit and push:
 
    ```bash
    git add -A && git commit -m "Release v0.2.0" && git push
    ```
 
-The push runs `release.yml` on `master` or `prerelease.yml` on `beta`. It sees a version without a tag, then builds the binaries, creates the tag with a GitHub Release whose notes are the changelog entry, and updates the Homebrew formula.
+3. Merge the PR. The push to `master` runs `release.yml`. It sees a version without a tag, then builds the binaries, creates the tag with a GitHub Release whose notes are the changelog entry, and updates the `bun-toolkit` formula.
 
-**Merging is not releasing.** A push that doesn't change the version publishes nothing, even when it brings in changesets. Merging a feature branch into `beta` or `master` only adds changesets; `bun run release:version` turns them into a version. When a run publishes nothing while changesets are waiting, the workflow shows a "Nothing published" warning and a job summary with the count, so a green run doesn't hide it. `bun run release:try` warns about the same thing before it installs.
+You can merge several PRs that each carry a changeset and version them together later. Merging an unversioned PR releases nothing.
 
-Once it's out, try it the way a user gets it with `bun run release:try` (stable) or `bun run release:try beta`, in a throwaway container (see [testing.md](testing.md#testing-a-published-release)).
+### The Release check
 
-## Pre-releases on the beta channel
+Every PR into `master` gets a **Release check** that writes what merging will do to the job summary. It never blocks the merge; it warns with the commands to run:
 
-The `beta` branch stays in Changesets pre mode, so every version from it is a pre-release such as `0.2.0-beta.1`. `prerelease.yml` publishes it as a GitHub pre-release and updates `Formula/bun-toolkit-beta.rb`. Stable users never get it.
+| Summary | What it means |
+| --- | --- |
+| Merging releases vX.Y.Z | The branch is versioned. The summary shows the release notes |
+| Not versioned yet | Changesets are waiting. Run `bun run release:version`, then commit and push |
+| No changeset | The PR changes `src/` or `bin/` without a changeset. Add one if users will notice |
+| vX.Y.Z is already released | The version matches an existing tag. Add a changeset and version again |
+| Nothing to release | Docs, tests or CI only |
 
-**Start a beta cycle.** Do this once per cycle:
+## Betas
 
-```bash
-git checkout master && git pull
-git checkout -b beta
-bun changeset pre enter beta
-git add .changeset/pre.json && git commit -m "Enter beta pre-release mode"
-git push -u origin beta
-```
-
-**Ship betas.** Open pull requests against `beta`, each with a changeset. Merging them doesn't publish anything. When you want a beta out, pull `beta`, run `bun run release:version` on it, then commit and push. Each run produces the next number: `-beta.0`, `-beta.1`, and so on.
-
-**Finish the cycle.** Leave pre mode on `beta`, then merge `beta` into `master`:
+A beta is a build of a branch, published as a GitHub pre-release and through the `bun-toolkit-beta` formula. Stable users never get it. Publish one from the Actions tab (**Publish beta → Run workflow**, then pick the branch), or from the terminal:
 
 ```bash
-git checkout beta && git pull
-bun changeset pre exit
-git add .changeset/pre.json && git commit -m "Exit beta pre-release mode" && git push
+gh workflow run beta.yml --ref your-branch
 ```
 
-Open a pull request from `beta` into `master` and merge it. Then run `bun run release:version` on `master`, which turns the beta's changesets into the stable entry, such as `0.2.0`. Commit and push, then delete the `beta` branch.
+The workflow works out the version the same way a release would:
 
-`-alpha.N` and `-rc.N` work the same way with `bun changeset pre enter alpha` or `pre enter rc`. They all publish to `bun-toolkit-beta`.
+- **The base version.** With changesets on the branch, it runs `changeset version` on a throwaway checkout, so `0.1.0` plus a `minor` changeset gives `0.2.0`. A branch that is already versioned uses its `package.json` version. Nothing is committed back.
+- **The beta number** comes from the existing tags: one more than the highest `v0.2.0-beta.N`, or `-beta.0` for a new base version.
+- **The release** is tagged on the branch's latest commit, with the branch name and the changelog entry as notes. The `bun-toolkit-beta` formula then points at it.
+
+Run it again after more pushes to get `-beta.3`, `-beta.4`, and so on. The run fails with "Nothing to publish" when the branch has no changesets and its version is already released.
 
 ## Install a beta
 
@@ -93,8 +111,11 @@ brew uninstall bun-toolkit-beta
 brew install davidpn11/bun-toolkit/bun-toolkit
 ```
 
+`bun run release:try beta` installs the latest beta in a throwaway container instead (see [testing.md](testing.md#testing-a-published-release)).
+
 ## When something goes wrong
 
 - **A release job failed.** The tag is only created together with the release, so nothing is half-published. Fix the problem and re-run the failed jobs, or push again.
 - **The formula is wrong or outdated.** Rewrite it from an existing release: `gh workflow run homebrew.yml -f tag=v0.2.0`.
-- **The channel check fails.** `master` holds a pre-release version, or `beta` a stable one. This usually means `beta` was merged without `changeset pre exit`, or pre mode was entered on `master`. Fix `.changeset/pre.json`, then push again.
+- **Merged without versioning.** The Release workflow publishes nothing and shows a "Nothing published" warning with the number of waiting changesets. Run `bun run release:version` on a new branch, and open and merge a PR.
+- **`release:version` refuses because of `.changeset/pre.json`.** Betas no longer use Changesets' pre-release mode, and that file would make a beta version. Run `bun changeset pre exit`, commit, then version again.

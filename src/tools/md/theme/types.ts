@@ -59,7 +59,6 @@ export type MdTheme = {
   /** Theme to start from. Without it, terminal styles start from `btk` and `css` replaces btk's page styles. */
   extends?: string;
   terminal?: TerminalThemeInput;
-  /** Stylesheet for the browser preview and `btk md html`. */
   css?: string;
 };
 

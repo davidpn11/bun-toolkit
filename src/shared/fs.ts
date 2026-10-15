@@ -43,14 +43,12 @@ export function listDirectory(dir: string, options: ListOptions = {}): DirEntry[
   ];
 }
 
-/** A path as messages show it: relative to `cwd` when it is inside, absolute otherwise. */
 export function displayPath(path: string, cwd: string): string {
   const rel = relative(cwd, path);
   if (rel === "") return ".";
   return rel.startsWith("..") || isAbsolute(rel) ? path : rel;
 }
 
-/** The absolute path of a folder argument; a missing path fails, and a file is a usage error with `hint`. */
 export function requireFolder(path: string, cwd: string, hint: string): string {
   const absolute = resolve(cwd, path);
   const stat = statSync(absolute, { throwIfNoEntry: false });

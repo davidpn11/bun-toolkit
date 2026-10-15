@@ -18,7 +18,6 @@ describe("btk serve", () => {
   const btk = (args: string[], env: Record<string, string> = {}) =>
     runBtk(args, { cwd: project.dir, env: { ...project.env, ...env } });
 
-  /** Runs `btk serve` on a free port until `check` is done, then stops it like Ctrl+C. */
   const serving = async (
     args: string[],
     check: (base: string) => Promise<void>,

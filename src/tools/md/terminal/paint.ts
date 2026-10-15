@@ -12,7 +12,6 @@ export type TerminalCtx = {
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
-/** Turns a theme style into a paint function; with color off every style paints nothing. */
 export function createPainter(enabled: boolean): Painter {
   const base = new Ansis(enabled ? 3 : 0);
   return (spec) => {

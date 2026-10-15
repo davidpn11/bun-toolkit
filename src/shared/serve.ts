@@ -16,7 +16,6 @@ export type WatchTarget = {
 };
 
 export type LiveServerOptions = {
-  /** Files are served from here, and only from here. */
   root: string;
   watch: WatchTarget | undefined;
   /** Interface to listen on; anything but loopback exposes the server to the network. */
@@ -33,7 +32,6 @@ export type LiveServerOptions = {
 export type LiveServer = {
   url: string;
   port: number;
-  /** Settles when the signal aborts and the server has stopped. */
   closed: Promise<void>;
 };
 
@@ -44,7 +42,6 @@ const RELOAD_DEBOUNCE_MS = 50;
 const KEEPALIVE_MS = 15_000;
 const IGNORED = /(^|[\\/])(node_modules|\.[^\\/]+)([\\/]|$)/;
 
-/** Serves files with live reload: browsers listening on `EVENTS_PATH` get a `reload` event when watched files change. */
 export function startLiveServer(options: LiveServerOptions): LiveServer {
   const clients: Clients = new Set();
   const hostname = options.hostname ?? LOOPBACK;

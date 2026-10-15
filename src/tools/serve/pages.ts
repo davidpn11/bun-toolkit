@@ -20,13 +20,11 @@ a { color: ${ACCENT}; text-decoration: none; }
 a:hover { text-decoration: underline; }
 `;
 
-/** Puts the reload script before the last `</body>`, or at the end when the page has none. */
 export function injectReload(html: string): string {
   const at = html.toLowerCase().lastIndexOf("</body>");
   return at === -1 ? `${html}\n${RELOAD_SCRIPT}` : `${html.slice(0, at)}${RELOAD_SCRIPT}\n${html.slice(at)}`;
 }
 
-/** The listing for a folder without an `index.html`. Dotfiles stay hidden, as the server refuses them anyway. */
 export function listingPage(dir: string, pathname: string): string {
   const rows = listEntries(dir).map((entry) => entryRow(entry, pathname));
   const up = pathname === "/" ? "" : `<tr><td><a href="../">../</a></td><td class="size"></td></tr>`;

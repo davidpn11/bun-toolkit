@@ -4,6 +4,8 @@
  * a token (GITHUB_TOKEN, or the gh CLI's) and the changeset commits must already be on GitHub.
  */
 
+import { existsSync } from "node:fs";
+
 function run(command: string[], env?: Record<string, string>): { code: number; stdout: string } {
   const result = Bun.spawnSync(command, { env: { ...process.env, ...env }, stderr: "inherit" });
   return { code: result.exitCode, stdout: result.stdout.toString().trim() };
@@ -12,6 +14,18 @@ function run(command: string[], env?: Record<string, string>): { code: number; s
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
+}
+
+/** Betas come from the Publish beta workflow now, so Changesets' pre-release mode would only make wrong versions. */
+export function preModeProblem(preMode: boolean): string | undefined {
+  return preMode
+    ? "This branch is in Changesets pre-release mode (.changeset/pre.json exists), which would make a beta version. Betas come from the Publish beta workflow now. Run: bun changeset pre exit"
+    : undefined;
+}
+
+function assertNotPreMode(): void {
+  const problem = preModeProblem(existsSync(".changeset/pre.json"));
+  if (problem) fail(problem);
 }
 
 function assertPushed(): void {
@@ -28,13 +42,18 @@ function githubToken(): string {
   return gh.stdout;
 }
 
-assertPushed();
-const versioned = Bun.spawnSync(["bun", "changeset", "version"], {
-  env: { ...process.env, GITHUB_TOKEN: githubToken() },
-  stdio: ["inherit", "inherit", "inherit"],
-});
-if (versioned.exitCode !== 0) process.exit(versioned.exitCode ?? 1);
+async function versionPackages(): Promise<void> {
+  assertNotPreMode();
+  assertPushed();
+  const versioned = Bun.spawnSync(["bun", "changeset", "version"], {
+    env: { ...process.env, GITHUB_TOKEN: githubToken() },
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  if (versioned.exitCode !== 0) process.exit(versioned.exitCode ?? 1);
 
-const { version } = (await Bun.file("package.json").json()) as { version: string };
-console.log(`\nVersion ${version}. Review CHANGELOG.md, then commit and push:
+  const { version } = (await Bun.file("package.json").json()) as { version: string };
+  console.log(`\nVersion ${version}. Review CHANGELOG.md, then commit and push:
   git add -A && git commit -m "Release v${version}" && git push`);
+}
+
+if (import.meta.main) await versionPackages();

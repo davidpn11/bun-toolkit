@@ -52,13 +52,12 @@ describe("pickEngine()", () => {
 describe("channelStatus()", () => {
   const releases = [
     { tag_name: "v0.3.0-beta.0", prerelease: true, draft: true },
-    { tag_name: "v0.2.0-beta.1", prerelease: true, draft: false },
+    { tag_name: "v0.2.0-beta.2", prerelease: true, draft: false },
     { tag_name: "v0.1.0", prerelease: false, draft: false },
   ];
   const changesets = [
     { name: "README.md", type: "file" },
     { name: "config.json", type: "file" },
-    { name: "pre", type: "dir" },
     { name: "a.md", type: "file" },
     { name: "b.md", type: "file" },
   ];
@@ -69,59 +68,55 @@ describe("channelStatus()", () => {
       return key ? files[key] : undefined;
     };
 
-  test("beta reads the newest published pre-release, the beta branch, and its waiting changesets", async () => {
+  test("beta only needs the newest published pre-release; betas have no branch", async () => {
     const urls: string[] = [];
-    const fetchJson = fake({
-      "/releases": releases,
-      "/beta/package.json": { version: "0.2.0-beta.1" },
-      ".changeset?ref=beta": changesets,
-    });
     const status = await channelStatus("beta", (url) => {
       urls.push(url);
-      return fetchJson(url);
+      return fake({ "/releases": releases })(url);
     });
-    expect(status).toEqual({ published: "0.2.0-beta.1", branchVersion: "0.2.0-beta.1", pending: 2 });
-    expect(
-      urls.some((url) => url.includes("raw.githubusercontent.com/davidpn11/bun-toolkit/beta/package.json")),
-    ).toBe(true);
+    expect(status).toEqual({ published: "0.2.0-beta.2", pending: 0 });
+    expect(urls).toHaveLength(1);
   });
 
-  test("stable skips pre-releases, and a branch without a .changeset folder has none waiting", async () => {
-    const fetchJson = fake({ "/releases": releases, "/master/package.json": { version: "0.1.0" } });
+  test("stable skips pre-releases and reads master's version and waiting changesets", async () => {
+    const fetchJson = fake({
+      "/releases": releases,
+      "/master/package.json": { version: "0.1.0" },
+      ".changeset?ref=master": changesets,
+    });
     expect(await channelStatus("stable", fetchJson)).toEqual({
       published: "0.1.0",
-      branchVersion: "0.1.0",
-      pending: 0,
+      masterVersion: "0.1.0",
+      pending: 2,
     });
+  });
+
+  test("master without a .changeset folder has none waiting", async () => {
+    const fetchJson = fake({ "/releases": releases, "/master/package.json": { version: "0.1.0" } });
+    expect((await channelStatus("stable", fetchJson)).pending).toBe(0);
   });
 });
 
 describe("describeStatus()", () => {
-  const status = (overrides: Partial<ChannelStatus>): ChannelStatus => ({
-    published: "0.2.0-beta.1",
-    branchVersion: "0.2.0-beta.1",
-    pending: 0,
-    ...overrides,
-  });
-
   test("up to date: only the latest release", () => {
-    expect(describeStatus("beta", status({}))).toEqual({
-      info: ["Latest beta release: v0.2.0-beta.1"],
+    expect(describeStatus("beta", { published: "0.2.0-beta.2", pending: 0 })).toEqual({
+      info: ["Latest beta release: v0.2.0-beta.2"],
       warnings: [],
     });
-  });
-
-  test("waiting changesets say how to publish them", () => {
-    const { warnings } = describeStatus("beta", status({ pending: 4 }));
-    expect(warnings).toEqual([
-      "4 changesets are waiting on beta and not in any release. Run bun run release:version on beta, then commit and push to publish them.",
+    expect(describeStatus("beta", { published: undefined, pending: 0 }).info).toEqual([
+      "No beta release yet",
     ]);
-    expect(describeStatus("beta", status({ pending: 1 })).warnings[0]).toStartWith("1 changeset is waiting");
   });
 
-  test("a version bump that isn't published yet points at the workflow", () => {
-    const { warnings } = describeStatus("stable", status({ published: "0.1.0", branchVersion: "0.2.0" }));
+  test("changesets merged without a version point at a PR", () => {
+    const { warnings } = describeStatus("stable", { published: "0.1.0", masterVersion: "0.1.0", pending: 3 });
+    expect(warnings).toEqual([
+      "3 changesets were merged into master without a version, so no release includes them. Run bun run release:version on a branch and open a PR.",
+    ]);
+  });
+
+  test("a version on master that isn't published yet points at the workflow", () => {
+    const { warnings } = describeStatus("stable", { published: "0.1.0", masterVersion: "0.2.0", pending: 0 });
     expect(warnings[0]).toStartWith("master is at v0.2.0, which isn't released yet");
-    expect(describeStatus("beta", status({ published: undefined })).info).toEqual(["No beta release yet"]);
   });
 });

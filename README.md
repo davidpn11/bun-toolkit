@@ -235,7 +235,7 @@ Data goes to stdout and logs to stderr, so pipes stay clean. When the reader of 
 
 ## Releases
 
-Every change is in the [changelog](CHANGELOG.md). Stable releases come from `master`, and pre-releases come from the `beta` branch and install as `bun-toolkit-beta`. [docs/releasing.md](docs/releasing.md) explains how a release is cut.
+Every change is in the [changelog](CHANGELOG.md). Stable releases come from merging a versioned pull request into `master`. Betas are published from any branch with the **Publish beta** workflow and install as `bun-toolkit-beta`. Every PR gets a **Release check** summary that says what merging releases. [docs/releasing.md](docs/releasing.md) explains the flow.
 
 ## Development
 
@@ -246,7 +246,8 @@ bun test                    # unit, TUI and integration tests
 bun run test:dist           # build the binary and run the end-to-end suite against it
 bun run check               # Biome, oxlint and tsc
 bun changeset               # describe your change for the changelog
-bun run release:version     # turn pending changesets into a version, before a release
+bun run release:version     # on your branch: turn changesets into the next version before merging
+gh workflow run beta.yml --ref <branch>   # publish a beta of a branch
 bun run release:try beta    # install the published beta in a throwaway container
 ```
 

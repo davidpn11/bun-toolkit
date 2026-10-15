@@ -1,12 +1,13 @@
 # CI pipeline
 
-Five GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
+Six GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
 
 | Workflow | Trigger | Job |
 | --- | --- | --- |
-| `test.yml` | pull requests, pushes to `master` and `beta` | Lint and test on three operating systems |
+| `test.yml` | pull requests, pushes to `master` | Lint and test on three operating systems |
+| `release-check.yml` | pull requests into `master` | Writes what merging releases to the job summary, with instructions when the PR isn't versioned |
 | `release.yml` | pushes to `master` | Runs `publish.yml` for the stable channel |
-| `prerelease.yml` | pushes to `beta` | Runs `publish.yml` for the beta channel |
+| `beta.yml` | by hand, on any branch | Runs `publish.yml` for the beta channel |
 | `publish.yml` | called by the two above | Build, release and Homebrew, when the version is new |
 | `homebrew.yml` | called by `publish.yml`, or by hand | Writes the Homebrew formula for one release |
 
@@ -19,19 +20,23 @@ A new push to the same branch cancels the run in progress.
 | `check` | Ubuntu | `bun install --frozen-lockfile`, then `bun run check` (Biome, oxlint, tsc) |
 | `test` | Ubuntu, macOS, Windows | `bun install --frozen-lockfile`, `bun test`, then `bun run test:dist`, which builds the binary for that runner and runs the end-to-end suite against it |
 
+## release-check.yml
+
+Runs `scripts/release-check.ts` on every pull request into `master`. It compares the PR's `package.json` version with master's, counts the changesets that haven't been versioned, and checks whether the version is already tagged. It then writes the result to the job summary, with the commands to run when something is missing ([releasing.md](releasing.md#the-release-check) lists the cases). It reports a notice or a warning and never fails, so it doesn't block a merge.
+
 ## publish.yml
 
-`release.yml` calls it with `channel: stable` and `prerelease.yml` with `channel: beta`. Every push to those branches runs it, but only a push that changes the version in `package.json` publishes. You make that change locally with `bun run release:version` (see [releasing.md](releasing.md)).
+`release.yml` calls it with `channel: stable` on every push to `master`. Only a push that changes the version in `package.json` publishes; you make that change on your branch with `bun run release:version` before merging (see [releasing.md](releasing.md)). `beta.yml` calls it with `channel: beta`, on the branch you run it on.
 
 | Job | Runs when | What it does |
 | --- | --- | --- |
-| `plan` | always | Checks whether `package.json` holds a version without a tag. If so, it checks that a `-` suffix matches the channel and that `CHANGELOG.md` has an entry, then outputs the tag. Otherwise it logs how many changesets are waiting. |
+| `plan` | always | **Stable:** refuses to run outside `master`, checks whether `package.json` holds a version without a tag, rejects a pre-release version, and reads the `CHANGELOG.md` entry. Without a new version it publishes nothing, and warns in the summary when changesets were merged without one. **Beta:** on a throwaway checkout, runs `changeset version` when changesets are pending to get the base version, then `scripts/beta-version.ts` picks the next `-beta.N` from the existing tags. It outputs the tag, the version and the release notes. |
 | `checks` | a tag is planned | `bun run check` and `bun test` |
-| `build` | after `checks` | Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
-| `release` | after `build` | Writes `SHA256SUMS` with `btk hash`. Creates the tag and the GitHub Release on the same commit, with the changelog entry as notes and `--prerelease` on the beta channel. Then downloads the published files and runs `btk hash check SHA256SUMS` on them |
+| `build` | after `checks` | On the beta channel, stamps the beta version into `package.json` with `scripts/set-version.ts` so `btk --version` reports it. Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
+| `release` | after `build` | Writes `SHA256SUMS` with `btk hash`. Creates the tag and the GitHub Release on the commit being built, with the notes from `plan` and `--prerelease` on the beta channel. Then downloads the published files and runs `btk hash check SHA256SUMS` on them |
 | `homebrew` | after `release` | Runs `homebrew.yml` for the new tag |
 
-The tag is created in the `release` job, together with the release. If a build fails, no tag exists, so the next push to the branch tries again.
+The tag is created in the `release` job, together with the release. If a build fails, no tag exists, so the next push (or the next beta run) tries again. `beta.yml` runs one at a time, so two betas never get the same number.
 
 The build matrix:
 

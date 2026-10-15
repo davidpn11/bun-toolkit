@@ -8,9 +8,9 @@
 | 3 | `btk convert` | Done |
 | 4 | `btk password` | Done |
 | 5 | `btk compress` and `btk decompress` | Done |
-| 6 | First release: CI, binaries, Homebrew, Changesets, beta channel | In progress |
+| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | In progress |
 | 7 | Documentation site | Planned |
-| 8 | `btk md`, themes, the plugin system, and `btk serve` | Built, shipping on the beta channel first |
+| 8 | `btk md`, themes, the plugin system, and `btk serve` | Built, shipping as a beta first |
 | 9 | TUI polish | Planned |
 | 10 | More tools and follow-ups | Ideas |
 
@@ -267,10 +267,11 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 ### What ships
 
 - `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
-- `release.yml` and `prerelease.yml` publish when a push to `master` or `beta` changes the version, which `bun run release:version` does from the pending changesets. They build the five platform binaries, run `test:dist` wherever the runner can execute them, and attach the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
+- `release.yml` publishes when a merge into `master` changes the version, which `bun run release:version` does on the branch before the merge. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
+- `beta.yml` publishes a beta of any branch on demand, numbered `-beta.N` from the existing tags, and `release-check.yml` tells every PR what merging releases.
 - The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This comes after the Homebrew channel.
 - The Homebrew formulas `bun-toolkit` and `bun-toolkit-beta` in `Formula/`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
-- Changesets for versions and `CHANGELOG.md`, with stable releases from `master` and pre-releases from `beta` (see [releasing.md](releasing.md)).
+- Changesets for versions and `CHANGELOG.md`, with stable releases from `master` and betas from any branch (see [releasing.md](releasing.md)).
 
 ### Why now
 
@@ -308,7 +309,7 @@ It reads plain markdown without required frontmatter, and relative links such as
 
 ---
 
-## Phase 8: markdown, themes, plugins and btk serve (built, shipping on beta)
+## Phase 8: markdown, themes, plugins and btk serve (built, shipping as a beta first)
 
 Bun APIs: `Bun.markdown`, a CommonMark and GFM parser written in Rust, for rendering; `Bun.serve` and `Bun.file` for the live previews; `Bun.YAML` for front matter.
 
@@ -405,7 +406,7 @@ btk serve demo/page.html
 - `bun test` covers the renderers, highlighting, themes and their validation, front matter, the plugin loader, the shared server (path, symlink, dotfile and Host checks, live reload, watch failures), folder serving, `btk serve`, and quiet exits on closed pipes.
 - `bun run test:dist` runs the end-to-end suite against the compiled binary, including a plugin that imports `definePlugin` and `defineTheme` and a pipe closed early.
 - `btk md serve docs` shows every page in `docs/` with working links. Checked by hand in the browser, at desktop and phone widths.
-- It ships on the beta channel first: `bun run release:try beta -- btk md themes` lists the themes, and the release container renders a markdown file.
+- It ships as a beta first, published from its branch with `gh workflow run beta.yml --ref feature/md`: `bun run release:try beta -- btk md themes` lists the themes, and the release container renders a markdown file.
 
 ## Phase 9: TUI polish
 
