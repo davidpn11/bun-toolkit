@@ -44,7 +44,7 @@ describe("btk convert", () => {
   test("config and env set the default target", async () => {
     const p = setup();
     p.write("btk.config.ts", `export default { tools: { convert: { to: "yaml" } } };`);
-    expect((await btk(["convert", "cfg/server.toml"])).stdout).toBe("server: \n  port: 80\n");
+    expect((await btk(["convert", "cfg/server.toml"])).stdout).toBe("server:\n  port: 80\n");
     expect(
       (await btk(["convert", "cfg/server.toml"], { env: { BTK_CONVERT_TO: "json5" } })).stdout,
     ).toContain("port: 80");
@@ -52,7 +52,7 @@ describe("btk convert", () => {
 
   test("stdin: detected for JSON, otherwise --from is required", async () => {
     setup();
-    expect((await btk(["convert", "-t", "yaml"], { stdin: '{"a":[1]}' })).stdout).toBe("a: \n  - 1\n");
+    expect((await btk(["convert", "-t", "yaml"], { stdin: '{"a":[1]}' })).stdout).toBe("a:\n  - 1\n");
     const unknown = await btk(["convert"], { stdin: "a: 1" });
     expect(unknown.code).toBe(1);
     expect(unknown.stderr).toContain("Pass --from");

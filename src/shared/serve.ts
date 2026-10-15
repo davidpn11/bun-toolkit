@@ -2,7 +2,7 @@ import { type FSWatcher, realpathSync, watch } from "node:fs";
 import { isIP } from "node:net";
 import { hostname as machineName } from "node:os";
 import { basename, isAbsolute, relative, resolve } from "node:path";
-import type { Server } from "bun";
+import type { BunFile, Server } from "bun";
 import type { BtkContext } from "../context.ts";
 import { BtkError } from "../errors.ts";
 
@@ -121,6 +121,11 @@ export function htmlResponse(html: string, status = 200): Response {
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
+/** Bun answers Range and If-Range itself; `Last-Modified` is the validator clients resume a download with. */
+export function fileResponse(file: BunFile): Response {
+  return new Response(file, { headers: { "Last-Modified": new Date(file.lastModified).toUTCString() } });
+}
+
 /** Undefined for malformed URLs, paths outside `root`, and dotfiles such as `.env`. */
 export function pathInside(root: string, pathname: string): string | undefined {
   const decoded = safeDecode(pathname);
@@ -236,7 +241,7 @@ function broadcast(clients: Clients, event: string): void {
 async function serveAsset(root: string, pathname: string): Promise<Response> {
   const path = pathInside(root, pathname);
   const file = path ? Bun.file(path) : undefined;
-  return file && (await file.exists()) ? new Response(file) : new Response("Not found", { status: 404 });
+  return file && (await file.exists()) ? fileResponse(file) : new Response("Not found", { status: 404 });
 }
 
 function safeDecode(pathname: string): string | undefined {
