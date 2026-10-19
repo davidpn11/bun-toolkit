@@ -8,9 +8,9 @@
 | 3 | `btk convert` | Done |
 | 4 | `btk password` | Done |
 | 5 | `btk compress` and `btk decompress` | Done |
-| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | In progress |
-| 7 | Documentation site | Planned |
-| 8 | `btk md`, themes, the plugin system, and `btk serve` | Built, shipping as a beta first |
+| 6 | First release: CI, binaries, Homebrew, Changesets, betas from branches | Done |
+| 7 | Documentation site | Done |
+| 8 | `btk md`, themes, the plugin system, and `btk serve` | Done |
 | 9 | TUI polish | Planned |
 | 10 | More tools and follow-ups | Ideas |
 
@@ -260,7 +260,7 @@ btk compress ./dist --gzip -o dist.tar.gz
 
 ---
 
-## Phase 6: first release, 0.1 (in progress)
+## Phase 6: first release, 0.1 (done)
 
 The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md](distribution.md). This work used to be a list of leftovers at the end of Phase 0. It now has its own phase so it lands before more features do.
 
@@ -285,31 +285,37 @@ Five tools work, but the test suite only runs on one Mac, and nobody can install
 
 ---
 
-## Phase 7: documentation site
+## Phase 7: documentation site (done)
 
-The docs stay markdown files in `docs/` that read well on GitHub. VitePress builds a website from the same files, and a workflow publishes it to GitHub Pages on every push to `main`.
+The docs stay markdown files in `docs/` that read well on GitHub. A Fumadocs site in `website/` builds from the same files, and `pages.yml` publishes it to GitHub Pages at [bun-toolkit.davidpn.com](https://bun-toolkit.davidpn.com) on every push to `master`.
 
 ### What ships
 
-- A landing page, `docs/index.md`, with the banner, the mascot, the install commands and a short tour of the tools.
-- A getting-started page covering installation, `btk init`, a first command for each tool and the output modes.
-- A sidebar that groups pages by reader: a guide (getting started, config, output modes), the tools (`docs/tools/*`), and contributing (architecture, testing, CI, distribution, plugins and the roadmap).
-- Search, navigation and dark mode from VitePress. The only site-specific files are `docs/.vitepress/config.ts` and the landing page's frontmatter.
-- `pages.yml`, which deploys the site from `main` and builds it on pull requests so broken links fail the check.
+- A landing page with the banner, the install commands and a card for each tool.
+- `docs/getting-started.md`, covering installation, `btk init`, a first command for each tool and the output modes.
+- A sidebar with two groups: a guide (getting started, config, output modes, plugins) and the tools (`docs/tools/*`). The contributor pages (architecture, testing, CI, distribution, releasing, the roadmap and the vision) stay on GitHub only.
+- Search, navigation and dark mode from Fumadocs, with Bun pink as the accent. The site is a static export, so GitHub Pages serves plain files.
+- `pages.yml`, which deploys the site from `master` and builds it on pull requests that touch `docs/` or `website/`.
 
-### Why VitePress
+### How it stays out of the way
 
-It reads plain markdown without required frontmatter, and relative links such as `tools/image.md` work both on GitHub and on the site, so every page is written once. Starlight and Docusaurus want their own folder layout and frontmatter, which makes the files read worse on GitHub. Phase 8's `btk md serve docs` previews the same files with working links, but it writes nothing, so publishing stays with VitePress. A static `btk md build` is listed under Phase 10.
+Everything for the site lives in `website/`: its own `package.json`, lockfile, `tsconfig.json` and Next.js app. It isn't a workspace, so a root `bun install`, the CLI build, changesets and releases never see it. The docs need no frontmatter. `website/lib/pages.ts` lists the pages in the site, with their sidebar titles and descriptions.
 
-### How we'll check it
+Relative links such as `tools/image.md` work on GitHub as they are. At build time the site rewrites them to its own routes, sends links to pages it leaves out to GitHub, and fails the build on a link to a missing file.
+
+### Why Fumadocs
+
+It reads markdown from any folder, so the docs keep their GitHub-friendly layout. The site's look, search and sidebar come from one package, and the static export needs no server. Phase 8's `btk md serve docs` previews the same files locally.
+
+### How we check it
 
 - Every page reads correctly on GitHub and on the site, and its links work in both.
-- A dead link fails `bunx vitepress build docs`, so the pull request check catches it.
-- The README and the npm package link to the site.
+- A dead link or a type error fails the `Docs site` check on the pull request.
+- The README links to the site.
 
 ---
 
-## Phase 8: markdown, themes, plugins and btk serve (built, shipping as a beta first)
+## Phase 8: markdown, themes, plugins and btk serve (done)
 
 Bun APIs: `Bun.markdown`, a CommonMark and GFM parser written in Rust, for rendering; `Bun.serve` and `Bun.file` for the live previews; `Bun.YAML` for front matter.
 

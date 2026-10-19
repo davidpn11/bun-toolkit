@@ -1,6 +1,6 @@
 # CI pipeline
 
-Six GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with `BUN_VERSION`, currently 1.4.0. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
+Seven GitHub Actions workflows live in `.github/workflows/`. They all install the Bun version pinned as `packageManager` in `package.json`, currently 1.4.0, through `setup-bun`'s `bun-version-file`. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
 
 | Workflow | Trigger | Job |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ Six GitHub Actions workflows live in `.github/workflows/`. They all pin Bun with
 | `beta.yml` | by hand, on any branch | Runs `publish.yml` for the beta channel |
 | `publish.yml` | called by the two above | Build, release and Homebrew, when the version is new |
 | `homebrew.yml` | called by `publish.yml`, or by hand | Writes the Homebrew formula for one release |
+| `pages.yml` | pull requests and pushes to `master` that touch `docs/` or `website/` | Builds the documentation site, and deploys it to GitHub Pages from `master` |
 
 ## test.yml
 

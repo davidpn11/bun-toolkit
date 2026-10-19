@@ -1,7 +1,7 @@
 {
   "name": "bun-toolkit",
   "version": "0.2.1",
-  "description": "Bun native APIs straight in your terminal. One CLI, one config, one output style.",
+  "description": "Bun native APIs straight in your terminal. A modern, configurable CLI that ships as a single binary.",
   "type": "module",
   "private": true,
   "license": "MIT",
@@ -13,9 +13,7 @@
     ".": "./src/public.ts"
   },
   "types": "./src/public.ts",
-  "engines": {
-    "bun": ">=1.4.0"
-  },
+  "packageManager": "bun@1.4.0",
   "scripts": {
     "dev": "bun bin/btk.ts",
     "test": "bun test",

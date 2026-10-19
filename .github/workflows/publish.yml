@@ -12,7 +12,6 @@ permissions:
   contents: read
 
 env:
-  BUN_VERSION: 1.4.0
   BTK_NO_LOCAL_CONFIG: "off"
 
 jobs:
@@ -29,7 +28,7 @@ jobs:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
       - name: Decide whether this commit is a stable release
         id: stable
         if: inputs.channel == 'stable'
@@ -92,7 +91,7 @@ jobs:
           fi
           version=$(bun scripts/beta-version.ts "$base")
           {
-            echo "Beta of v$base from \`$BRANCH\` ($(git rev-parse --short HEAD)). Install it with \`brew install davidpn11/bun-toolkit/bun-toolkit-beta\`."
+            echo "Beta of v$base from \`$BRANCH\` ($(git rev-parse --short HEAD)), built on Bun $(bun --version). Install it with \`brew install davidpn11/bun-toolkit/bun-toolkit-beta\`."
             echo
             bun scripts/changelog-section.ts "$base" 2> /dev/null || true
           } > "$RUNNER_TEMP/notes.md"
@@ -114,7 +113,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun test
@@ -161,7 +160,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
       - name: Stamp the beta version
         if: inputs.channel == 'beta'
@@ -192,7 +191,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
       - uses: actions/download-artifact@v8
         with:
           path: release

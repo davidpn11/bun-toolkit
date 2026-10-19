@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Next's CSS parser rejects ::highlight(); app/layout.tsx adds these two styles inline instead. */
+@source not inline("[&_::highlight(fd-search)]:text-fd-primary");
+@source not inline("[&_::highlight(fd-search)]:underline");
+
+:root,
+.dark {
+  --color-fd-primary: #ff1f8f;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
