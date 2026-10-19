@@ -1,5 +1,21 @@
 # bun-toolkit
 
+## 0.3.0
+
+Built on Bun 1.4.3.
+
+### Minor Changes
+
+- [#4](https://github.com/davidpn11/bun-toolkit/pull/4) [`2d74bd9`](https://github.com/davidpn11/bun-toolkit/commit/2d74bd954be97ae17289c0aa2b871b0f4c35849e) Thanks [@davidpn11](https://github.com/davidpn11)! - `btk ui` now opens `md` and `serve`. The md dashboard lists the markdown files in the folder and renders the one you pick in the terminal. The serve dashboard serves the folder and shows its URL and the requests as they arrive, until you leave the screen.
+
+### Patch Changes
+
+- [#4](https://github.com/davidpn11/bun-toolkit/pull/4) [`2d74bd9`](https://github.com/davidpn11/bun-toolkit/commit/2d74bd954be97ae17289c0aa2b871b0f4c35849e) Thanks [@davidpn11](https://github.com/davidpn11)! - The `btk ui` home screen keeps its columns lined up in narrower terminals: long descriptions wrap under their own column instead of pushing rows out of line. In terminals with only 16 colors, it leaves out the mascot, whose colors would turn into blocks.
+
+- [#6](https://github.com/davidpn11/bun-toolkit/pull/6) [`1bea003`](https://github.com/davidpn11/bun-toolkit/commit/1bea0035c31b70e697f2f9b716d12047289b9fb4) Thanks [@davidpn11](https://github.com/davidpn11)! - `btk serve` and `btk md` send files with a `Last-Modified` header, so an interrupted download resumes where it stopped instead of starting over. If the file changed in the meantime, the client gets the new file in full.
+
+- [#6](https://github.com/davidpn11/bun-toolkit/pull/6) [`1bea003`](https://github.com/davidpn11/bun-toolkit/commit/1bea0035c31b70e697f2f9b716d12047289b9fb4) Thanks [@davidpn11](https://github.com/davidpn11)! - btk is now built on Bun 1.4.3, and the binary starts about twice as fast because it is compiled to bytecode. `btk image` reads CMYK and YCCK JPEGs, slightly damaged JPEGs, and 10-bit HEIC files on macOS. `btk convert --to yaml` no longer leaves a trailing space after keys, and with `--indent` it keeps `[]` and `{}` on the key's line and aligns nested lists. `btk md` renders deeply nested lists much faster.
+
 ## 0.2.1
 
 Built on Bun 1.4.0.

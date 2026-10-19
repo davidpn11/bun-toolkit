@@ -1,6 +1,6 @@
 # CI pipeline
 
-Seven GitHub Actions workflows live in `.github/workflows/`. They all install the Bun version pinned as `packageManager` in `package.json`, currently 1.4.0, through `setup-bun`'s `bun-version-file`. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
+Seven GitHub Actions workflows live in `.github/workflows/`. They all install the Bun version pinned as `packageManager` in `package.json`, currently 1.4.3, through `setup-bun`'s `bun-version-file`. Every step runs on Bun, and nothing installs Node. The only Node in CI is the runtime GitHub uses for the actions themselves: `actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8` and `oven-sh/setup-bun@v2` all target Node 24. When GitHub deprecates a Node version, bump these to the major whose `action.yml` says `runs.using: node24` or later. `bunfig.toml` sets `[run] bun = true`, so tools with a `node` shebang, such as the Changesets CLI, run on Bun through `bun run` and `bun <tool>`. [releasing.md](releasing.md) covers the release process from a contributor's side.
 
 | Workflow | Trigger | Job |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ A new push to the same branch cancels the run in progress.
 
 | Job | Runs on | Steps |
 | --- | --- | --- |
-| `check` | Ubuntu | `bun install --frozen-lockfile`, then `bun run check` (Biome, oxlint, tsc) |
+| `check` | Ubuntu | `bun install --frozen-lockfile`, then `bun run check` (Biome, oxlint, `bun --check`) |
 | `test` | Ubuntu, macOS, Windows | `bun install --frozen-lockfile`, `bun test`, then `bun run test:dist`, which builds the binary for that runner and runs the end-to-end suite against it |
 
 ## release-check.yml
@@ -87,7 +87,7 @@ await Bun.build({
 });
 ```
 
-The build skips `--bytecode` because Ink and yoga-layout use top-level await, which bytecode compilation rejects (see [distribution.md](distribution.md)). The entrypoint still avoids top-level await, so we can turn bytecode back on if that changes.
+The build compiles to ESM bytecode, so the binaries start about twice as fast (see [distribution.md](distribution.md)).
 
 ## Later
 

@@ -4,6 +4,7 @@ import type { BtkContext } from "../../context.ts";
 import { BtkError } from "../../errors.ts";
 import { displayPath } from "../../shared/fs.ts";
 import {
+  fileResponse,
   htmlResponse,
   isIgnoredPath,
   isLoopback,
@@ -70,7 +71,7 @@ export async function respond(root: string, pathname: string, spa: boolean): Pro
     case "file":
       return isHtml(target.path)
         ? htmlResponse(injectReload(await Bun.file(target.path).text()))
-        : new Response(Bun.file(target.path));
+        : fileResponse(Bun.file(target.path));
   }
 }
 

@@ -113,14 +113,14 @@ bun scripts/build.ts --target bun-linux-x64     # cross-compile
 
 The build minifies, sets `NODE_ENV=production`, writes a linked sourcemap, and stubs `react-devtools-core` with a plugin. Ink imports that package only when `DEV=true`, but without the stub the bundler would leave it as a missing module.
 
-The build does not use `--bytecode`. Ink 6 and yoga-layout use top-level await, which bytecode compilation rejects in both ESM and CJS output. We confirmed this with Bun 1.4.0 in the Phase 0 spike. Plain commands still start in about 20ms because btk imports Ink only when the TUI opens.
+The build compiles to bytecode with ESM output (`bytecode: true`, `format: "esm"`), so JavaScriptCore skips parsing at startup. Bun 1.4.0 rejected this because Ink 6 and yoga-layout use top-level await. Bun 1.4.3 accepts it, and `btk hash --help` went from about 32 ms to 14 ms on an Apple silicon Mac. Bytecode adds about 5 MB to the binary. btk still imports Ink only when the TUI opens.
 
 The spike also confirmed that a compiled binary can:
 
 - `import()` a user's `btk.config.ts` from any directory
 - resolve `import { defineConfig } from "bun-toolkit"` through a runtime `Bun.plugin` virtual module, without `node_modules`
 
-The binary is about 63 MB because it embeds the Bun runtime.
+The binary is 73 to 98 MB, depending on the platform, because it embeds the Bun runtime.
 
 ## Platform package structure
 

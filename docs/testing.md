@@ -128,4 +128,4 @@ Every tool needs:
 
 - `bun run lint` runs oxlint.
 - `bun run format` runs Biome, which formats and sorts imports.
-- `bun run check` runs Biome, oxlint and tsc.
+- `bun run check` runs Biome, oxlint and `bun --check`, the type checker built into Bun.

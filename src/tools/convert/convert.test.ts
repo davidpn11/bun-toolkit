@@ -28,6 +28,13 @@ describe("codec", () => {
     expect(stringify({ a: 1 }, "json", { ...write, indent: 4 })).toBe('{\n    "a": 1\n}\n');
   });
 
+  test("YAML at a custom indent aligns nested lists and keeps empty collections inline", () => {
+    const value = { a: { b: [1, [2]] }, c: [], d: {} };
+    expect(stringify(value, "yaml", { ...write, indent: 4 })).toBe(
+      "a:\n    b:\n        - 1\n        - - 2\nc: []\nd: {}\n",
+    );
+  });
+
   test("JSONC and JSON5 accept comments and trailing commas", () => {
     expect(parse('{"a": 1, /* note */ "b": [1,],}', "jsonc")).toEqual({ a: 1, b: [1] });
     expect(parse("{a: 1, // note\n b: 'x',}", "json5")).toEqual({ a: 1, b: "x" });
