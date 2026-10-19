@@ -1,3 +1,4 @@
+import ansis from "ansis";
 import { Box, Text } from "ink";
 import { registeredTools, type ToolDef } from "../../cli/define.ts";
 import { colors } from "../../output/palette.ts";
@@ -18,8 +19,7 @@ export function Home() {
   const nav = useNavigation();
   const tools = registeredTools(ctx.registry);
   const { columns, rows } = useTerminalSize();
-  // header, subtitle, borders and footer take 8 rows; leave the list about 60 columns
-  const showMascot = columns >= MASCOT_WIDTH + 60 && rows >= MASCOT_HEIGHT + 10;
+  const showMascot = canShowMascot(columns, rows, ansis.level);
 
   const items: SelectItem<HomeValue>[] = [
     ...tools.map((tool) => ({
@@ -75,6 +75,11 @@ export function Home() {
       </Box>
     </Screen>
   );
+}
+
+/** A 16-color terminal rounds the sprite's colors into blocks, so it needs 256 colors (`colorLevel` 2) or more. */
+export function canShowMascot(columns: number, rows: number, colorLevel: number): boolean {
+  return colorLevel >= 2 && columns >= MASCOT_WIDTH + 60 && rows >= MASCOT_HEIGHT + 10;
 }
 
 export const homeScreen: ScreenEntry = { id: "home", title: "Home", render: () => <Home /> };

@@ -8,7 +8,7 @@ import { defaultRegistry } from "../cli/main.ts";
 import { builtins } from "../commands/index.ts";
 import { stripAnsi } from "../output/style.ts";
 import { TuiApp } from "./app.tsx";
-import { homeScreen } from "./screens/Home.tsx";
+import { canShowMascot, homeScreen } from "./screens/Home.tsx";
 import { toolScreen } from "./screens/ToolHost.tsx";
 
 type Tools = "none" | "demo" | "shipped";
@@ -110,5 +110,15 @@ describe("<TuiApp>", () => {
     await waitFor(app.frame, "demo dashboard");
     expect(app.frame()).not.toContain("esc back");
     app.unmount();
+  });
+});
+
+describe("canShowMascot()", () => {
+  test("needs room and at least 256 colors, since 16 colors turn the sprite into blocks", () => {
+    expect(canShowMascot(200, 50, 3)).toBe(true);
+    expect(canShowMascot(200, 50, 2)).toBe(true);
+    expect(canShowMascot(200, 50, 1)).toBe(false);
+    expect(canShowMascot(60, 50, 3)).toBe(false);
+    expect(canShowMascot(200, 10, 3)).toBe(false);
   });
 });

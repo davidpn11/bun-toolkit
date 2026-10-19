@@ -6,6 +6,7 @@ import {
   type Engine,
   parseTryArgs,
   pickEngine,
+  terminalEnv,
 } from "./run.ts";
 
 describe("parseTryArgs()", () => {
@@ -118,5 +119,17 @@ describe("describeStatus()", () => {
   test("a version on master that isn't published yet points at the workflow", () => {
     const { warnings } = describeStatus("stable", { published: "0.1.0", masterVersion: "0.2.0", pending: 0 });
     expect(warnings[0]).toStartWith("master is at v0.2.0, which isn't released yet");
+  });
+});
+
+describe("terminalEnv()", () => {
+  test("the container gets a 256-color TERM it knows, plus truecolor when the host has it", () => {
+    expect(terminalEnv({ TERM: "xterm-ghostty", COLORTERM: "truecolor" })).toEqual([
+      "-e",
+      "TERM=xterm-256color",
+      "-e",
+      "COLORTERM=truecolor",
+    ]);
+    expect(terminalEnv({})).toEqual(["-e", "TERM=xterm-256color"]);
   });
 });

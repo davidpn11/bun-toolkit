@@ -93,6 +93,8 @@ Betas have no branch of their own, so for beta it only reads the latest pre-rele
 
 It passes the latest version into the container, which fails when the formula installs anything else, for example when the Homebrew formula update failed. Without network access to GitHub it warns and skips these checks. Set `GITHUB_TOKEN` if you hit GitHub's rate limit.
 
+The container gets `TERM=xterm-256color` and your terminal's `COLORTERM`, so colors match your own terminal. Without them, `run -t` would set `TERM=xterm`, which means 16 colors: Bun pink turns into your theme's magenta and the mascot is left out.
+
 The container starts from the `homebrew/brew` image. It taps this repository from GitHub, trusts and installs `bun-toolkit` or `bun-toolkit-beta`, then checks the release:
 
 - `btk --version` and `bun-toolkit --version` both print the version of the installed formula.

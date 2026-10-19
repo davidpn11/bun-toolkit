@@ -2,10 +2,8 @@
  * `bun run release:try [stable|beta] [-- command...]`
  * `bun run` drops a leading `--`, so a command needs the channel before it: `stable -- btk info`.
  *
- * Asks GitHub which release is the latest on the channel, and for stable, warns when master has changes
- * that aren't released yet. Then installs the published release in a fresh Homebrew container, checks that
- * it is that latest release, and opens a shell (or runs the command). The container is removed when the shell exits. Uses Podman when it's
- * installed, otherwise Docker; BTK_CONTAINER_ENGINE picks one. See docs/testing.md.
+ * Installs the latest published release in a throwaway Homebrew container. Uses Podman when it's installed,
+ * otherwise Docker; BTK_CONTAINER_ENGINE picks one. See docs/testing.md.
  */
 
 import { existsSync } from "node:fs";
@@ -154,10 +152,19 @@ function assetsMount(): string[] {
   return existsSync(ASSETS) ? ["-v", `${ASSETS}:/assets:ro`] : [];
 }
 
+/**
+ * `run -t` sets TERM=xterm, which tools read as 16 colors, so Bun pink turns into the terminal's magenta.
+ * xterm-256color exists in every terminfo, unlike TERMs such as xterm-ghostty, and COLORTERM carries truecolor.
+ */
+export function terminalEnv(env: Record<string, string | undefined>): string[] {
+  const colorterm = env.COLORTERM ? ["-e", `COLORTERM=${env.COLORTERM}`] : [];
+  return ["-e", "TERM=xterm-256color", ...colorterm];
+}
+
 function runContainer(engine: Engine, options: TryOptions, expected: string | undefined): number {
   const interactive = options.command.length === 0 ? ["-it"] : [];
   const command = options.command.length > 0 ? ["--", ...options.command] : [];
-  const env = expected ? ["-e", `BTK_EXPECTED_VERSION=${expected}`] : [];
+  const env = [...terminalEnv(process.env), ...(expected ? ["-e", `BTK_EXPECTED_VERSION=${expected}`] : [])];
   const args = ["run", "--rm", ...interactive, ...env, ...assetsMount(), IMAGE, options.channel, ...command];
   return run(engine, args);
 }

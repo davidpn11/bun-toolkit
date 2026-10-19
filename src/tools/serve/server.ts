@@ -3,7 +3,13 @@ import { basename, dirname, resolve } from "node:path";
 import type { BtkContext } from "../../context.ts";
 import { BtkError } from "../../errors.ts";
 import { displayPath } from "../../shared/fs.ts";
-import { htmlResponse, isIgnoredPath, isLoopback, serveUntilStopped } from "../../shared/serve.ts";
+import {
+  htmlResponse,
+  isIgnoredPath,
+  isLoopback,
+  type LiveServerOptions,
+  serveUntilStopped,
+} from "../../shared/serve.ts";
 import { networkUrls } from "./network.ts";
 import { injectReload, listingPage, notFoundPage } from "./pages.ts";
 import { isHtml, resolveRequest } from "./resolve.ts";
@@ -20,14 +26,7 @@ export async function servePath(
   const shown = displayPath(root, ctx.cwd);
   let network: string[] = [];
   const server = await serveUntilStopped(
-    {
-      root,
-      hostname: settings.host,
-      port: settings.port,
-      watch: { dir: root, recursive: true, accept: (changed) => !isIgnoredPath(changed) },
-      page: (pathname) => respond(root, pathname, settings.spa),
-      headers: responseHeaders(settings.cors),
-    },
+    folderServer(root, settings),
     settings.open,
     ctx,
     (started, link) => {
@@ -38,6 +37,17 @@ export async function servePath(
   );
   const url = new URL(page, server.url).href;
   return { root: shown, url, host: settings.host, port: server.port, network };
+}
+
+export function folderServer(root: string, settings: ServeSettings): Omit<LiveServerOptions, "signal"> {
+  return {
+    root,
+    hostname: settings.host,
+    port: settings.port,
+    watch: { dir: root, recursive: true, accept: (changed) => !isIgnoredPath(changed) },
+    page: (pathname) => respond(root, pathname, settings.spa),
+    headers: responseHeaders(settings.cors),
+  };
 }
 
 function serveEntry(path: string, cwd: string): { root: string; page: string } {

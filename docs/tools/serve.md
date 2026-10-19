@@ -52,6 +52,10 @@ export default defineConfig({
 
 Every key also works as an environment variable, such as `BTK_SERVE_PORT=4000` or `BTK_SERVE_SPA=true`.
 
+## Dashboard
+
+`btk serve --ui`, or **serve** on the `btk ui` home screen, serves the current folder with your `tools.serve` settings. It shows the URL, the options, the network URLs when `host` shares it, and the latest requests with their status codes. `o` opens the browser, and leaving the screen stops the server.
+
 ## Security
 
 By default the server listens on `127.0.0.1`, so only your machine can reach it.
