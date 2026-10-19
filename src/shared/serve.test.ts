@@ -91,6 +91,35 @@ describe("startLiveServer", () => {
     await server.closed;
   });
 
+  test("files carry Last-Modified, so an interrupted download resumes with If-Range", async () => {
+    project = createTempProject();
+    project.write("big.bin", "0123456789");
+    const stop = new AbortController();
+    const server = startLiveServer({
+      root: project.dir,
+      watch: undefined,
+      port: 0,
+      page: async () => undefined,
+      signal: stop.signal,
+    });
+    const url = `${server.url}big.bin`;
+    const lastModified = (await fetch(url)).headers.get("last-modified");
+    expect(lastModified).toBe(new Date(Bun.file(join(project.dir, "big.bin")).lastModified).toUTCString());
+
+    const resumed = await fetch(url, { headers: { Range: "bytes=4-", "If-Range": lastModified ?? "" } });
+    expect(resumed.status).toBe(206);
+    expect(resumed.headers.get("content-range")).toBe("bytes 4-9/10");
+    expect(await resumed.text()).toBe("456789");
+
+    const stale = await fetch(url, {
+      headers: { Range: "bytes=4-", "If-Range": "Wed, 01 Jan 2020 00:00:00 GMT" },
+    });
+    expect(stale.status).toBe(200);
+    expect(await stale.text()).toBe("0123456789");
+    stop.abort();
+    await server.closed;
+  });
+
   test("opens the browser with each platform's command", () => {
     expect(openCommand("darwin", "u")).toEqual(["open", "u"]);
     expect(openCommand("win32", "u")).toEqual(["cmd", "/c", "start", "", "u"]);

@@ -39,6 +39,8 @@ const result = await Bun.build({
   entrypoints: ["./bin/btk.ts"],
   compile: { outfile, ...(target && { target }) },
   minify: true,
+  bytecode: true,
+  format: "esm",
   sourcemap: "linked",
   define: { "process.env.NODE_ENV": JSON.stringify("production") },
   plugins: [stubDevtools],

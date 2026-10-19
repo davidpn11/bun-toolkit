@@ -59,13 +59,17 @@ describe("btk serve", () => {
     expect(listingPage(site(), "/")).not.toContain('href="../"');
   });
 
-  test("HTML responses get the reload script; other files are sent as they are", async () => {
+  test("HTML responses get the reload script; other files are sent as they are, with Last-Modified", async () => {
     const root = site();
     const page = await respond(root, "/", false);
     expect(page.headers.get("content-type")).toBe("text/html; charset=utf-8");
     expect(await page.text()).toContain('new EventSource("/__btk/events")');
+    expect(page.headers.get("last-modified")).toBeNull();
     const css = await respond(root, "/app.css", false);
     expect(css.headers.get("content-type")).toStartWith("text/css");
+    expect(css.headers.get("last-modified")).toBe(
+      new Date(Bun.file(join(root, "app.css")).lastModified).toUTCString(),
+    );
     expect(await css.text()).toBe("h1 { color: red; }");
     const missing = await respond(root, "/nope.png", false);
     expect(missing.status).toBe(404);
