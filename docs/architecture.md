@@ -28,7 +28,7 @@ src/
     help.ts                   Help renderer
     suggest.ts                Edit distance for "did you mean"
     global-args.ts            --json, --verbose, --no-color, --config, --help and --ui
-  commands/                   Built-ins: info, init, config (show, validate, path), ui
+  commands/                   Built-ins: info, init, config (show, validate, path), ui, update
   tools/
     index.ts                  The tool registry
     image/                    btk image (docs/tools/image.md)

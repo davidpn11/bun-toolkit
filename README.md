@@ -36,7 +36,7 @@ brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
 brew install davidpn11/bun-toolkit/bun-toolkit
 ```
 
-Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. `brew upgrade bun-toolkit` picks up new releases.
+Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. `btk update` (or `brew upgrade bun-toolkit`) picks up new releases.
 
 Pre-releases are a separate formula. Only one of the two can be installed at a time, because both install `btk`:
 
@@ -55,7 +55,7 @@ grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 
-Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`.
+Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`. Later, `btk update` downloads the newest release, verifies it the same way and replaces the binary.
 
 ### From source
 
