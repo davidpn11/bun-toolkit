@@ -1,5 +1,13 @@
 # bun-toolkit
 
+## 0.4.0
+
+Built on Bun 1.4.3.
+
+### Minor Changes
+
+- [#8](https://github.com/davidpn11/bun-toolkit/pull/8) [`af91348`](https://github.com/davidpn11/bun-toolkit/commit/af91348ef5b2ae788373e8932a557a9ceeb5d4b9) Thanks [@davidpn11](https://github.com/davidpn11)! - Add `btk update`, which updates btk to the latest release. Homebrew installs run `brew upgrade`, and standalone binaries download the new release, check it against `SHA256SUMS` and replace themselves.
+
 ## 0.3.0
 
 Built on Bun 1.4.3.
