@@ -1,17 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { assetName, detectInstall, expectedChecksum } from "./update.ts";
+import { assetName, detectInstall, expectedChecksum, optPath } from "./update.ts";
+
+const MAC_CELLAR = "/opt/homebrew/Cellar/bun-toolkit/0.3.0/bin/btk";
+const LINUX_CELLAR = "/home/linuxbrew/.linuxbrew/Cellar/bun-toolkit-beta/0.4.0-beta.1/bin/btk";
 
 describe("detectInstall", () => {
   test("Homebrew formulas from the Cellar path", () => {
-    expect(detectInstall("/opt/homebrew/Cellar/bun-toolkit/0.3.0/bin/btk", "/$bunfs/root/btk")).toEqual({
+    expect(detectInstall(MAC_CELLAR, "/$bunfs/root/btk")).toEqual({
       kind: "homebrew",
       formula: "bun-toolkit",
+      path: MAC_CELLAR,
     });
-    expect(
-      detectInstall("/home/linuxbrew/.linuxbrew/Cellar/bun-toolkit-beta/0.4.0-beta.1/bin/btk", ""),
-    ).toEqual({
+    expect(detectInstall(LINUX_CELLAR, "")).toEqual({
       kind: "homebrew",
       formula: "bun-toolkit-beta",
+      path: LINUX_CELLAR,
     });
   });
 
@@ -28,6 +31,11 @@ describe("detectInstall", () => {
       kind: "source",
     });
   });
+});
+
+test("optPath points at the linked version through Homebrew's opt/ link", () => {
+  expect(optPath(MAC_CELLAR)).toBe("/opt/homebrew/opt/bun-toolkit/bin/btk");
+  expect(optPath(LINUX_CELLAR)).toBe("/home/linuxbrew/.linuxbrew/opt/bun-toolkit-beta/bin/btk");
 });
 
 test("assetName matches the release asset names", () => {

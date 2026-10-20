@@ -8,7 +8,7 @@ import { describeFileError } from "../shared/fs.ts";
 const REPO = "davidpn11/bun-toolkit";
 
 export type InstallMethod =
-  | { kind: "homebrew"; formula: string }
+  | { kind: "homebrew"; formula: string; path: string }
   | { kind: "binary"; path: string }
   | { kind: "source" };
 
@@ -26,9 +26,14 @@ type Release = {
 
 export function detectInstall(execPath: string, main: string): InstallMethod {
   const cellar = execPath.match(/\/Cellar\/(bun-toolkit(?:-beta)?)\//);
-  if (cellar?.[1]) return { kind: "homebrew", formula: cellar[1] };
+  if (cellar?.[1]) return { kind: "homebrew", formula: cellar[1], path: execPath };
   // Compiled binaries run their entrypoint from Bun's embedded filesystem.
   return /\$bunfs|~BUN/.test(main) ? { kind: "binary", path: execPath } : { kind: "source" };
+}
+
+/** Homebrew's opt/ link always points at the formula's currently linked version. */
+export function optPath(cellarPath: string): string {
+  return cellarPath.replace(/\/Cellar\/([^/]+)\/[^/]+\//, "/opt/$1/");
 }
 
 export function assetName(platform: NodeJS.Platform, arch: string): string {
@@ -92,6 +97,7 @@ function verify(binary: Uint8Array, name: string, sums: string): void {
 
 async function swapBinary(path: string, binary: Uint8Array, platform: NodeJS.Platform): Promise<void> {
   const temp = `${path}.new`;
+  let movedOld = false;
   try {
     await Bun.write(temp, binary);
     chmodSync(temp, 0o755);
@@ -99,16 +105,26 @@ async function swapBinary(path: string, binary: Uint8Array, platform: NodeJS.Pla
       // shortcut: Windows can rename a running exe but not delete it, so btk.exe.old stays until the next update.
       rmSync(`${path}.old`, { force: true });
       renameSync(path, `${path}.old`);
+      movedOld = true;
     }
     renameSync(temp, path);
   } catch (error) {
     rmSync(temp, { force: true });
+    if (movedOld) restoreOld(path);
     const { code, reason } = describeFileError(error);
     throw new BtkError(`Could not replace ${path}: ${reason}`, {
       code,
       hint: code === "EACCES" || code === "EPERM" ? "Run it again with sudo" : undefined,
       cause: error,
     });
+  }
+}
+
+function restoreOld(path: string): void {
+  try {
+    renameSync(`${path}.old`, path);
+  } catch {
+    // The original failure is the one worth reporting; .old stays for a manual restore.
   }
 }
 
@@ -136,6 +152,30 @@ async function brewUpgrade(formula: string, signal: AbortSignal): Promise<void> 
   }
 }
 
+async function updateHomebrew(
+  formula: string,
+  path: string,
+  latest: string,
+  ctx: BtkContext,
+): Promise<string> {
+  await brewUpgrade(formula, ctx.signal);
+  const check = Bun.spawnSync([optPath(path), "--version"]);
+  if (!check.success) {
+    throw new BtkError("The btk that Homebrew installed does not start", {
+      code: "ERR_UPDATE_BREW",
+      hint: `Run "brew reinstall ${formula}"`,
+    });
+  }
+  const installed = check.stdout.toString().trim();
+  if (installed === ctx.version) {
+    throw new BtkError(`Homebrew doesn't have btk ${latest} yet`, {
+      code: "ERR_UPDATE_BREW_STALE",
+      hint: "The formula is updated shortly after each release. Try again later.",
+    });
+  }
+  return installed;
+}
+
 export const update = defineCommand({
   name: "update",
   aliases: ["upgrade"],
@@ -161,11 +201,11 @@ export const update = defineCommand({
 
       if (method.kind === "homebrew") {
         spinner.stop();
-        await brewUpgrade(method.formula, ctx.signal);
-      } else {
-        spinner.update(`Downloading btk ${latest}`);
-        await updateBinary(release, method.path, ctx);
+        const installed = await updateHomebrew(method.formula, method.path, latest, ctx);
+        return { ...result, to: installed, updated: true };
       }
+      spinner.update(`Downloading btk ${latest}`);
+      await updateBinary(release, method.path, ctx);
       return { ...result, updated: true };
     } finally {
       spinner.stop();
