@@ -7,6 +7,7 @@ export type Section = { title: string; pages: DocPage[] };
 export const docsRoute = "/docs";
 export const repoUrl = "https://github.com/davidpn11/bun-toolkit";
 export const bunVersion = pkg.packageManager.replace(/^bun@/, "");
+export const version = pkg.version;
 
 const indexFile = "getting-started.md";
 

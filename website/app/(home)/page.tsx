@@ -2,7 +2,7 @@ import banner from "@docs/assets/btk-banner.png";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { bunVersion, type DocPage, docsRoute, toolPages, urlOf } from "@/lib/pages";
+import { bunVersion, type DocPage, docsRoute, repoUrl, toolPages, urlOf, version } from "@/lib/pages";
 
 type Highlight = { title: string; body: ReactNode };
 
@@ -36,16 +36,20 @@ const install = [
   "brew install davidpn11/bun-toolkit/bun-toolkit",
 ];
 
+const chip = "rounded-full border px-3 py-1 text-sm text-fd-muted-foreground hover:border-fd-primary";
+
 function Hero() {
   return (
     <section className="flex flex-col items-center gap-6 text-center">
       <Image src={banner} alt="The btk mascot, a bun in a hardhat, next to the btk dashboard" priority />
-      <Link
-        href={`${docsRoute}#bun-version`}
-        className="rounded-full border px-3 py-1 text-sm text-fd-muted-foreground hover:border-fd-primary"
-      >
-        Built on <span className="font-medium text-fd-primary">Bun {bunVersion}</span>
-      </Link>
+      <div className="flex flex-wrap justify-center gap-2">
+        <a href={`${repoUrl}/releases/tag/v${version}`} className={chip}>
+          Latest <span className="font-medium text-fd-primary">v{version}</span>
+        </a>
+        <Link href={`${docsRoute}#bun-version`} className={chip}>
+          Built on <span className="font-medium text-fd-primary">Bun {bunVersion}</span>
+        </Link>
+      </div>
       <h1 className="text-4xl font-bold">
         Bun native APIs, straight in your <span className="text-fd-primary">terminal</span>.
       </h1>
