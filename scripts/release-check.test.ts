@@ -17,7 +17,12 @@ describe("releaseCheck()", () => {
     const check = releaseCheck(state({ headVersion: "0.2.0", changelog: "### Minor Changes\n\n- New tool" }));
     expect(check).toMatchObject({ level: "notice", title: "Merging releases v0.2.0" });
     expect(check.summary).toContain("- New tool");
-    expect(check.summary).toContain("gh workflow run beta.yml --ref feature/x");
+    expect(check.summary).toContain("gh workflow run beta.yml --ref 'feature/x'");
+  });
+
+  test("the beta command quotes the branch, so pasting it never runs a $(…) in the name", () => {
+    const check = releaseCheck(state({ headVersion: "0.2.0", branch: "a$(id)'b" }));
+    expect(check.summary).toContain(`--ref 'a$(id)'\\''b'`);
   });
 
   test("pending changesets warn with the command that versions them", () => {

@@ -27,7 +27,7 @@ cat notes.md | btk md --browser         # piped markdown, still in the browser
 btk md README.md --terminal --columns 72 --hyperlinks
 ```
 
-In a terminal, `btk md README.md` serves the page on `127.0.0.1` and opens your browser. The server only answers requests for `127.0.0.1` and `localhost`. The page updates when you save the file and keeps its scroll position. Images and other files next to the markdown file are served too, so relative links work. Press Ctrl+C to stop.
+In a terminal, `btk md README.md` serves the page on `127.0.0.1` and opens your browser. The server only answers requests for `127.0.0.1` and `localhost`. The page updates when you save the file and keeps its scroll position. Images and other files next to the markdown file are served too, so relative links work. Press Ctrl+C to stop. The page's Content-Security-Policy only lets the live reload script run, so scripts, `onerror=` attributes and `javascript:` links in the markdown do nothing.
 
 When stdout is not a terminal, or in json mode, preview prints the terminal rendering instead, because nobody is there to look at a browser. `--terminal` and `--browser` force one or the other. Piped output is plain unless you pass `--terminal`, which keeps the colors for a pager such as `less -R`.
 

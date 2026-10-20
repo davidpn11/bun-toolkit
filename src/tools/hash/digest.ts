@@ -33,6 +33,7 @@ export async function digestStream(
   chunks: AsyncIterable<Uint8Array>,
   options: DigestOptions,
 ): Promise<Digest> {
+  assertHmacSupported(options);
   const { algorithm } = options;
   if (isCrypto(algorithm)) return digestCrypto(chunks, algorithm, options);
   if (algorithm === "crc32") return digestCrc32(chunks, options.encoding);

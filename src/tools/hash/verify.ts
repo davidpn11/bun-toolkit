@@ -2,7 +2,7 @@ import { dirname, resolve } from "node:path";
 import { UsageError } from "../../errors.ts";
 import { describeFileError } from "../../shared/fs.ts";
 import { type Algorithm, digestLength, isAlgorithm } from "./algorithms.ts";
-import { type DigestOptions, digestBytes, digestFile } from "./digest.ts";
+import { assertHmacSupported, type DigestOptions, digestBytes, digestFile } from "./digest.ts";
 
 export type Expected = {
   /** From an SRI-style value like `sha256-…`. */
@@ -66,6 +66,7 @@ export async function verifyInput(
   const expected = parseExpected(expectedText);
   const { algorithm, inferred } = resolveAlgorithm(expected, options.explicit, options.preferred);
   const digestOptions: DigestOptions = { algorithm, encoding: "hex", hmacKey: options.hmacKey };
+  assertHmacSupported(digestOptions);
   const base = { file, algorithm, inferred, expected: expected.bytes.toString("hex") };
   try {
     const { digest } = source

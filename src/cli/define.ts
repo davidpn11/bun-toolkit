@@ -58,6 +58,7 @@ export type ActionDef<A extends ArgsSpec = ArgsSpec, R = unknown> = {
    * Every other command fails early with the config error.
    */
   requiresConfig?: boolean;
+  projectConfig?: boolean;
   run(input: InferArgs<A>, ctx: BtkContext, meta: ActionMeta<A>): R | Promise<R>;
   render?(result: Awaited<R>, out: Output, ctx: BtkContext): void;
   exitCode?(result: Awaited<R>, ctx: BtkContext): ExitCode;

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { z } from "zod";
 import { defineAction, defineTool, flag, positional } from "../../cli/define.ts";
@@ -18,8 +19,12 @@ export type StreamResult = {
   before: number;
   after: number;
   path?: string;
+  dryRun?: boolean;
   data: Uint8Array;
 };
+
+type StreamTarget = { output: string | undefined; overwrite: boolean; dryRun: boolean };
+const STDOUT: StreamTarget = { output: undefined, overwrite: false, dryRun: false };
 export type CompressResult = StreamResult | ({ mode: "batch" } & CompressReport);
 export type DecompressResult = StreamResult | ({ mode: "batch" } & DecompressReport);
 
@@ -83,7 +88,7 @@ export const compressRun = defineAction({
   },
   async run(input, ctx): Promise<CompressResult> {
     const formats = chosenFormats(input);
-    if (streamWanted(input.inputs, ctx)) return compressStream(formats, input.level, input.output, ctx);
+    if (streamWanted(input.inputs, ctx)) return compressStream(formats, input.level, input, ctx);
     if (input.inputs.length === 0)
       throw nothingGiven("compress", "cat file | btk compress --zstd > file.zst");
     const plan: CompressPlan = {
@@ -173,8 +178,8 @@ export const decompressRun = defineAction({
   },
   async run(input, ctx): Promise<DecompressResult> {
     if (streamWanted(input.inputs, ctx)) {
-      checkStreamTarget(input.output, ctx, false);
-      return decompressStream(await readStdin(ctx.io), input.format, input.output, ctx);
+      checkStreamTarget(input, ctx, false);
+      return decompressStream(await readStdin(ctx.io), input.format, input, ctx);
     }
     if (input.inputs.length === 0) throw nothingGiven("decompress", "cat file.zst | btk decompress > file");
     if (input.stdout) return decompressOneToStdout(input.inputs, input.format, ctx);
@@ -221,18 +226,18 @@ function streamWanted(inputs: string[], ctx: BtkContext): boolean {
 async function compressStream(
   formats: Format[],
   level: number | undefined,
-  output: string | undefined,
+  target: StreamTarget,
   ctx: BtkContext,
 ): Promise<StreamResult> {
   const [format, ...more] = formats;
   if (!format || more.length > 0)
     throw new UsageError("Standard input takes one format", { code: "ERR_MANY_FORMATS" });
-  checkStreamTarget(output, ctx, true);
+  checkStreamTarget(target, ctx, true);
   const data = await readStdin(ctx.io);
   const compressed = await compressBytes(data, format, resolveLevel(format, level));
   return deliver(
     { mode: "stream", format, before: data.byteLength, after: compressed.byteLength, data: compressed },
-    output,
+    target,
     ctx,
   );
 }
@@ -240,7 +245,7 @@ async function compressStream(
 async function decompressStream(
   data: Uint8Array,
   forced: Format | undefined,
-  output: string | undefined,
+  target: StreamTarget,
   ctx: BtkContext,
 ): Promise<StreamResult> {
   const format = forced ?? sniffFormat(data);
@@ -253,7 +258,7 @@ async function decompressStream(
   const raw = await decompressBytes(data, format);
   return deliver(
     { mode: "stream", format, before: data.byteLength, after: raw.byteLength, data: raw },
-    output,
+    target,
     ctx,
   );
 }
@@ -265,17 +270,25 @@ async function decompressOneToStdout(
 ): Promise<StreamResult> {
   const [only, ...more] = inputs;
   if (!only || more.length > 0) throw new UsageError("--stdout takes one file", { code: "ERR_STDOUT_MANY" });
-  checkStreamTarget(undefined, ctx, false);
+  checkStreamTarget(STDOUT, ctx, false);
   const path = resolve(ctx.cwd, only);
   const file = Bun.file(path);
   if (!(await file.exists())) throw new BtkError(`File not found: ${only}`, { code: "ENOENT" });
   const detected = forced ?? detectFromName(path)?.format;
-  return decompressStream(await file.bytes(), detected, undefined, ctx);
+  return decompressStream(await file.bytes(), detected, STDOUT, ctx);
 }
 
 /** Runs before any input is read. Without `-o` the bytes go to stdout, so not into JSON or, compressed, a terminal. */
-function checkStreamTarget(output: string | undefined, ctx: BtkContext, binary: boolean): void {
-  if (output) return;
+function checkStreamTarget(target: StreamTarget, ctx: BtkContext, binary: boolean): void {
+  if (target.output) {
+    if (!target.overwrite && existsSync(resolve(ctx.cwd, target.output))) {
+      throw new UsageError(`${target.output} already exists`, {
+        code: "ERR_OUTPUT_EXISTS",
+        hint: "Pass --overwrite to replace it",
+      });
+    }
+    return;
+  }
   if (ctx.outputMode === "json") {
     throw new UsageError("Binary data can't go in a JSON document", {
       code: "ERR_JSON_BINARY",
@@ -290,13 +303,10 @@ function checkStreamTarget(output: string | undefined, ctx: BtkContext, binary: 
   }
 }
 
-async function deliver(
-  result: StreamResult,
-  output: string | undefined,
-  ctx: BtkContext,
-): Promise<StreamResult> {
-  if (!output) return result;
-  const path = resolve(ctx.cwd, output);
+async function deliver(result: StreamResult, target: StreamTarget, ctx: BtkContext): Promise<StreamResult> {
+  if (!target.output) return result;
+  const path = resolve(ctx.cwd, target.output);
+  if (target.dryRun) return { ...result, path, dryRun: true };
   await writeFileAtomic(path, result.data);
   return { ...result, path };
 }

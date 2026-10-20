@@ -254,6 +254,12 @@ describe("mergeLayers()", () => {
     expect(sources["tools.x.a"]?.kind).toBe("default");
     expect(sources["tools.x.list"]?.kind).toBe("project");
   });
+
+  test("a __proto__ key in a JSON config does not reach Object.prototype", () => {
+    const values = JSON.parse('{ "tools": { "image": { "__proto__": { "hostname": "0.0.0.0" } } } }');
+    mergeLayers([{ source: { kind: "project", origin: "p" }, values }]);
+    expect(({} as Record<string, unknown>).hostname).toBeUndefined();
+  });
 });
 
 describe("envVarName()", () => {

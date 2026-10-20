@@ -18,6 +18,7 @@ import {
 } from "./components/spinner.ts";
 import { renderSummary, type SummaryTone } from "./components/summary.ts";
 import { renderTable, type TableOptions } from "./components/table.ts";
+import { terminalSafe } from "./format.ts";
 import { icons } from "./palette.ts";
 import type { OutStream } from "./stream.ts";
 import { createStyler, type Styler } from "./style.ts";
@@ -64,8 +65,8 @@ export function createReporter(options: ReporterOptions): Reporter {
   const outStyle = createStyler(color && stdout.isTTY === true);
   const plain = mode === "ci";
 
-  const writeOut = (text: string) => stdout.write(`${text}\n`);
-  const writeErr = (text: string) => stderr.write(`${text}\n`);
+  const writeOut = (text: string) => stdout.write(`${terminalSafe(text)}\n`);
+  const writeErr = (text: string) => stderr.write(`${terminalSafe(text)}\n`);
 
   const logAt =
     (level: LogLevel): LogFn =>

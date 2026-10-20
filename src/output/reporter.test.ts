@@ -17,6 +17,15 @@ const rows = [
 ];
 
 describe("createReporter()", () => {
+  test("escapes terminal control sequences but keeps color and links", () => {
+    const { reporter, stdout } = setup("human");
+    const link = "\x1b]8;;https://bun.sh\x1b\\bun\x1b]8;;\x1b\\";
+    reporter.out.text(`a\x1b]52;c;aGk=\x07b\rc ${reporter.out.style.bold("x")} ${link}`);
+    expect(stdout.text).toContain("a\\x1b]52;c;aGk=\\x07b\\x0dc");
+    expect(stdout.text).toMatch(ANSI);
+    expect(stdout.text).toContain(link);
+  });
+
   test("human: styled logs to stderr, results to stdout", () => {
     const { reporter, stdout, stderr } = setup("human");
     reporter.log.success("done");

@@ -182,6 +182,7 @@ export const update = defineCommand({
   description: "Update btk to the latest release",
   examples: ["btk update"],
   requiresConfig: false,
+  projectConfig: false,
   async run(_input, ctx): Promise<UpdateResult> {
     const method = detectInstall(realpathSync(process.execPath), Bun.main);
     if (method.kind === "source") {

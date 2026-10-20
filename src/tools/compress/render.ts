@@ -67,7 +67,7 @@ function renderStream(result: StreamResult, out: Output, ctx: BtkContext, verb: 
   const sizes = `${formatBytes(result.before)} → ${formatBytes(result.after)}`;
   if (result.path) {
     out.text(
-      `${out.style.success(icons.success)} Wrote ${out.style.bold(displayPath(result.path, ctx.cwd))} ${out.style.muted(`(${result.format}, ${sizes})`)}`,
+      `${out.style.success(icons.success)} ${result.dryRun ? "Would write" : "Wrote"} ${out.style.bold(displayPath(result.path, ctx.cwd))} ${out.style.muted(`(${result.format}, ${sizes})`)}`,
     );
     return;
   }

@@ -26,19 +26,18 @@ jobs:
       TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
           path: tap
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: package.json
+          bun-version-file: tap/package.json
       - name: Write the formula
         id: formula
         run: |
           gh release view "$TAG" --json assets > "$RUNNER_TEMP/assets.json"
           gh release download "$TAG" --pattern SHA256SUMS --dir "$RUNNER_TEMP"
-          path=$(bun scripts/homebrew-formula.ts \
+          path=$(bun tap/scripts/homebrew-formula.ts \
             --version "${TAG#v}" \
             --repo "$GITHUB_REPOSITORY" \
             --assets "$RUNNER_TEMP/assets.json" \
@@ -51,6 +50,11 @@ jobs:
         env:
           FORMULA: ${{ steps.formula.outputs.path }}
         run: |
+          case "$TAG" in *-*) want=tap/Formula/bun-toolkit-beta.rb ;; *) want=tap/Formula/bun-toolkit.rb ;; esac
+          if [ "$FORMULA" != "$want" ]; then
+            echo "::error::Expected $want for $TAG, got $FORMULA"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${FORMULA#tap/}"

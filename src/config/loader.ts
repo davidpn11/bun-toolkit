@@ -35,6 +35,7 @@ export type LoadConfigOptions = {
   env: Record<string, string | undefined>;
   tools: readonly ToolDef[];
   explicitPath?: string | undefined;
+  project?: boolean;
 };
 
 export function displayPath(path: string, cwd: string): string {
@@ -140,7 +141,7 @@ export async function loadConfig(options: LoadConfigOptions): Promise<LoadedConf
       };
       projectPath = undefined;
     }
-  } else {
+  } else if (options.project !== false) {
     projectPath = findProjectConfig(cwd, env);
   }
   if (projectPath) {

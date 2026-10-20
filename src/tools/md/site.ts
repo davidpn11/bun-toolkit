@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { basename, extname, join, relative, sep } from "node:path";
 import { collectFiles } from "../../shared/collect.ts";
-import { pathInside } from "../../shared/serve.ts";
+import { folderRedirect, pathInside } from "../../shared/serve.ts";
 import { splitFrontMatter } from "./front-matter.ts";
 
 export type SitePage = {
@@ -19,14 +19,16 @@ const MARKDOWN = /\.(md|markdown)$/i;
 const INDEX_NAMES = ["README.md", "readme.md", "index.md"];
 const HEADING = /^#[ \t]+(.+?)[ \t#]*$/m;
 
-/** Every markdown file under `root`, skipping `node_modules` and dot folders such as `.git`. */
+/** Every markdown file under `root`, skipping `node_modules`, dot folders such as `.git`, and links out of `root`. */
 export async function listPages(root: string): Promise<SitePage[]> {
   const { files } = await collectFiles([root], {
     cwd: root,
     recursive: true,
     accept: (p) => MARKDOWN.test(p),
   });
-  const paths = files.map((file) => toPosix(relative(root, file.path))).filter(isVisible);
+  const paths = files
+    .map((file) => toPosix(relative(root, file.path)))
+    .filter((path) => pathInside(root, pageHref(path)));
   const pages = await Promise.all(
     paths.map(async (path) => ({ path, title: titleOf(await Bun.file(join(root, path)).text(), path) })),
   );
@@ -39,9 +41,9 @@ export function resolveTarget(root: string, pathname: string): SiteTarget | unde
   if (!path || !stat) return undefined;
   if (stat.isFile()) return MARKDOWN.test(path) ? pageTarget(root, path) : undefined;
   if (!stat.isDirectory()) return undefined;
-  if (!pathname.endsWith("/")) return { kind: "redirect", location: `${pathname}/` };
-  const index = INDEX_NAMES.map((name) => join(path, name)).find((file) =>
-    statSync(file, { throwIfNoEntry: false }),
+  if (!pathname.endsWith("/")) return { kind: "redirect", location: folderRedirect(pathname) };
+  const index = INDEX_NAMES.map((name) => pathInside(root, `${pathname}${name}`)).find(
+    (file): file is string => file !== undefined && statSync(file, { throwIfNoEntry: false }) !== undefined,
   );
   return index ? pageTarget(root, index) : { kind: "folder", dir: toPosix(relative(root, path)) };
 }
@@ -117,10 +119,6 @@ function folderOf(path: string): string {
 
 function isIndex(path: string): boolean {
   return INDEX_NAMES.includes(basename(path));
-}
-
-function isVisible(path: string): boolean {
-  return !path.split("/").some((segment) => segment.startsWith("."));
 }
 
 function toPosix(path: string): string {
