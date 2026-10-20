@@ -1,7 +1,7 @@
 /**
  * Renders the mascot sprite (src/tui/mascot.ts) to the images in docs/assets.
  *
- *   bun scripts/mascot.ts          # btk-mascot.svg, btk-banner.svg
+ *   bun scripts/mascot.ts          # btk-mascot.svg, btk-banner.svg, the website's app/icon.svg
  *   bun scripts/mascot.ts --png    # also btk-banner.png (2560x1280), through headless Chrome
  *
  * Chrome is found through $CHROME, then the usual install locations.
@@ -11,7 +11,6 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { ACCENT } from "../src/output/palette.ts";
 import { mascotPixels } from "../src/tui/mascot.ts";
-import { BUN_VERSION, VERSION } from "../src/version.ts";
 
 const { values } = parseArgs({ args: Bun.argv.slice(2), options: { png: { type: "boolean" } } });
 
@@ -41,6 +40,11 @@ function spriteRects(fill?: string) {
 
 const mascotSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SW * 16}" height="${SH * 16}" viewBox="0 0 ${SW} ${SH}" shape-rendering="crispEdges">
 <title>btk mascot</title>
+${spriteRects()}
+</svg>
+`;
+
+const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 ${(SH - SW) / 2} ${SW} ${SW}" shape-rendering="crispEdges">
 ${spriteRects()}
 </svg>
 `;
@@ -90,7 +94,6 @@ const bannerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="
   <text x="${box.x + 4}" y="74" font-family="${FONT}" font-size="22">
     <tspan fill="${ACCENT}" font-weight="700">◆ bun-toolkit</tspan><tspan fill="${MUTED}"> ❯ </tspan><tspan fill="${TEXT}">home</tspan>
   </text>
-  <text x="${W - box.x - 4}" y="74" font-family="${FONT}" font-size="20" fill="${MUTED}" text-anchor="end">v${VERSION} · bun ${BUN_VERSION}</text>
 
   <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="18" fill="#101016" stroke="${ACCENT}" stroke-width="2.5"/>
   <ellipse cx="${artX + (SW * CELL) / 2}" cy="${artY + (SH * CELL) / 2 + 10}" rx="300" ry="220" fill="url(#glow)"/>
@@ -120,7 +123,9 @@ const bannerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="
 
 await Bun.write(join(OUT, "btk-mascot.svg"), mascotSvg);
 await Bun.write(join(OUT, "btk-banner.svg"), bannerSvg);
-console.log(`wrote ${join(OUT, "btk-mascot.svg")}\nwrote ${join(OUT, "btk-banner.svg")}`);
+const ICON = join(import.meta.dir, "..", "website", "app", "icon.svg");
+await Bun.write(ICON, iconSvg);
+console.log(`wrote ${join(OUT, "btk-mascot.svg")}\nwrote ${join(OUT, "btk-banner.svg")}\nwrote ${ICON}`);
 
 if (values.png) {
   const chrome = [
