@@ -60,6 +60,15 @@ describe("digests", () => {
     );
     expect(() => assertHmacSupported({ algorithm: "sha512", encoding: "hex", hmacKey: "k" })).not.toThrow();
   });
+
+  test("verifying with a key refuses an expected hash that picks a keyless algorithm", async () => {
+    const source = new TextEncoder().encode("hello");
+    const options = { preferred: "sha256" as const, hmacKey: "k" };
+    await expect(verifyInput("-", source, "3610a686", options)).rejects.toThrow(UsageError);
+    await expect(digestBytes(source, { algorithm: "crc32", encoding: "hex", hmacKey: "k" })).rejects.toThrow(
+      UsageError,
+    );
+  });
 });
 
 describe("splitAlgorithm()", () => {

@@ -12,6 +12,7 @@ export type Layer = {
 };
 
 const CONCAT_KEYS = new Set(["plugins"]);
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
@@ -33,10 +34,10 @@ export function mergeLayers(layers: Layer[]): {
     source: ValueSource,
   ) => {
     for (const [key, value] of Object.entries(incoming)) {
-      if (value === undefined) continue;
+      if (value === undefined || UNSAFE_KEYS.has(key)) continue;
       const path = prefix ? `${prefix}.${key}` : key;
       if (isPlainObject(value)) {
-        const existing = target[key];
+        const existing = Object.hasOwn(target, key) ? target[key] : undefined;
         const next = isPlainObject(existing) ? existing : {};
         target[key] = next;
         walk(next, value, path, source);

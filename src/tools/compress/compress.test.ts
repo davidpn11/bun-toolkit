@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { posixRelative } from "../../../tests/support/paths.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
@@ -157,6 +157,31 @@ describe("decompressInputs()", () => {
     await decompressInputs(["bundle.tgz"], project.dir, decompressPlan);
     expect(readFileSync(join(project.dir, "bundle/y.txt"), "utf8")).toBe("y");
     expect(isTar(loose)).toBe(true);
+  });
+
+  test("archive entries can't climb out with ../ or write through a symlink in the destination", async () => {
+    project = createTempProject();
+    project.write("victim.txt", "original");
+    const climbing = await new Bun.Archive({ "fresh/../victim.txt": "replaced" }).bytes();
+    await Bun.write(join(project.dir, "climb.tgz"), Bun.gzipSync(climbing));
+    const climbed = await decompressInputs(["climb.tgz"], project.dir, decompressPlan);
+    expect(climbed.results[0]).toMatchObject({ status: "done", output: join(project.dir, "climb") });
+    expect(readFileSync(join(project.dir, "victim.txt"), "utf8")).toBe("original");
+    const escaping = await new Bun.Archive({ "../victim.txt": "replaced" }).bytes();
+    await Bun.write(join(project.dir, "escape.tgz"), Bun.gzipSync(escaping));
+    const escaped = await decompressInputs(["escape.tgz"], project.dir, decompressPlan);
+    expect(escaped.results[0]?.reason).toContain("outside its folder");
+    expect(readFileSync(join(project.dir, "victim.txt"), "utf8")).toBe("original");
+
+    const outside = join(project.dir, "..", "outside");
+    mkdirSync(join(project.dir, "dest"));
+    mkdirSync(outside);
+    symlinkSync(outside, join(project.dir, "dest/a"));
+    const through = await new Bun.Archive({ "a/x.txt": "escaped" }).bytes();
+    await Bun.write(join(project.dir, "through.tgz"), Bun.gzipSync(through));
+    const plan = { ...decompressPlan, overwrite: true, output: "dest" };
+    expect((await decompressInputs(["through.tgz"], project.dir, plan)).results[0]?.status).toBe("failed");
+    expect(existsSync(join(outside, "x.txt"))).toBe(false);
   });
 
   test("unknown files fail unless --format or magic bytes say what they are", async () => {

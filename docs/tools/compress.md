@@ -104,6 +104,8 @@ Both commands keep the input, never replace an existing file or folder without `
 
 btk refuses to print compressed data to a terminal or into `--json` output, and suggests a redirect or `-o` instead.
 
+Extraction refuses archive entries that lead outside the folder (`../x`) and never writes through a symlink already in the destination. Symlinks inside an archive are skipped.
+
 ## Formats and levels
 
 | Format | Extension | Levels | Default |

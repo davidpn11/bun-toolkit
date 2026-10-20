@@ -73,6 +73,10 @@ describe("btk compress and decompress", () => {
     );
     const { stdout } = await btk(["decompress", "piped.zst", "--stdout"]);
     expect(stdout).toBe(BODY);
+    const again = await btk(["compress", "--zstd", "-o", "piped.zst"], { stdin: "other" });
+    expect(again.code).not.toBe(0);
+    expect((await btk(["compress", "--zstd", "-o", "dry.zst", "-n"], { stdin: BODY })).code).toBe(0);
+    expect(existsSync(join(p.dir, "dry.zst"))).toBe(false);
   });
 
   test("compressed data is never printed to a terminal or put in JSON", async () => {

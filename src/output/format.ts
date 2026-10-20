@@ -56,3 +56,13 @@ export function changeTone(percent: number): "success" | "warning" | "error" {
   if (percent > 20) return "success";
   return percent >= 0 ? "warning" : "error";
 }
+
+const TERMINAL_UNSAFE =
+  // oxlint-disable-next-line no-control-regex
+  /(\x1b\[[0-9;:]*m|\x1b\]8;[^\x07\x1b]*(?:\x1b\\|\x07))|[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
+
+export function terminalSafe(text: string): string {
+  return text.replace(TERMINAL_UNSAFE, (match, kept: string | undefined) =>
+    kept ? kept : `\\x${match.charCodeAt(0).toString(16).padStart(2, "0")}`,
+  );
+}

@@ -55,12 +55,13 @@ jobs:
             exit 1 ;;
           esac
           bun scripts/changelog-section.ts "$version" > "$RUNNER_TEMP/notes.md"
+          delim="BTK_NOTES_$(openssl rand -hex 16)"
           {
             echo "tag=$tag"
             echo "version=$version"
-            echo "notes<<BTK_NOTES_EOF"
+            echo "notes<<$delim"
             cat "$RUNNER_TEMP/notes.md"
-            echo "BTK_NOTES_EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           printf '### Publishing %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
       - name: Install dependencies for the changeset CLI
@@ -95,12 +96,13 @@ jobs:
             echo
             bun scripts/changelog-section.ts "$base" 2> /dev/null || true
           } > "$RUNNER_TEMP/notes.md"
+          delim="BTK_NOTES_$(openssl rand -hex 16)"
           {
             echo "tag=v$version"
             echo "version=$version"
-            echo "notes<<BTK_NOTES_EOF"
+            echo "notes<<$delim"
             cat "$RUNNER_TEMP/notes.md"
-            echo "BTK_NOTES_EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           printf '### Publishing beta v%s from `%s`\n\nInstall it with `brew install davidpn11/bun-toolkit/bun-toolkit-beta`, or check it with `bun run release:try beta`.\n' "$version" "$BRANCH" >> "$GITHUB_STEP_SUMMARY"
 
@@ -188,10 +190,6 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG: ${{ needs.plan.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
       - uses: actions/download-artifact@v8
         with:
           path: release
@@ -199,8 +197,7 @@ jobs:
       - name: Checksums
         working-directory: release
         run: |
-          chmod +x btk-*
-          ./btk-linux-x64 hash btk-* > SHA256SUMS
+          sha256sum btk-* > SHA256SUMS
           cat SHA256SUMS
       - name: Release notes
         env:
@@ -217,8 +214,7 @@ jobs:
         run: |
           mkdir published
           gh release download "$TAG" --dir published
-          chmod +x published/btk-linux-x64
-          published/btk-linux-x64 hash check published/SHA256SUMS
+          cd published && sha256sum -c SHA256SUMS
 
   homebrew:
     needs: [plan, release]

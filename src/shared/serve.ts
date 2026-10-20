@@ -140,10 +140,21 @@ function isInside(root: string, path: string): boolean {
   return !inside.startsWith("..") && !isAbsolute(inside);
 }
 
-/** A symlink inside the folder must not lead out of it. Missing paths pass; callers check that they exist. */
+/** A symlink inside the folder must not lead out of it, or to a dotfile. Missing paths pass; callers check that they exist. */
 function linksStayInside(root: string, path: string): boolean {
   const real = safeRealpath(path);
-  return real === undefined || isInside(safeRealpath(root) ?? root, real);
+  if (real === undefined) return true;
+  const realRoot = safeRealpath(root) ?? root;
+  return (
+    isInside(realRoot, real) &&
+    !relative(realRoot, real)
+      .split(/[\\/]/)
+      .some((s) => s.startsWith("."))
+  );
+}
+
+export function folderRedirect(pathname: string): string {
+  return `/${pathname.replace(/^\/+/, "")}/`;
 }
 
 function safeRealpath(path: string): string | undefined {

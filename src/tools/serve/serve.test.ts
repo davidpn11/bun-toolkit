@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { networkUrls } from "./network.ts";
@@ -30,6 +31,17 @@ describe("btk serve", () => {
     expect(resolveRequest(root, "/docs/", false)).toEqual({ kind: "listing", path: join(root, "docs") });
     expect(resolveRequest(root, "/nope", false)).toEqual({ kind: "missing" });
     expect(resolveRequest(root, "/docs/.secret", false)).toEqual({ kind: "missing" });
+  });
+
+  test("index symlinks and links to dotfiles can't escape the root, and redirects stay on the server", () => {
+    const root = site();
+    const outside = project.write("../outside.html", "secret");
+    symlinkSync(outside, join(root, "docs/index.html"));
+    symlinkSync(join(root, "docs/.secret"), join(root, "visible.txt"));
+    expect(resolveRequest(root, "/docs/", false)).toEqual({ kind: "listing", path: join(root, "docs") });
+    expect(resolveRequest(root, "/visible.txt", false)).toEqual({ kind: "missing" });
+    project.write("evil.com/x.txt", "");
+    expect(resolveRequest(root, "//evil.com", false)).toEqual({ kind: "redirect", location: "/evil.com/" });
   });
 
   test("--spa answers unknown routes without an extension with the root index.html", () => {

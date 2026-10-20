@@ -1,4 +1,5 @@
 import { mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { BtkError, UsageError } from "../errors.ts";
 
@@ -59,9 +60,9 @@ export function requireFolder(path: string, cwd: string, hint: string): string {
 
 export async function writeFileAtomic(path: string, data: string | Uint8Array): Promise<void> {
   mkdirSync(dirname(path), { recursive: true });
-  const temp = `${path}.btk-${process.pid}.tmp`;
+  const temp = `${path}.btk-${crypto.randomUUID()}.tmp`;
   try {
-    await Bun.write(temp, data);
+    await writeFile(temp, data, { flag: "wx" });
     renameSync(temp, path);
   } catch (error) {
     rmSync(temp, { force: true });

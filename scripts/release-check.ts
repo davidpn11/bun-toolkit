@@ -90,7 +90,11 @@ function prereleaseOnBranch(state: ReleaseState): ReleaseCheck {
 }
 
 function betaHint(state: ReleaseState): string {
-  return `\n### Try it first\n\nPublish a beta of this branch: **Actions → Publish beta → Run workflow** on \`${state.branch}\`, or \`gh workflow run beta.yml --ref ${state.branch}\`. Install it with \`brew install davidpn11/bun-toolkit/bun-toolkit-beta\`, or check it with \`bun run release:try beta\`.\n`;
+  return `\n### Try it first\n\nPublish a beta of this branch: **Actions → Publish beta → Run workflow** on \`${state.branch}\`, or \`gh workflow run beta.yml --ref ${shellQuote(state.branch)}\`. Install it with \`brew install davidpn11/bun-toolkit/bun-toolkit-beta\`, or check it with \`bun run release:try beta\`.\n`;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
 function git(...args: string[]): string {

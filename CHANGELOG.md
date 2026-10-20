@@ -1,5 +1,13 @@
 # bun-toolkit
 
+## 0.4.1
+
+Built on Bun 1.4.3.
+
+### Patch Changes
+
+- code improvements
+
 ## 0.4.0
 
 Built on Bun 1.4.3.

@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { symlinkSync } from "node:fs";
+import { join } from "node:path";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { BtkError, UsageError } from "../../errors.ts";
 import { createHooks, noHooks } from "../../plugins/loader.ts";
 import type { BtkPlugin } from "../../plugins/types.ts";
 import { splitFrontMatter } from "./front-matter.ts";
 import { highlight } from "./highlight.ts";
-import { buildPage, pageTitle, renderBody } from "./html/page.ts";
+import { buildPage, LIVE_RELOAD, pageTitle, renderBody } from "./html/page.ts";
 import { folderBody, listPages, pageHref, renderNav, resolveTarget, titleOf } from "./site.ts";
 import { renderTerminal } from "./terminal/render.ts";
 import { BTK_THEME } from "./theme/builtin.ts";
@@ -222,6 +224,20 @@ describe("html", () => {
     expect(custom).toBe('Hi|body{color:red}|<h1 id="hi">Hi</h1>');
   });
 
+  test("only the live reload script may run, and --css can't close the style tag", () => {
+    const options = {
+      css: "</style><script>x()</script>",
+      fallbackTitle: "f",
+      liveReload: LIVE_RELOAD,
+      nav: "",
+    };
+    const page = buildPage("<img src=x onerror=alert(1)>", options, noHooks);
+    const script = LIVE_RELOAD.slice("<script>".length, -"</script>".length);
+    const hash = new Bun.CryptoHasher("sha256").update(script).digest("base64");
+    expect(page).toContain(`content="script-src 'sha256-${hash}'; object-src 'none'; base-uri 'none'"`);
+    expect(page).toContain("<style><\\/style><script>x()</script></style>");
+  });
+
   test("a page with navigation gets the sidebar layout", () => {
     const options = { css: "", fallbackTitle: "f", liveReload: "", nav: "<ul><li>x</li></ul>" };
     const page = buildPage("# Hi", options, noHooks);
@@ -269,6 +285,16 @@ describe("site", () => {
     expect(resolveTarget(root, "/logo.png")).toBeUndefined();
     expect(resolveTarget(root, "/missing.md")).toBeUndefined();
     expect(resolveTarget(root, "/%2e%2e/")).toBeUndefined();
+  });
+
+  test("index and page symlinks that lead out of the root are ignored", async () => {
+    const root = site();
+    const outside = project.write("../outside.md", "# Secret\n");
+    symlinkSync(outside, join(root, "api/README.md"));
+    symlinkSync(outside, join(root, "leak.md"));
+    expect(resolveTarget(root, "/api/")).toEqual({ kind: "folder", dir: "api" });
+    expect((await listPages(root)).map((page) => page.path)).not.toContain("leak.md");
+    expect(resolveTarget(root, "//api")).toEqual({ kind: "redirect", location: "/api/" });
   });
 
   test("the sidebar groups pages by folder and marks the current page", async () => {

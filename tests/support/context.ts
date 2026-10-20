@@ -18,7 +18,7 @@ export async function createTestContext(
   const cwd = options.cwd ?? emptyDir();
   const io = createIO({ tty: true });
   const tools = registry.entries.filter((e): e is ToolDef => e.kind === "tool");
-  const configInfo = await loadConfig({ cwd, env, tools });
+  const configInfo = await loadConfig({ cwd, env, tools, project: options.cwd !== undefined });
   const environment = detectEnvironment({
     argv: [],
     env: {},

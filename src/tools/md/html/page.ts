@@ -30,13 +30,16 @@ const SITE_LAYOUT_CSS = `
 `;
 
 /** Replaces the page body when the file changes, so the scroll position stays put. */
-export const LIVE_RELOAD = `<script>
+const LIVE_RELOAD_JS = `
 new EventSource("/__btk/events").addEventListener("reload", async () => {
   const page = new DOMParser().parseFromString(await (await fetch(location.href)).text(), "text/html");
   document.title = page.title;
   document.body.innerHTML = page.body.innerHTML;
 });
-</script>`;
+`;
+export const LIVE_RELOAD = `<script>${LIVE_RELOAD_JS}</script>`;
+
+const CSP = `script-src 'sha256-${new Bun.CryptoHasher("sha256").update(LIVE_RELOAD_JS).digest("base64")}'; object-src 'none'; base-uri 'none'`;
 
 export function renderBody(source: string): string {
   return Bun.markdown
@@ -90,8 +93,9 @@ function defaultTemplate({ title, body, css, liveReload, nav }: HtmlTemplateInpu
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="${CSP}">
 <title>${Bun.escapeHTML(title)}</title>
-<style>${nav ? SITE_LAYOUT_CSS : ""}${css}</style>
+<style>${nav ? SITE_LAYOUT_CSS : ""}${css.replace(/<\/style/gi, "<\\/style")}</style>
 </head>
 <body>
 ${nav ? `<div class="btk-site">\n<nav class="btk-nav">${nav}</nav>\n${main}\n</div>` : main}

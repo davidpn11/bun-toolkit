@@ -74,6 +74,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
       env,
       tools: toolDefs,
       explicitPath: peekValue(argv, "--config"),
+      project: route.kind !== "action" || route.action.projectConfig !== false,
     });
 
     environment = detectEnvironment(envInput, configInfo.config.output);
@@ -154,7 +155,6 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     });
 
     const input = Object.fromEntries(Object.keys(actionArgs).map((key) => [key, parsed.values[key]]));
-    reporter.log.debug(`${route.path} ${JSON.stringify(input)}`);
 
     const result = await action.run(input, ctx, { sources: parsed.sources });
     const exitCode = action.exitCode?.(result, ctx) ?? ExitCode.Ok;

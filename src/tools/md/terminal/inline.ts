@@ -31,7 +31,8 @@ function inlineNode(node: MdNode, ctx: TerminalCtx): string {
 }
 
 function renderLink(node: MdNode, ctx: TerminalCtx): string {
-  const href = node.meta.href ?? "";
+  // oxlint-disable-next-line no-control-regex
+  const href = (node.meta.href ?? "").replace(/[\x00-\x1f\x7f-\x9f]/g, "");
   const label = ctx.paint(ctx.theme.link)(renderInline(node.children, ctx));
   if (ctx.hyperlinks) return `\x1b]8;;${href}\x1b\\${label}\x1b]8;;\x1b\\`;
   if (href.startsWith("#") || sameAsLabel(href, textOf(node.children))) return label;
