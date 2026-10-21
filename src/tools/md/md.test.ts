@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { symlinkSync } from "node:fs";
+import { existsSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
+import { createTestContext } from "../../../tests/support/context.ts";
 import { createTempProject, type TempProject } from "../../../tests/support/tmp.ts";
 import { BtkError, UsageError } from "../../errors.ts";
 import { createHooks, noHooks } from "../../plugins/loader.ts";
 import type { BtkPlugin } from "../../plugins/types.ts";
+import { buildSite } from "./build.ts";
 import { splitFrontMatter } from "./front-matter.ts";
 import { highlight } from "./highlight.ts";
 import { buildPage, LIVE_RELOAD, pageTitle, renderBody } from "./html/page.ts";
@@ -317,5 +319,49 @@ describe("site", () => {
     expect(titleOf("text only", "notes/my file.md")).toBe("my file");
     expect(titleOf("## Not level one\n# Real", "x.md")).toBe("Real");
     expect(pageHref("notes/my file.md")).toBe("/notes/my%20file.md");
+  });
+});
+
+describe("build", () => {
+  let project: TempProject;
+  afterEach(() => project?.cleanup());
+
+  const build = async (settings: { out?: string; overwrite?: boolean; dryRun?: boolean } = {}) => {
+    const ctx = await createTestContext({ cwd: project.dir });
+    const options = { out: "docs/site", overwrite: false, dryRun: false, ...settings };
+    return buildSite("docs", resolveTheme("plain", availableThemes(noHooks)), options, ctx);
+  };
+  const read = (path: string) => readFileSync(join(project.dir, "docs/site", path), "utf8");
+
+  test("writes pages, index pages and folder lists with links relative to each page", async () => {
+    project = createTempProject();
+    project.write("docs/README.md", "# Home\n\nSee [the guide](guide.md#setup) and ![logo](img/logo.png).\n");
+    project.write("docs/guide.md", "# Guide\n\n[Tools](tools/README.md) and [api](api/).\n");
+    project.write("docs/tools/README.md", "# Tools\n");
+    project.write("docs/api/a.md", "# A\n");
+    project.write("docs/img/logo.png", "png");
+    project.write("docs/.private/notes.txt", "secret");
+    symlinkSync(project.write("outside.txt", "secret"), join(project.dir, "docs/leak.txt"));
+
+    expect(await build()).toMatchObject({ mode: "build", pages: 4, folders: 1, assets: 1, dryRun: false });
+    expect(read("index.html")).toContain('<a href="guide.html#setup">');
+    expect(read("index.html")).toContain('src="img/logo.png"');
+    expect(read("guide.html")).toContain('<a href="tools/index.html">Tools</a>');
+    expect(read("guide.html")).toContain('<a href="api/index.html">api</a>');
+    expect(read("tools/index.html")).toContain('<a href="../guide.html">Guide</a>');
+    expect(read("api/index.html")).toContain('<a href="a.html">A</a>');
+    expect(read("img/logo.png")).toBe("png");
+    expect(existsSync(join(project.dir, "docs/site/.private"))).toBe(false);
+    expect(existsSync(join(project.dir, "docs/site/leak.txt"))).toBe(false);
+
+    await expect(build()).rejects.toThrow(UsageError);
+    expect(await build({ overwrite: true })).toMatchObject({ pages: 4, assets: 1 });
+  });
+
+  test("a dry run counts without writing", async () => {
+    project = createTempProject();
+    project.write("docs/a.md", "# A\n");
+    expect(await build({ dryRun: true })).toMatchObject({ pages: 1, folders: 1, dryRun: true });
+    expect(existsSync(join(project.dir, "docs/site"))).toBe(false);
   });
 });

@@ -1,13 +1,12 @@
 import { basename, resolve } from "node:path";
 import type { BtkContext } from "../../context.ts";
-import { BtkError } from "../../errors.ts";
 import { pluralize } from "../../output/format.ts";
 import { displayPath } from "../../shared/fs.ts";
 import { htmlResponse, isIgnoredPath, serveUntilStopped, type WatchTarget } from "../../shared/serve.ts";
 import { readText } from "./document.ts";
 import { buildPage, LIVE_RELOAD, type PageOptions, wrapBody } from "./html/page.ts";
 import { announce, type BrowserSettings, pageCss } from "./preview.ts";
-import { folderBody, listPages, renderNav, resolveTarget } from "./site.ts";
+import { folderBody, listPages, renderNav, resolveTarget, sitePages } from "./site.ts";
 import type { ResolvedTheme } from "./theme/types.ts";
 
 export type SitePreview = { mode: "site"; root: string; pages: number; theme: string; url: string };
@@ -22,13 +21,7 @@ export async function sitePreview(
 ): Promise<SitePreview> {
   const root = resolve(ctx.cwd, dir);
   const shown = displayPath(root, ctx.cwd);
-  const count = (await listPages(root)).length;
-  if (count === 0) {
-    throw new BtkError(`No markdown files in ${shown}`, {
-      code: "ERR_NO_FILES",
-      hint: "btk md serve looks for .md and .markdown files, skipping node_modules and dot folders",
-    });
-  }
+  const count = (await sitePages(root, shown)).length;
   const page = (pathname: string) => sitePage(root, pathname, theme, settings, ctx);
   const watch: WatchTarget = { dir: root, recursive: true, accept: isSiteFile };
   const { url } = await serveUntilStopped(

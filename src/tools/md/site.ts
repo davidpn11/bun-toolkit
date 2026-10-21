@@ -1,5 +1,6 @@
 import { statSync } from "node:fs";
 import { basename, extname, join, relative, sep } from "node:path";
+import { BtkError } from "../../errors.ts";
 import { collectFiles } from "../../shared/collect.ts";
 import { folderRedirect, pathInside } from "../../shared/serve.ts";
 import { splitFrontMatter } from "./front-matter.ts";
@@ -15,8 +16,8 @@ export type SiteTarget =
   | { kind: "folder"; dir: string }
   | { kind: "redirect"; location: string };
 
-const MARKDOWN = /\.(md|markdown)$/i;
-const INDEX_NAMES = ["README.md", "readme.md", "index.md"];
+export const MARKDOWN = /\.(md|markdown)$/i;
+export const INDEX_NAMES = ["README.md", "readme.md", "index.md"];
 const HEADING = /^#[ \t]+(.+?)[ \t#]*$/m;
 
 /** Every markdown file under `root`, skipping `node_modules`, dot folders such as `.git`, and links out of `root`. */
@@ -33,6 +34,15 @@ export async function listPages(root: string): Promise<SitePage[]> {
     paths.map(async (path) => ({ path, title: titleOf(await Bun.file(join(root, path)).text(), path) })),
   );
   return pages.sort(comparePages);
+}
+
+export async function sitePages(root: string, shown: string): Promise<SitePage[]> {
+  const pages = await listPages(root);
+  if (pages.length > 0) return pages;
+  throw new BtkError(`No markdown files in ${shown}`, {
+    code: "ERR_NO_FILES",
+    hint: "btk md looks for .md and .markdown files, skipping node_modules and dot folders",
+  });
 }
 
 export function resolveTarget(root: string, pathname: string): SiteTarget | undefined {

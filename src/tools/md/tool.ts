@@ -3,6 +3,7 @@ import { defineAction, defineTool, flag, positional } from "../../cli/define.ts"
 import type { BtkContext } from "../../context.ts";
 import { UsageError } from "../../errors.ts";
 import { requireFolder } from "../../shared/fs.ts";
+import { type BuildResult, buildSite } from "./build.ts";
 import { columnsSchema, type MdConfig, mdConfig, portSchema } from "./config.ts";
 import { isFolder, readDocument } from "./document.ts";
 import { splitFrontMatter } from "./front-matter.ts";
@@ -15,7 +16,7 @@ import {
   type TerminalPreview,
   terminalPreview,
 } from "./preview.ts";
-import { renderHtml, renderPreview, renderThemes } from "./render.ts";
+import { renderBuild, renderHtml, renderPreview, renderThemes } from "./render.ts";
 import { type SitePreview, sitePreview } from "./site-preview.ts";
 import { availableThemes, resolveTheme } from "./theme/resolve.ts";
 import { themeNameSchema } from "./theme/schema.ts";
@@ -108,6 +109,25 @@ export const serve = defineAction({
   render: renderPreview,
 });
 
+export const build = defineAction({
+  description: "Write a folder of markdown out as a static site",
+  examples: ["btk md build", "btk md build docs --out public", "btk md build docs --theme plain --overwrite"],
+  args: {
+    dir: positional(z.string().default("."), { valueHint: "folder", description: "Folder of markdown" }),
+    out: flag(z.string().default("site"), {
+      alias: "o",
+      valueHint: "<folder>",
+      description: "Where to write the site",
+    }),
+    theme: themeFlag,
+    css: cssFlag,
+    overwrite: flag(z.boolean().default(false), { description: "Write into an existing folder" }),
+    dryRun: flag(z.boolean().default(false), { alias: "n", description: "Count the pages without writing" }),
+  },
+  run: (input, ctx): Promise<BuildResult> => buildSite(input.dir, themeFor(input.theme, ctx), input, ctx),
+  render: renderBuild,
+});
+
 export type HtmlResult = { file: string; theme: string; html: string };
 
 export const html = defineAction({
@@ -157,7 +177,7 @@ export const md = defineTool({
   aliases: ["markdown"],
   config: mdConfig,
   defaultAction: "preview",
-  actions: { preview, serve, html, themes },
+  actions: { preview, serve, build, html, themes },
   ui: () => import("./ui/Dashboard.tsx"),
 });
 

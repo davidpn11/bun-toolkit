@@ -18,7 +18,7 @@ describe("complete()", () => {
   });
 
   test("a tool offers its actions, plus paths when its default action takes them", () => {
-    expect(values("md", "")).toEqual(["preview", "serve", "html", "themes", FILES]);
+    expect(values("md", "")).toEqual(["preview", "serve", "build", "html", "themes", FILES]);
     expect(values("config", "")).toEqual(["show", "validate", "path"]);
   });
 
