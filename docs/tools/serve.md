@@ -20,7 +20,7 @@ btk serve fixtures --cors               # let pages on other origins fetch these
 ## What it does
 
 - **A file opens itself.** `btk serve demo/page.html` serves the `demo/` folder and opens `page.html`, so its relative links, scripts and styles load, and saving it reloads the page.
-- **Folders open their `index.html`.** A folder without one shows a listing with folders first and file sizes. `/docs` redirects to `/docs/`, so relative links inside the folder resolve.
+- **Folders open their `index.html`.** A folder without one shows a listing with folders first and file sizes. `/docs` redirects to `/docs/`, keeping any query string, so relative links inside the folder resolve.
 - **Files go out as they are,** with the content type `Bun.file` picks from the extension. Nothing is bundled or transformed.
 - **Live reload.** btk adds a small script to every HTML page it serves, before `</body>`. When any file in the folder changes, open pages reload. Changes in `node_modules` and dot folders don't count.
 - **Single-page apps.** With `--spa`, a path that has no file extension and matches no file, such as `/settings/profile`, gets the root `index.html`, so client-side routing works on reload. Missing assets such as `/logo.png` still return 404.
@@ -28,7 +28,7 @@ btk serve fixtures --cors               # let pages on other origins fetch these
 - **Resumable downloads.** Files carry a `Last-Modified` header and answer range requests, so a large download that stops halfway picks up where it left off, and video and audio can seek. If the file changed in the meantime, the client gets the whole new file instead.
 - **When watching fails,** for example when a very large folder runs into the operating system's watch limit, btk warns and keeps serving. Reload the page yourself.
 
-Press Ctrl+C to stop. In json mode it prints `{ root, url, host, port, network }` when it stops.
+Press Ctrl+C to stop. With `--json` it prints `{ root, url, host, port, network }` when it stops. Json mode from `AGENT=true`, `BTK_OUTPUT=json` or config is refused with `ERR_SERVER_JSON`, so an agent never waits on a server that only stops with Ctrl+C.
 
 ## Options
 
@@ -61,6 +61,7 @@ Every key also works as an environment variable, such as `BTK_SERVE_PORT=4000` o
 
 By default the server listens on `127.0.0.1`, so only your machine can reach it.
 
+- **Read only.** `GET` and `HEAD` are answered; any other method gets `405`.
 - **Paths stay inside the folder.** A symlink that points outside it isn't followed, and dotfiles such as `.env` and `.git/config` are never served, even by exact URL.
 - **Host names are checked.** On `127.0.0.1` it only answers requests addressed to `127.0.0.1` or `localhost`. A web page you visit therefore can't point a domain name at your machine and read your files (DNS rebinding).
 - **`--host 0.0.0.0` shares the folder with your network.** btk warns, lists the URLs other devices can use, and then also answers requests addressed to an IP address or your machine's name. Use it on networks you trust.
@@ -82,4 +83,4 @@ To preview markdown, use [`btk md`](md.md): `btk md serve docs` renders a folder
 | --- | --- |
 | 0 | The server stopped with Ctrl+C |
 | 1 | The path doesn't exist, or the port is taken |
-| 2 | An option is invalid |
+| 2 | An option is invalid, or json mode came from `AGENT=true` instead of `--json` |

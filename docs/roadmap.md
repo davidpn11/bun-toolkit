@@ -444,7 +444,5 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 
 ### Open questions from Phase 8
 
-- `btk md serve` and `btk serve` wait for Ctrl+C even in json mode, so an agent running them with `AGENT=true` waits forever. They could refuse to start in json mode unless asked.
 - Pages with a strict Content-Security-Policy block the injected reload script, so live reload silently stops on them.
 - HTML that isn't UTF-8 can be mangled when the reload script is added.
-- `btk serve` answers `POST` and `PUT` with the file instead of `405`, and the `/folder` → `/folder/` redirect drops the query string.

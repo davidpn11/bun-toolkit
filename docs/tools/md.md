@@ -62,7 +62,7 @@ btk md serve docs --port 4000 --no-open --theme plain
 - **It skips what isn't docs.** `node_modules` and dot folders such as `.git` and `.github` stay out of the sidebar.
 - **Images and other files** in the folder are served as they are. Nothing outside the folder is reachable, including through symlinks, and neither are dotfiles such as `.env`.
 
-It takes `--theme`, `--css`, `--port` and `--no-open`, with the same config keys as preview. Press Ctrl+C to stop. In json mode it prints `{ mode, root, pages, theme, url }` when it stops.
+It takes `--theme`, `--css`, `--port` and `--no-open`, with the same config keys as preview. Press Ctrl+C to stop. With `--json` it prints `{ mode, root, pages, theme, url }` when it stops; like `btk serve`, it refuses json mode that only comes from `AGENT=true` or config.
 
 `btk md serve` is a preview, not a site generator: it renders each page when you open it and writes nothing to disk. To serve a folder of HTML or other files as they are, use [`btk serve`](serve.md).
 

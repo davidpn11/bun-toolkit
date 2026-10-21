@@ -4,7 +4,7 @@ import { hostname as machineName } from "node:os";
 import { basename, isAbsolute, relative, resolve } from "node:path";
 import type { BunFile, Server } from "bun";
 import type { BtkContext } from "../context.ts";
-import { BtkError } from "../errors.ts";
+import { BtkError, UsageError } from "../errors.ts";
 
 export const EVENTS_PATH = "/__btk/events";
 export const LOOPBACK = "127.0.0.1";
@@ -78,6 +78,7 @@ export async function serveUntilStopped(
   /** Page to announce and open, relative to the server root. */
   page = "",
 ): Promise<LiveServer> {
+  refuseImplicitJson(ctx);
   const server = listen(options, ctx);
   const url = new URL(page, server.url).href;
   announce(server, ctx.reporter.style.accent(url));
@@ -86,6 +87,15 @@ export async function serveUntilStopped(
   }
   await server.closed;
   return server;
+}
+
+function refuseImplicitJson(ctx: BtkContext): void {
+  const { mode, reason } = ctx.environment;
+  if (mode !== "json" || reason === "--json flag") return;
+  throw new UsageError(`The server runs until Ctrl+C, so it can't answer with JSON (${reason})`, {
+    code: "ERR_SERVER_JSON",
+    hint: "Pass --json to serve anyway and get the result when it stops",
+  });
 }
 
 function warnNoReload(error: unknown, ctx: BtkContext): void {
@@ -188,14 +198,18 @@ async function route(
   options: LiveServerOptions,
   clients: Clients,
 ): Promise<Response> {
-  const { pathname, hostname } = new URL(request.url);
+  const { pathname, hostname, search } = new URL(request.url);
   if (!isAllowedHost(hostname, options.hostname ?? LOOPBACK))
     return new Response("Forbidden", { status: 403 });
+  if (request.method !== "GET" && request.method !== "HEAD")
+    return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (pathname === EVENTS_PATH) {
     server.timeout(request, 0);
     return eventStream(clients);
   }
   const response = withHeaders(await respond(options, pathname), options.headers);
+  const location = response.headers.get("Location");
+  if (location && search) response.headers.set("Location", location + search);
   options.onRequest?.({ method: request.method, path: pathname, status: response.status });
   return response;
 }
