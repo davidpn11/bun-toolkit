@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { runBtk } from "../support/cli.ts";
 import { freePort, waitForPage } from "../support/server.ts";
 import { ANSI } from "../support/streams.ts";
@@ -80,6 +82,22 @@ describe("btk md", () => {
       data: { mode: "terminal", file: "README.md", theme: "btk" },
     });
     expect(envelope.data.output).not.toMatch(ANSI);
+  });
+
+  test("build writes a static site, refuses an existing folder, and reports in json", async () => {
+    setup();
+    const built = await btk(["md", "build", "--out", "public"]);
+    expect(built.code).toBe(0);
+    expect(built.stdout).toContain("public");
+    expect(existsSync(join(project.dir, "public/index.html"))).toBe(true);
+    expect((await btk(["md", "build", "--out", "public"])).code).toBe(2);
+    const json = await btk(["md", "build", "-o", "public", "--overwrite", "--json"]);
+    expect(JSON.parse(json.stdout)).toEqual({
+      ok: true,
+      command: "md build",
+      data: { mode: "build", root: ".", out: "public", pages: 1, folders: 0, assets: 0, dryRun: false },
+    });
+    expect((await btk(["md", "build", "--help"])).stdout).toContain("--overwrite");
   });
 
   test("html writes a standalone page, or only the body with --fragment", async () => {

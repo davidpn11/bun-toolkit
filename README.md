@@ -36,7 +36,7 @@ brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
 brew install davidpn11/bun-toolkit/bun-toolkit
 ```
 
-Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. `btk update` (or `brew upgrade bun-toolkit`) picks up new releases.
+Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. It also installs tab completion for zsh, bash and fish (elsewhere, see `btk completion --help`). `btk update` (or `brew upgrade bun-toolkit`) picks up new releases.
 
 Pre-releases are a separate formula. Only one of the two can be installed at a time, because both install `btk`:
 
@@ -142,6 +142,7 @@ Preview markdown with `Bun.markdown`: in the browser with live reload, or styled
 btk md README.md                            # live preview in the browser
 btk md CHANGELOG.md --terminal | less -R    # styled for the terminal
 btk md serve docs                           # the whole folder, with a sidebar and working links
+btk md build docs --out public              # the same site, written out as static HTML
 btk md html README.md > README.html         # a standalone page
 btk md README.md --theme plain --css my.css # pick a theme, add your own styles
 btk md themes                               # built-in themes and the ones plugins add

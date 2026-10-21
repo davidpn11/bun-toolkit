@@ -10,8 +10,8 @@ Bun ships native APIs for image encoding, password hashing, compression, format 
 
 - Project name: `bun-toolkit`
 - CLI command: `btk`, with `bun-toolkit` as a longer alias
-- npm package: `bun-toolkit`
-- Platform packages: `@btk/darwin-arm64`, `@btk/linux-x64` and so on
+- npm package: `@bun-toolkit/cli`, in the `bun-toolkit` npm org, because the unscoped name and the `@btk` scope belong to others ([ADR-007](adr/ADR-007-homebrew-before-npm.md))
+- Platform packages: `@bun-toolkit/darwin-arm64`, `@bun-toolkit/linux-x64` and so on
 - The documentation, website and GitHub repo all use `bun-toolkit`
 
 ## Commands

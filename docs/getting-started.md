@@ -38,9 +38,21 @@ bun install
 bun link
 ```
 
+### Shell completion
+
+Homebrew installs completion for zsh, bash and fish. Otherwise, add the line for your shell to its startup file:
+
+```bash
+source <(btk completion zsh)         # ~/.zshrc, after compinit
+eval "$(btk completion bash)"        # ~/.bashrc
+btk completion fish | source         # ~/.config/fish/config.fish
+```
+
+Tab completes tools, actions, flags, choices such as `--to` formats, and `btk md` theme names, including ones from your plugins.
+
 ## Bun version
 
-btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.3**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the banner and `btk info` show it, and every changelog entry names it.
+btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.3**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the website and `btk info` show it, and every changelog entry names it.
 
 When Bun ships a new version, btk follows. We move to it, update these docs, adjust the commands whose behavior changed, and add commands for the APIs it brings. The binary carries its own Bun runtime, so upgrading btk is all you need to get there.
 

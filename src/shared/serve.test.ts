@@ -91,6 +91,28 @@ describe("startLiveServer", () => {
     await server.closed;
   });
 
+  test("writes get 405, and a folder redirect keeps the query string", async () => {
+    project = createTempProject();
+    const stop = new AbortController();
+    const server = startLiveServer({
+      root: project.dir,
+      watch: undefined,
+      port: 0,
+      page: async (pathname) =>
+        pathname === "/docs"
+          ? new Response(null, { status: 302, headers: { Location: "/docs/" } })
+          : undefined,
+      signal: stop.signal,
+    });
+    const post = await fetch(server.url, { method: "POST" });
+    expect(post.status).toBe(405);
+    expect(post.headers.get("allow")).toBe("GET, HEAD");
+    const redirect = await fetch(`${server.url}docs?x=1`, { redirect: "manual" });
+    expect(redirect.headers.get("location")).toBe("/docs/?x=1");
+    stop.abort();
+    await server.closed;
+  });
+
   test("files carry Last-Modified, so an interrupted download resumes with If-Range", async () => {
     project = createTempProject();
     project.write("big.bin", "0123456789");

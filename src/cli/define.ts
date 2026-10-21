@@ -12,6 +12,8 @@ export type FlagOptions = {
   /** Key in `tools.<tool>` that supplies the default when the flag is not passed. */
   config?: string;
   hidden?: boolean;
+  /** Values offered by shell completion when the schema isn't an enum. */
+  choices?: (ctx: BtkContext) => string[];
 };
 
 export type FlagSpec<S extends z.ZodType = z.ZodType> = FlagOptions & {

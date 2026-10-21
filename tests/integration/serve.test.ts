@@ -122,6 +122,13 @@ describe("btk serve", () => {
     expect((await btk(["serve", "site", "--port", "70000"])).code).toBe(2);
   });
 
+  test("an agent gets an error instead of a server that never answers", async () => {
+    setup();
+    const { code, stdout } = await btk(["serve", "site"], { AGENT: "true" });
+    expect(code).toBe(2);
+    expect(JSON.parse(stdout).error.code).toBe("ERR_SERVER_JSON");
+  });
+
   test("help lists the options", async () => {
     setup();
     const tool = await btk(["serve", "--help"]);

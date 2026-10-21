@@ -1,11 +1,21 @@
 import type { BtkContext } from "../../context.ts";
+import { icons } from "../../output/palette.ts";
 import type { Output } from "../../output/reporter.ts";
+import type { BuildResult } from "./build.ts";
 import type { HtmlResult, PreviewResult, ThemeRow } from "./tool.ts";
 
 export function renderPreview(result: PreviewResult, out: Output, ctx: BtkContext): void {
   if (result.mode === "terminal") out.text(result.output);
   else if (result.mode === "site") ctx.reporter.log.success(`Stopped serving ${result.root}`);
   else ctx.reporter.log.success(`Stopped the preview of ${result.file}`);
+}
+
+export function renderBuild(result: BuildResult, out: Output): void {
+  const verb = result.dryRun ? "Would write" : "Wrote";
+  out.text(
+    `${out.style.success(icons.success)} ${verb} the site for ${result.root} to ${out.style.bold(result.out)}`,
+  );
+  out.summary({ pages: result.pages, "folder pages": result.folders, files: result.assets });
 }
 
 export function renderHtml(result: HtmlResult, out: Output): void {

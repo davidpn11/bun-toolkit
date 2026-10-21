@@ -1,5 +1,7 @@
 # Architecture
 
+Why things are this way is in the [architecture decision records](adr/README.md).
+
 ## Command framework
 
 The first plan used citty for routing. We dropped it in Phase 0 because citty 0.2 takes only single-value positionals, has no repeated flags, silently ignores unknown flags, and prints its own errors and help. Typo suggestions, validated values, variadic paths and config-sourced defaults would all have meant working around it.
