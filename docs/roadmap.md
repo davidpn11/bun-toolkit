@@ -439,6 +439,7 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 - `btk transpile` turns a TypeScript or JSX file into JavaScript.
 - `btk semver` compares and validates semantic versions.
 - Interactive examples on the documentation site.
+- Mermaid diagrams in `btk md` through a `@bun-toolkit/plugin-mermaid` package, so the 5.5 MB script stays out of the binary. See the [plan](mermaid-plugin.md).
 - `btk md build` (done) writes a folder of markdown out as a static site, the way `btk md serve` shows it.
 - Shell tab completion (done): `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
 
