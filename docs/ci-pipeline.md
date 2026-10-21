@@ -34,7 +34,7 @@ Runs `scripts/release-check.ts` on every pull request into `master`. It compares
 | `plan` | always | **Stable:** refuses to run outside `master`, checks whether `package.json` holds a version without a tag, rejects a pre-release version, and reads the `CHANGELOG.md` entry. Without a new version it publishes nothing, and warns in the summary when changesets were merged without one. **Beta:** on a throwaway checkout, runs `changeset version` when changesets are pending to get the base version, then `scripts/beta-version.ts` picks the next `-beta.N` from the existing tags. It outputs the tag, the version and the release notes. |
 | `checks` | a tag is planned | `bun run check` and `bun test` |
 | `build` | after `checks` | On the beta channel, stamps the beta version into `package.json` with `scripts/set-version.ts` so `btk --version` reports it. Builds the five binaries with `scripts/build.ts`, runs the end-to-end suite against the ones its runner can execute, and uploads each as an artifact |
-| `release` | after `build` | Writes `SHA256SUMS` with `btk hash`. Creates the tag and the GitHub Release on the commit being built, with the notes from `plan` and `--prerelease` on the beta channel. Then downloads the published files and runs `btk hash check SHA256SUMS` on them |
+| `release` | after `build` | Writes `SHA256SUMS` with `sha256sum`. Creates the tag and the GitHub Release on the commit being built, with the notes from `plan` and `--prerelease` on the beta channel. Then downloads the published files and checks them with `sha256sum -c`. It never runs the built binaries, because it holds a token that can write to the repository |
 | `homebrew` | after `release` | Runs `homebrew.yml` for the new tag |
 
 The tag is created in the `release` job, together with the release. If a build fails, no tag exists, so the next push (or the next beta run) tries again. `beta.yml` runs one at a time, so two betas never get the same number.
@@ -53,7 +53,7 @@ The two cross-compiled binaries aren't run in CI, because they target a differen
 
 ## homebrew.yml
 
-Writes the formula for one release tag and commits it to `master`, the branch Homebrew reads. It runs `scripts/homebrew-formula.ts` from the commit that started the workflow, and writes the result into a second checkout of `master`. A beta published from `beta` therefore uses `beta`'s script, and a manual run uses `master`'s.
+Writes the formula for one release tag and commits it to `master`, the branch Homebrew reads. It checks out `master` and runs `scripts/homebrew-formula.ts` from there, never from the branch that started the workflow, because the job can push to `master`. Before committing, it checks that the file it wrote is the formula for the tag's channel.
 
 The version decides the formula. A version with a `-` suffix, such as `0.2.0-beta.1`, writes `Formula/bun-toolkit-beta.rb`. Anything else writes `Formula/bun-toolkit.rb`. Both download the plain release URLs and conflict with each other, because both install `btk`. Never edit them by hand, because the next release overwrites them.
 

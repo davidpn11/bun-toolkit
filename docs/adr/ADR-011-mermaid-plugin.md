@@ -1,4 +1,7 @@
-# Plan: Mermaid diagrams as a plugin
+# ADR-011: Mermaid diagrams as a plugin
+
+- **Status:** Proposed
+- **Builds on:** [ADR-009](ADR-009-plugins-from-config.md), [ADR-010](ADR-010-local-server-boundaries.md)
 
 `btk md` shows a ` ```mermaid ` block as highlighted code. Rendering the diagram, including newer types such as `xychart-beta`, needs Mermaid's browser script, which is about 5.5 MB (1.6 MB gzipped). Bundled into btk, that would add 5–7% to every binary (77 MB to about 82.6 MB on macOS arm64) for one feature of one tool. As a plugin, only the people who want diagrams download it.
 
@@ -108,7 +111,7 @@ export default definePlugin(() => ({
 
 ## Publishing
 
-This is the first npm package, so it also starts the npm channel planned in [distribution.md](distribution.md):
+This is the first npm package, so it also starts the npm channel planned in [distribution.md](../distribution.md) and [ADR-007](ADR-007-homebrew-before-npm.md):
 
 - **Name.** `@bun-toolkit/plugin-mermaid`, in the `bun-toolkit` npm org.
 - **Versions.** Changesets already versions the root package. With a workspace, it versions both, and one changeset can name either package. `scripts/release-check.ts`, `scripts/version-packages.ts` and `publish.yml` assume one package, so they need to ignore the plugin or handle it.
