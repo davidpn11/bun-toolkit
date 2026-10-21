@@ -107,7 +107,9 @@ function entryRow(s: Styler, entry: Entry): Row {
 
 export function renderRootHelp(s: Styler, registry: Registry): string {
   const tools = registeredTools(registry);
-  const builtins = registry.entries.filter((e) => !tools.includes(e as ToolDef));
+  const builtins = registry.entries.filter(
+    (e) => !tools.includes(e as ToolDef) && !(e.kind === "command" && e.hidden),
+  );
   const lines = [
     ...header(s),
     "",

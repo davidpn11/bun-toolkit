@@ -43,6 +43,7 @@ const themeFlag = flag(themeNameSchema, {
   config: "theme",
   valueHint: "<name>",
   description: 'Theme; see "btk md themes"',
+  choices: (ctx) => availableThemes(ctx.hooks).map((entry) => entry.theme.name),
 });
 
 const cssFlag = flag(z.string().optional(), {

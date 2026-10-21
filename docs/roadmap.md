@@ -440,7 +440,7 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 - `btk semver` compares and validates semantic versions.
 - Interactive examples on the documentation site.
 - `btk md build` writes a folder of markdown out as a static site, the way `btk md serve` shows it.
-- Shell tab completion: `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
+- Shell tab completion (done): `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
 
 ### Open questions from Phase 8
 

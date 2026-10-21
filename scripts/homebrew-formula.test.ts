@@ -40,6 +40,7 @@ describe("homebrew formula", () => {
     expect(ruby).toContain('url "https://github.com/o/r/releases/download/v1.2.3/btk-darwin-arm64"\n');
     expect(ruby).toContain(`sha256 "${SHA(1)}"`);
     expect(ruby).toContain('conflicts_with "bun-toolkit-beta", because: "both install btk"');
+    expect(ruby).toContain('generate_completions_from_executable(bin/"btk", "completion", base_name: "btk")');
     expect(ruby).not.toContain("windows");
     expect(ruby).not.toContain("api.github.com");
   });

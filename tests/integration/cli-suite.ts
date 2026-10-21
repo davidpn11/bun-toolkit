@@ -35,6 +35,18 @@ export function defineCliSuite(label: string): void {
       expect(stdout).toContain("Global options");
     });
 
+    test("completion prints a script that asks btk for candidates, and the helper stays out of help", async () => {
+      fresh();
+      const script = await btk(["completion", "zsh"]);
+      expect(script.code).toBe(0);
+      expect(script.stdout).toContain("__complete --");
+      const candidates = await btk(["__complete", "--", "md", "--th"]);
+      expect(candidates.stdout).toBe('--theme\tTheme; see "btk md themes"\n');
+      const help = await btk(["--help"]);
+      expect(help.stdout).toContain("completion");
+      expect(help.stdout).not.toContain("__complete");
+    });
+
     test("<command> --help shows options and examples", async () => {
       fresh();
       const { code, stdout } = await btk(["init", "--help"]);
