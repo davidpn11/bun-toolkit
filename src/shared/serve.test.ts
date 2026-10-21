@@ -99,7 +99,9 @@ describe("startLiveServer", () => {
       watch: undefined,
       port: 0,
       page: async (pathname) =>
-        pathname === "/docs" ? new Response(null, { status: 302, headers: { Location: "/docs/" } }) : undefined,
+        pathname === "/docs"
+          ? new Response(null, { status: 302, headers: { Location: "/docs/" } })
+          : undefined,
       signal: stop.signal,
     });
     const post = await fetch(server.url, { method: "POST" });
