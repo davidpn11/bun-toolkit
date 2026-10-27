@@ -51,7 +51,7 @@ Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries 
 ```bash
 curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64 &&
 curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS &&
-grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c &&
+grep btk-darwin-arm64 SHA256SUMS | if command -v sha256sum >/dev/null; then sha256sum -c -; else shasum -a 256 -c; fi &&
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 
@@ -68,8 +68,13 @@ On Windows, paste this into PowerShell, then open a new terminal so `btk` is on 
   $want = (Select-String -SimpleMatch btk-windows-x64.exe SHA256SUMS).Line.Split(" ")[0]
   if ((Get-FileHash btk-windows-x64.exe).Hash -ne $want) { throw "Checksum mismatch" }
   Move-Item -Force btk-windows-x64.exe "$dir\btk.exe"
-  $path = [Environment]::GetEnvironmentVariable("Path", "User")
-  if ($path -notlike "*$dir*") { [Environment]::SetEnvironmentVariable("Path", "$path;$dir", "User") }
+  $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Environment")
+  $entries = @($key.GetValue("Path", "", "DoNotExpandEnvironmentNames").Split(";") | Where-Object { $_ })
+  if ($entries -notcontains $dir) {
+    $key.SetValue("Path", ($entries + $dir) -join ";", "ExpandString")
+    # Removing an unset variable makes Windows tell open apps that PATH changed
+    [Environment]::SetEnvironmentVariable("BTK_INSTALL", $null, "User")
+  }
 }
 ```
 
