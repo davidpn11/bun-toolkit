@@ -145,7 +145,7 @@ export function pathInside(root: string, pathname: string): string | undefined {
   return isInside(root, path) && linksStayInside(root, path) ? path : undefined;
 }
 
-function isInside(root: string, path: string): boolean {
+export function isInside(root: string, path: string): boolean {
   const inside = relative(root, path);
   return !inside.startsWith("..") && !isAbsolute(inside);
 }
@@ -201,22 +201,43 @@ async function route(
   const { pathname, hostname, search } = new URL(request.url);
   if (!isAllowedHost(hostname, options.hostname ?? LOOPBACK))
     return new Response("Forbidden", { status: 403 });
-  if (request.method !== "GET" && request.method !== "HEAD")
-    return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
-  if (pathname === EVENTS_PATH) {
+  const read = request.method === "GET" || request.method === "HEAD";
+  if (read && pathname === EVENTS_PATH) {
     server.timeout(request, 0);
     return eventStream(clients);
   }
-  const response = withHeaders(await respond(options, pathname), options.headers);
-  const location = response.headers.get("Location");
-  if (location && search) response.headers.set("Location", location + search);
+  const response = withHeaders(
+    read ? await pageResponse(options, pathname, search) : notAllowed(),
+    options.headers,
+  );
   options.onRequest?.({ method: request.method, path: pathname, status: response.status });
   return response;
 }
 
+function notAllowed(): Response {
+  return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+}
+
+async function pageResponse(options: LiveServerOptions, pathname: string, search: string): Promise<Response> {
+  const response = await respond(options, pathname);
+  const location = response.headers.get("Location");
+  if (location && search) response.headers.set("Location", withQuery(location, search));
+  return response;
+}
+
+function withQuery(location: string, search: string): string {
+  const hash = location.indexOf("#");
+  const end = hash === -1 ? location.length : hash;
+  const path = location.slice(0, end);
+  const query = path.includes("?") ? `&${search.slice(1)}` : search;
+  return path + query + location.slice(end);
+}
+
 async function respond(options: LiveServerOptions, pathname: string): Promise<Response> {
   try {
-    return (await options.page(pathname)) ?? (await serveAsset(options.root, pathname));
+    const page = await options.page(pathname);
+    // Copied because Response.redirect() headers are immutable per the Fetch spec.
+    return page ? new Response(page.body, page) : await serveAsset(options.root, pathname);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return new Response(`Could not render the page: ${message}`, { status: 500 });

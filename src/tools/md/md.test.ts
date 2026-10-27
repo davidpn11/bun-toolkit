@@ -358,6 +358,21 @@ describe("build", () => {
     expect(await build({ overwrite: true })).toMatchObject({ pages: 4, assets: 1 });
   });
 
+  test("refuses two files that would land on the same output path", async () => {
+    project = createTempProject();
+    project.write("docs/README.md", "# Home\n");
+    project.write("docs/index.md", "# Index\n");
+    await expect(build()).rejects.toThrow("Two files would be written to index.html");
+    expect(existsSync(join(project.dir, "docs/site"))).toBe(false);
+  });
+
+  test("copies assets when the output folder contains the source", async () => {
+    project = createTempProject();
+    project.write("docs/a.md", "# A\n");
+    project.write("docs/img/logo.png", "png");
+    expect(await build({ out: ".", overwrite: true })).toMatchObject({ assets: 1 });
+  });
+
   test("a dry run counts without writing", async () => {
     project = createTempProject();
     project.write("docs/a.md", "# A\n");

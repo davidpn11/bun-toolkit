@@ -4,7 +4,7 @@ import type { BtkContext } from "../../context.ts";
 import { UsageError } from "../../errors.ts";
 import { collectFiles } from "../../shared/collect.ts";
 import { displayPath, requireFolder } from "../../shared/fs.ts";
-import { pathInside } from "../../shared/serve.ts";
+import { isInside, pathInside } from "../../shared/serve.ts";
 import { readText } from "./document.ts";
 import { buildPage, type PageOptions, wrapBody } from "./html/page.ts";
 import { pageCss } from "./preview.ts";
@@ -45,6 +45,7 @@ export async function buildSite(
     ...folderPages(site, css, ctx),
   ];
   const assets = await assetPaths(root, out);
+  refuseCollisions(written, assets);
   if (!settings.dryRun) await writeSite(root, out, written, assets);
   return {
     mode: "build",
@@ -63,6 +64,18 @@ function refuseExisting(out: string, settings: BuildSettings): void {
     code: "ERR_OUTPUT_EXISTS",
     hint: "Pass --overwrite to write into it",
   });
+}
+
+function refuseCollisions(pages: readonly Written[], assets: readonly string[]): void {
+  const seen = new Set<string>();
+  for (const path of [...pages.map((page) => page.path), ...assets]) {
+    if (seen.has(path))
+      throw new UsageError(`Two files would be written to ${path}`, {
+        code: "ERR_OUTPUT_COLLISION",
+        hint: "Rename or remove one of them",
+      });
+    seen.add(path);
+  }
 }
 
 function outputPaths(pages: readonly SitePage[]): Map<string, string> {
@@ -145,7 +158,7 @@ async function assetPaths(root: string, out: string): Promise<string[]> {
   const { files } = await collectFiles([root], {
     cwd: root,
     recursive: true,
-    exclude: [out],
+    exclude: isInside(root, out) ? [out] : [],
     accept: (path) => !MARKDOWN.test(path),
   });
   return files

@@ -87,6 +87,9 @@ describe("startLiveServer", () => {
     });
     expect((await fetch(server.url)).headers.get("access-control-allow-origin")).toBe("*");
     expect((await fetch(`${server.url}missing`)).headers.get("access-control-allow-origin")).toBe("*");
+    expect((await fetch(server.url, { method: "POST" })).headers.get("access-control-allow-origin")).toBe(
+      "*",
+    );
     stop.abort();
     await server.closed;
   });
@@ -94,21 +97,28 @@ describe("startLiveServer", () => {
   test("writes get 405, and a folder redirect keeps the query string", async () => {
     project = createTempProject();
     const stop = new AbortController();
+    const requests: number[] = [];
     const server = startLiveServer({
       root: project.dir,
       watch: undefined,
       port: 0,
       page: async (pathname) =>
         pathname === "/docs"
-          ? new Response(null, { status: 302, headers: { Location: "/docs/" } })
-          : undefined,
+          ? Response.redirect("/docs/", 302)
+          : pathname === "/lang"
+            ? new Response(null, { status: 302, headers: { Location: "/docs/?lang=en#top" } })
+            : undefined,
+      onRequest: (request) => requests.push(request.status),
       signal: stop.signal,
     });
     const post = await fetch(server.url, { method: "POST" });
     expect(post.status).toBe(405);
     expect(post.headers.get("allow")).toBe("GET, HEAD");
+    expect(requests).toEqual([405]);
     const redirect = await fetch(`${server.url}docs?x=1`, { redirect: "manual" });
     expect(redirect.headers.get("location")).toBe("/docs/?x=1");
+    const merged = await fetch(`${server.url}lang?x=1`, { redirect: "manual" });
+    expect(merged.headers.get("location")).toBe("/docs/?lang=en&x=1#top");
     stop.abort();
     await server.closed;
   });
