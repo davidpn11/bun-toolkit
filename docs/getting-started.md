@@ -26,7 +26,24 @@ grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c &&
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 
-Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`.
+Replace `darwin-arm64` with `darwin-x64`, `linux-x64` or `linux-arm64`.
+
+On Windows, paste this into PowerShell, then open a new terminal so `btk` is on your PATH:
+
+```powershell
+& {
+  $ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"
+  $dir = "$env:LOCALAPPDATA\Programs\btk"; New-Item -ItemType Directory -Force $dir | Out-Null
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-windows-x64.exe -OutFile btk-windows-x64.exe
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS -OutFile SHA256SUMS
+  $want = (Select-String -SimpleMatch btk-windows-x64.exe SHA256SUMS).Line.Split(" ")[0]
+  if ((Get-FileHash btk-windows-x64.exe).Hash -ne $want) { throw "Checksum mismatch" }
+  Move-Item -Force btk-windows-x64.exe "$dir\btk.exe"
+  $path = [Environment]::GetEnvironmentVariable("Path", "User")
+  if ($path -notlike "*$dir*") { [Environment]::SetEnvironmentVariable("Path", "$path;$dir", "User") }
+}
+```
+
 
 ### From source
 

@@ -44,6 +44,20 @@ const binaryInstall = [
   "chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk",
 ];
 
+const windowsInstall = [
+  "& {",
+  '  $ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"',
+  '  $dir = "$env:LOCALAPPDATA\\Programs\\btk"; New-Item -ItemType Directory -Force $dir | Out-Null',
+  `  Invoke-WebRequest ${repoUrl}/releases/latest/download/btk-windows-x64.exe -OutFile btk-windows-x64.exe`,
+  `  Invoke-WebRequest ${repoUrl}/releases/latest/download/SHA256SUMS -OutFile SHA256SUMS`,
+  '  $want = (Select-String -SimpleMatch btk-windows-x64.exe SHA256SUMS).Line.Split(" ")[0]',
+  '  if ((Get-FileHash btk-windows-x64.exe).Hash -ne $want) { throw "Checksum mismatch" }',
+  '  Move-Item -Force btk-windows-x64.exe "$dir\\btk.exe"',
+  '  $path = [Environment]::GetEnvironmentVariable("Path", "User")',
+  '  if ($path -notlike "*$dir*") { [Environment]::SetEnvironmentVariable("Path", "$path;$dir", "User") }',
+  "}",
+];
+
 const chip = "rounded-full border px-3 py-1 text-sm text-fd-muted-foreground hover:border-fd-primary";
 
 function Hero() {
@@ -80,12 +94,12 @@ function Hero() {
   );
 }
 
-function Commands({ lines }: { lines: string[] }) {
+function Commands({ lines, prompt = "$ " }: { lines: string[]; prompt?: string }) {
   return (
     <pre className="overflow-x-auto rounded-xl border bg-fd-card p-4 text-sm">
       {lines.map((line, i) => (
         <div key={line}>
-          <span className="text-fd-primary select-none">{lines[i - 1]?.endsWith("&&") ? "  " : "$ "}</span>
+          <span className="text-fd-primary select-none">{lines[i - 1]?.endsWith("&&") ? "  " : prompt}</span>
           {line}
         </div>
       ))}
@@ -95,18 +109,24 @@ function Commands({ lines }: { lines: string[] }) {
 
 function Install() {
   return (
-    <Tabs items={["Homebrew", "Standalone binary"]} className="w-full max-w-2xl">
+    <Tabs items={["Homebrew", "Standalone binary", "Windows"]} className="w-full max-w-2xl">
       <Tab value="Homebrew">
         <Commands lines={brewInstall} />
       </Tab>
       <Tab value="Standalone binary">
         <Commands lines={binaryInstall} />
         <p className="mt-3 text-sm text-fd-muted-foreground">
-          On another platform? Swap in <code>darwin-x64</code>, <code>linux-x64</code>,{" "}
-          <code>linux-arm64</code> or <code>windows-x64.exe</code>.{" "}
+          On another platform? Swap in <code>darwin-x64</code>, <code>linux-x64</code> or{" "}
+          <code>linux-arm64</code>.{" "}
           <Link href={`${docsRoute}#download-a-binary`} className="text-fd-primary hover:underline">
             Full instructions
           </Link>
+        </p>
+      </Tab>
+      <Tab value="Windows">
+        <Commands lines={windowsInstall} prompt="" />
+        <p className="mt-3 text-sm text-fd-muted-foreground">
+          Paste it into PowerShell, then open a new terminal so <code>btk</code> is on your PATH.
         </p>
       </Tab>
     </Tabs>
