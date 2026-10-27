@@ -21,6 +21,8 @@ export function complete(registry: Registry, words: readonly string[], ctx: BtkC
   const current = words.at(-1) ?? "";
   const done = words.slice(0, -1);
   const position = locate(registry, done);
+  const attached = /^(-[^=]+)=(.*)$/.exec(current);
+  if (attached) return attachedValues(specOf(position), attached, ctx);
   const pending = valueFlag(specOf(position), done.at(-1) ?? "");
   const candidates = pending
     ? flagValues(pending, ctx)
@@ -67,6 +69,18 @@ function valueFlag(spec: ArgsSpec, word: string): FlagSpec | undefined {
     ([key, s]) => s.kind === "flag" && (word === `--${toKebab(key)}` || (s.alias && word === `-${s.alias}`)),
   )?.[1];
   return match?.kind === "flag" && inspectSchema(match.schema).kind !== "boolean" ? match : undefined;
+}
+
+function attachedValues(
+  spec: ArgsSpec,
+  [, flag = "", value = ""]: readonly string[],
+  ctx: BtkContext,
+): string[] {
+  const flagSpec = valueFlag(spec, flag);
+  if (!flagSpec) return [];
+  return flagValues(flagSpec, ctx)
+    .filter((v) => v !== FILES && v.startsWith(value))
+    .map((v) => `${flag}=${v}`);
 }
 
 function flagValues(spec: FlagSpec, ctx: BtkContext): string[] {

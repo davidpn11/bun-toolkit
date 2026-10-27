@@ -37,6 +37,12 @@ describe("complete()", () => {
     expect(values("md", "--theme=plain", "")).toContain(FILES);
   });
 
+  test("attached flag values keep the flag prefix", () => {
+    expect(values("convert", "x.json", "--to=y")).toEqual(["--to=yaml"]);
+    expect(values("md", "--css=")).toEqual([]);
+    expect(values("md", "--json=")).toEqual([]);
+  });
+
   test("positionals: enum values, then paths for later words", () => {
     expect(values("completion", "")).toEqual(["zsh", "bash", "fish"]);
     expect(values("hash", "a.txt", "")).toEqual([FILES]);

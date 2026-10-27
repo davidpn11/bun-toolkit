@@ -24,10 +24,10 @@ const BASH = `_btk() {
   while IFS= read -r line; do
     if [[ $line == ":files" ]]; then files=1; elif [[ -n $line ]]; then values+=("\${line%%$'\\t'*}"); fi
   done < <("\${COMP_WORDS[0]}" __complete -- "\${COMP_WORDS[@]:1:COMP_CWORD}" 2>/dev/null)
-  COMPREPLY=($(compgen -W "\${values[*]}" -- "$cur"))
+  COMPREPLY=("\${values[@]}")
   if (( files )); then
     compopt -o filenames 2>/dev/null
-    COMPREPLY+=($(compgen -f -- "$cur"))
+    while IFS= read -r line; do COMPREPLY+=("$line"); done < <(compgen -f -- "$cur")
   fi
 }
 complete -F _btk btk bun-toolkit
