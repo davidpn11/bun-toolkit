@@ -2,36 +2,37 @@
 class BunToolkit < Formula
   desc "Bun's native APIs in your terminal: images, hashes, data formats and more"
   homepage "https://github.com/davidpn11/bun-toolkit"
-  version "0.4.1"
+  version "0.5.0"
   license "MIT"
 
   conflicts_with "bun-toolkit-beta", because: "both install btk"
 
   on_macos do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.4.1/btk-darwin-arm64"
-      sha256 "bdf104a4bdb8866059a561118f5c536fd923aa87d20f5dbd20e6e6fef9a7efe8"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.5.0/btk-darwin-arm64"
+      sha256 "e7567d2485128058b155d74a6d77213de93f2ea5dcbfd94a951f2baf59689b7d"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.4.1/btk-darwin-x64"
-      sha256 "c18baf218a9c83fbd4790285c8e71daaf18a55273bccc6a45de1956a47a56b21"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.5.0/btk-darwin-x64"
+      sha256 "ff72c8a41c28ef68cd007b6e407f45667302fb9790b1c861a15b4f910b2ae8aa"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.4.1/btk-linux-arm64"
-      sha256 "6216756d22747ccb047fdb1c2536c93767c3ab4256e41b7da4e566e2bc7bbd25"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.5.0/btk-linux-arm64"
+      sha256 "54100ecf12b7ce6d5d9db7bbe3a0b5450b1e2b0e56c61ee4541f362d9c2b3c77"
     end
     on_intel do
-      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.4.1/btk-linux-x64"
-      sha256 "33626dc073330ec9bd67d24e3a9e302efd4cc7c7eb32f9a54f58840dd13fb8d2"
+      url "https://github.com/davidpn11/bun-toolkit/releases/download/v0.5.0/btk-linux-x64"
+      sha256 "8f5d0b0060f23c8bf7f3ba23210659184c07a565b5bbcc18ac4d4186d48b626f"
     end
   end
 
   def install
     bin.install Dir["*"].first => "btk"
     bin.install_symlink "btk" => "bun-toolkit"
+    generate_completions_from_executable(bin/"btk", "completion", base_name: "btk")
   end
 
   test do
