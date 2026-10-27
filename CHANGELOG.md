@@ -1,5 +1,17 @@
 # bun-toolkit
 
+## 0.5.0
+
+Built on Bun 1.4.3.
+
+### Minor Changes
+
+- [#11](https://github.com/davidpn11/bun-toolkit/pull/11) [`47314dd`](https://github.com/davidpn11/bun-toolkit/commit/47314ddb9d58d3d95778d392099d90070e4a37cb) Thanks [@davidpn11](https://github.com/davidpn11)! - Add `btk completion zsh|bash|fish`, installed by Homebrew, and `btk md build`, which writes a folder of markdown out as a static site. `btk serve` and `btk md serve` now refuse json mode that only comes from `AGENT=true` or config instead of waiting forever, answer `405` to writes, and keep the query string on folder redirects.
+
+### Patch Changes
+
+- [`19f8f43`](https://github.com/davidpn11/bun-toolkit/commit/19f8f4363bbf99ef45c295e10fc235506fcf9aee) Thanks [@davidpn11](https://github.com/davidpn11)! - improve apis usage
+
 ## 0.4.1
 
 Built on Bun 1.4.3.
