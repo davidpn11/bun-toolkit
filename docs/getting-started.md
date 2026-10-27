@@ -20,9 +20,9 @@ Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. 
 Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries for macOS, Linux and Windows, plus a `SHA256SUMS` file:
 
 ```bash
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS
-grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64 &&
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS &&
+grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c &&
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 

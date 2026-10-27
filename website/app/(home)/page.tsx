@@ -38,9 +38,9 @@ const brewInstall = [
 ];
 
 const binaryInstall = [
-  `curl -fsSLO ${repoUrl}/releases/latest/download/btk-darwin-arm64`,
-  `curl -fsSLO ${repoUrl}/releases/latest/download/SHA256SUMS`,
-  "grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c",
+  `curl -fsSLO ${repoUrl}/releases/latest/download/btk-darwin-arm64 &&`,
+  `curl -fsSLO ${repoUrl}/releases/latest/download/SHA256SUMS &&`,
+  "grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c &&",
   "chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk",
 ];
 
@@ -83,9 +83,9 @@ function Hero() {
 function Commands({ lines }: { lines: string[] }) {
   return (
     <pre className="overflow-x-auto rounded-xl border bg-fd-card p-4 text-sm">
-      {lines.map((line) => (
+      {lines.map((line, i) => (
         <div key={line}>
-          <span className="text-fd-primary select-none">$ </span>
+          <span className="text-fd-primary select-none">{lines[i - 1]?.endsWith("&&") ? "  " : "$ "}</span>
           {line}
         </div>
       ))}
