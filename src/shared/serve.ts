@@ -236,8 +236,9 @@ function withQuery(location: string, search: string): string {
 async function respond(options: LiveServerOptions, pathname: string): Promise<Response> {
   try {
     const page = await options.page(pathname);
-    // Copied because Response.redirect() headers are immutable per the Fetch spec.
-    return page ? new Response(page.body, page) : await serveAsset(options.root, pathname);
+    if (!page) return await serveAsset(options.root, pathname);
+    // Redirects are copied because Response.redirect() headers are immutable per the Fetch spec.
+    return page.headers.has("Location") ? new Response(page.body, page) : page;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return new Response(`Could not render the page: ${message}`, { status: 500 });
