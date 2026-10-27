@@ -8,6 +8,7 @@ Preview markdown in the browser or in the terminal, serve a whole folder of it, 
 | --- | --- |
 | `btk md [file]` | Live preview in the browser, or in the terminal when the output is piped. Short for `btk md preview` |
 | `btk md serve [folder]` | Serve every markdown file in a folder, with a sidebar and live reload |
+| `btk md build [folder]` | Write the same site to disk as static HTML |
 | `btk md html [file]` | Render a standalone HTML page, or only the body with `--fragment` |
 | `btk md themes` | List the themes, including the ones plugins add |
 
@@ -62,9 +63,25 @@ btk md serve docs --port 4000 --no-open --theme plain
 - **It skips what isn't docs.** `node_modules` and dot folders such as `.git` and `.github` stay out of the sidebar.
 - **Images and other files** in the folder are served as they are. Nothing outside the folder is reachable, including through symlinks, and neither are dotfiles such as `.env`.
 
-It takes `--theme`, `--css`, `--port` and `--no-open`, with the same config keys as preview. Press Ctrl+C to stop. In json mode it prints `{ mode, root, pages, theme, url }` when it stops.
+It takes `--theme`, `--css`, `--port` and `--no-open`, with the same config keys as preview. Press Ctrl+C to stop. With `--json` it prints `{ mode, root, pages, theme, url }` when it stops; like `btk serve`, it refuses json mode that only comes from `AGENT=true` or config.
 
-`btk md serve` is a preview, not a site generator: it renders each page when you open it and writes nothing to disk. To serve a folder of HTML or other files as they are, use [`btk serve`](serve.md).
+`btk md serve` is a preview: it renders each page when you open it and writes nothing to disk. `btk md build` writes the same site out. To serve a folder of HTML or other files as they are, use [`btk serve`](serve.md).
+
+### build
+
+```bash
+btk md build                            # ./site from the markdown under the current folder
+btk md build docs --out public          # docs/ into public/
+btk md build docs --theme plain --overwrite
+```
+
+`btk md build` writes what `btk md serve` shows as static HTML, ready for GitHub Pages or any file host.
+
+- **Pages keep their paths.** `tools/hash.md` becomes `tools/hash.html`, and a folder's `README.md` (or `readme.md`, or `index.md`) becomes its `index.html`. A folder without one gets an `index.html` listing its pages.
+- **Links are relative.** The sidebar and links between pages point at the built files, relative to each page, so the site works from a sub-path or straight from disk.
+- **Other files are copied.** Images and anything else next to the pages go along, with the same rules as `serve`: no dot folders, `node_modules` or links out of the folder.
+
+`--out` (`-o`) sets the folder, `site` by default; it may sit inside the source folder. It must not exist yet unless you pass `--overwrite`, which writes into it without deleting old files. `--dry-run` (`-n`) counts the pages without writing. With `--json` it prints `{ mode, root, out, pages, folders, assets, dryRun }`.
 
 ### html
 
@@ -173,4 +190,4 @@ Every key also works as an environment variable, such as `BTK_MD_THEME=plain` or
 | --- | --- |
 | 0 | Rendered, or the preview stopped with Ctrl+C |
 | 1 | The file or stylesheet is missing, a served folder has no markdown, a plugin failed, or the port is taken |
-| 2 | An unknown theme, conflicting flags, no input, or a folder where a file is expected (and the reverse) |
+| 2 | An unknown theme, conflicting flags, no input, a folder where a file is expected (and the reverse), or a build folder that exists without `--overwrite` |

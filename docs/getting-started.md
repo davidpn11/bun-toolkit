@@ -20,13 +20,35 @@ Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. 
 Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries for macOS, Linux and Windows, plus a `SHA256SUMS` file:
 
 ```bash
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS
-grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64 &&
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS &&
+grep btk-darwin-arm64 SHA256SUMS | if command -v sha256sum >/dev/null; then sha256sum -c -; else shasum -a 256 -c; fi &&
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 
-Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`.
+Replace `darwin-arm64` with `darwin-x64`, `linux-x64` or `linux-arm64`.
+
+On Windows, paste this into PowerShell, then open a new terminal so `btk` is on your PATH:
+
+```powershell
+& {
+  $ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"
+  $dir = "$env:LOCALAPPDATA\Programs\btk"; New-Item -ItemType Directory -Force $dir | Out-Null
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-windows-x64.exe -OutFile btk-windows-x64.exe
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS -OutFile SHA256SUMS
+  $want = (Select-String -SimpleMatch btk-windows-x64.exe SHA256SUMS).Line.Split(" ")[0]
+  if ((Get-FileHash btk-windows-x64.exe).Hash -ne $want) { throw "Checksum mismatch" }
+  Move-Item -Force btk-windows-x64.exe "$dir\btk.exe"
+  $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Environment")
+  $entries = @($key.GetValue("Path", "", "DoNotExpandEnvironmentNames").Split(";") | Where-Object { $_ })
+  if ($entries -notcontains $dir) {
+    $key.SetValue("Path", ($entries + $dir) -join ";", "ExpandString")
+    # Removing an unset variable makes Windows tell open apps that PATH changed
+    [Environment]::SetEnvironmentVariable("BTK_INSTALL", $null, "User")
+  }
+}
+```
+
 
 ### From source
 
@@ -38,9 +60,21 @@ bun install
 bun link
 ```
 
+### Shell completion
+
+Homebrew installs completion for zsh, bash and fish. Otherwise, add the line for your shell to its startup file:
+
+```bash
+source <(btk completion zsh)         # ~/.zshrc, after compinit
+eval "$(btk completion bash)"        # ~/.bashrc
+btk completion fish | source         # ~/.config/fish/config.fish
+```
+
+Tab completes tools, actions, flags, choices such as `--to` formats, and `btk md` theme names, including ones from your plugins.
+
 ## Bun version
 
-btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.3**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the banner and `btk info` show it, and every changelog entry names it.
+btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.3**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the website and `btk info` show it, and every changelog entry names it.
 
 When Bun ships a new version, btk follows. We move to it, update these docs, adjust the commands whose behavior changed, and add commands for the APIs it brings. The binary carries its own Bun runtime, so upgrading btk is all you need to get there.
 

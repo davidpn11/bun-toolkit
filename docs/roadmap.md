@@ -267,7 +267,7 @@ The plans are in [docs/ci-pipeline.md](ci-pipeline.md) and [docs/distribution.md
 ### What ships
 
 - `test.yml` runs `bun run check`, `bun test`, a build and `bun run test:dist` on every pull request and push to `master`, on macOS, Linux and Windows.
-- `release.yml` publishes when a merge into `master` changes the version, which `bun run release:version` does on the branch before the merge. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file made by `btk hash` and the changelog entry as notes.
+- `release.yml` publishes when a merge into `master` changes the version, which `bun run release:version` does on the branch before the merge. It builds the five platform binaries, runs `test:dist` wherever the runner can execute them, and attaches the binaries to a GitHub Release with a `SHA256SUMS` file and the changelog entry as notes.
 - `beta.yml` publishes a beta of any branch on demand, numbered `-beta.N` from the existing tags, and `release-check.yml` tells every PR what merging releases.
 - The npm package `@bun-toolkit/cli`, with the `bin.mjs` shim and the five `@bun-toolkit/*` platform packages. `"private": true` comes off `package.json`. This comes after the Homebrew channel.
 - The Homebrew formulas `bun-toolkit` and `bun-toolkit-beta` in `Formula/`, which `homebrew.yml` rewrites after every release. v0.1.0 shipped this way.
@@ -439,12 +439,11 @@ The TUI foundation shipped in Phase 0, and every tool brings its own dashboard. 
 - `btk transpile` turns a TypeScript or JSX file into JavaScript.
 - `btk semver` compares and validates semantic versions.
 - Interactive examples on the documentation site.
-- `btk md build` writes a folder of markdown out as a static site, the way `btk md serve` shows it.
-- Shell tab completion: `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
+- Mermaid diagrams in `btk md` through a `@bun-toolkit/plugin-mermaid` package, so the 5.5 MB script stays out of the binary. See [ADR-011](adr/ADR-011-mermaid-plugin.md).
+- `btk md build` (done) writes a folder of markdown out as a static site, the way `btk md serve` shows it.
+- Shell tab completion (done): `btk completion zsh|bash|fish`, installed by Homebrew, completing tools, actions, flags, choice values and theme names.
 
 ### Open questions from Phase 8
 
-- `btk md serve` and `btk serve` wait for Ctrl+C even in json mode, so an agent running them with `AGENT=true` waits forever. They could refuse to start in json mode unless asked.
 - Pages with a strict Content-Security-Policy block the injected reload script, so live reload silently stops on them.
 - HTML that isn't UTF-8 can be mangled when the reload script is added.
-- `btk serve` answers `POST` and `PUT` with the file instead of `405`, and the `/folder` → `/folder/` redirect drops the query string.

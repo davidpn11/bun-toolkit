@@ -10,8 +10,8 @@ Bun ships native APIs for image encoding, password hashing, compression, format 
 
 - Project name: `bun-toolkit`
 - CLI command: `btk`, with `bun-toolkit` as a longer alias
-- npm package: `bun-toolkit`
-- Platform packages: `@btk/darwin-arm64`, `@btk/linux-x64` and so on
+- npm package: `@bun-toolkit/cli`, in the `bun-toolkit` npm org, because the unscoped name and the `@btk` scope belong to others ([ADR-007](adr/ADR-007-homebrew-before-npm.md))
+- Platform packages: `@bun-toolkit/darwin-arm64`, `@bun-toolkit/linux-x64` and so on
 - The documentation, website and GitHub repo all use `bun-toolkit`
 
 ## Commands
@@ -34,7 +34,7 @@ People always use bun-toolkit through the CLI, never as a library import.
 
 In a terminal, which is the main target, output has colors, icons, spinners, progress bars and aligned tables.
 
-In CI pipelines the commands stay the same and only the output changes. bun-toolkit detects `CI=true` or a non-TTY environment and prints plain text. Run it with `npx bun-toolkit image ./assets`, or add it as a devDependency and call `btk` from npm scripts the way you would call changesets or lint-staged.
+In CI pipelines the commands stay the same and only the output changes. bun-toolkit detects `CI=true` or a non-TTY environment and prints plain text. Run it with `npx @bun-toolkit/cli image ./assets`, or add it as a devDependency and call `btk` from npm scripts the way you would call changesets or lint-staged.
 
 For AI agents, `AGENT=true` or `--json` makes every command print one JSON document that the agent can parse.
 

@@ -36,7 +36,7 @@ brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit
 brew install davidpn11/bun-toolkit/bun-toolkit
 ```
 
-Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. `btk update` (or `brew upgrade bun-toolkit`) picks up new releases.
+Homebrew 5.1 and later refuse to load a formula from a tap you haven't trusted. If yours does, run the `brew trust` command it prints, then install again. It also installs tab completion for zsh, bash and fish (elsewhere, see `btk completion --help`). `btk update` (or `brew upgrade bun-toolkit`) picks up new releases.
 
 Pre-releases are a separate formula. Only one of the two can be installed at a time, because both install `btk`:
 
@@ -49,13 +49,36 @@ brew install davidpn11/bun-toolkit/bun-toolkit-beta
 Every [release](https://github.com/davidpn11/bun-toolkit/releases) has binaries for macOS, Linux and Windows, plus a `SHA256SUMS` file:
 
 ```bash
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64
-curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS
-grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-darwin-arm64 &&
+curl -fsSLO https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS &&
+grep btk-darwin-arm64 SHA256SUMS | if command -v sha256sum >/dev/null; then sha256sum -c -; else shasum -a 256 -c; fi &&
 chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk
 ```
 
-Replace `darwin-arm64` with `darwin-x64`, `linux-x64`, `linux-arm64` or `windows-x64.exe`. Later, `btk update` downloads the newest release, verifies it the same way and replaces the binary.
+Replace `darwin-arm64` with `darwin-x64`, `linux-x64` or `linux-arm64`.
+
+On Windows, paste this into PowerShell, then open a new terminal so `btk` is on your PATH:
+
+```powershell
+& {
+  $ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"
+  $dir = "$env:LOCALAPPDATA\Programs\btk"; New-Item -ItemType Directory -Force $dir | Out-Null
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/btk-windows-x64.exe -OutFile btk-windows-x64.exe
+  Invoke-WebRequest https://github.com/davidpn11/bun-toolkit/releases/latest/download/SHA256SUMS -OutFile SHA256SUMS
+  $want = (Select-String -SimpleMatch btk-windows-x64.exe SHA256SUMS).Line.Split(" ")[0]
+  if ((Get-FileHash btk-windows-x64.exe).Hash -ne $want) { throw "Checksum mismatch" }
+  Move-Item -Force btk-windows-x64.exe "$dir\btk.exe"
+  $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Environment")
+  $entries = @($key.GetValue("Path", "", "DoNotExpandEnvironmentNames").Split(";") | Where-Object { $_ })
+  if ($entries -notcontains $dir) {
+    $key.SetValue("Path", ($entries + $dir) -join ";", "ExpandString")
+    # Removing an unset variable makes Windows tell open apps that PATH changed
+    [Environment]::SetEnvironmentVariable("BTK_INSTALL", $null, "User")
+  }
+}
+```
+
+Later, `btk update` downloads the newest release, verifies it the same way and replaces the binary.
 
 ### From source
 
@@ -142,6 +165,7 @@ Preview markdown with `Bun.markdown`: in the browser with live reload, or styled
 btk md README.md                            # live preview in the browser
 btk md CHANGELOG.md --terminal | less -R    # styled for the terminal
 btk md serve docs                           # the whole folder, with a sidebar and working links
+btk md build docs --out public              # the same site, written out as static HTML
 btk md html README.md > README.html         # a standalone page
 btk md README.md --theme plain --css my.css # pick a theme, add your own styles
 btk md themes                               # built-in themes and the ones plugins add

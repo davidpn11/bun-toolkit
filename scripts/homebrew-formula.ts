@@ -92,6 +92,7 @@ ${platformBlock("linux", input.assets)}
   def install
     bin.install Dir["*"].first => "btk"
     bin.install_symlink "btk" => "bun-toolkit"
+    generate_completions_from_executable(bin/"btk", "completion", base_name: "btk")
   end
 
   test do

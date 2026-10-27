@@ -4,7 +4,7 @@ import { hostname as machineName } from "node:os";
 import { basename, isAbsolute, relative, resolve } from "node:path";
 import type { BunFile, Server } from "bun";
 import type { BtkContext } from "../context.ts";
-import { BtkError } from "../errors.ts";
+import { BtkError, UsageError } from "../errors.ts";
 
 export const EVENTS_PATH = "/__btk/events";
 export const LOOPBACK = "127.0.0.1";
@@ -78,6 +78,7 @@ export async function serveUntilStopped(
   /** Page to announce and open, relative to the server root. */
   page = "",
 ): Promise<LiveServer> {
+  refuseImplicitJson(ctx);
   const server = listen(options, ctx);
   const url = new URL(page, server.url).href;
   announce(server, ctx.reporter.style.accent(url));
@@ -86,6 +87,15 @@ export async function serveUntilStopped(
   }
   await server.closed;
   return server;
+}
+
+function refuseImplicitJson(ctx: BtkContext): void {
+  const { mode, reason } = ctx.environment;
+  if (mode !== "json" || reason === "--json flag") return;
+  throw new UsageError(`The server runs until Ctrl+C, so it can't answer with JSON (${reason})`, {
+    code: "ERR_SERVER_JSON",
+    hint: "Pass --json to serve anyway and get the result when it stops",
+  });
 }
 
 function warnNoReload(error: unknown, ctx: BtkContext): void {
@@ -135,7 +145,7 @@ export function pathInside(root: string, pathname: string): string | undefined {
   return isInside(root, path) && linksStayInside(root, path) ? path : undefined;
 }
 
-function isInside(root: string, path: string): boolean {
+export function isInside(root: string, path: string): boolean {
   const inside = relative(root, path);
   return !inside.startsWith("..") && !isAbsolute(inside);
 }
@@ -188,21 +198,47 @@ async function route(
   options: LiveServerOptions,
   clients: Clients,
 ): Promise<Response> {
-  const { pathname, hostname } = new URL(request.url);
+  const { pathname, hostname, search } = new URL(request.url);
   if (!isAllowedHost(hostname, options.hostname ?? LOOPBACK))
     return new Response("Forbidden", { status: 403 });
-  if (pathname === EVENTS_PATH) {
+  const read = request.method === "GET" || request.method === "HEAD";
+  if (read && pathname === EVENTS_PATH) {
     server.timeout(request, 0);
     return eventStream(clients);
   }
-  const response = withHeaders(await respond(options, pathname), options.headers);
+  const response = withHeaders(
+    read ? await pageResponse(options, pathname, search) : notAllowed(),
+    options.headers,
+  );
   options.onRequest?.({ method: request.method, path: pathname, status: response.status });
   return response;
 }
 
+function notAllowed(): Response {
+  return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+}
+
+async function pageResponse(options: LiveServerOptions, pathname: string, search: string): Promise<Response> {
+  const response = await respond(options, pathname);
+  const location = response.headers.get("Location");
+  if (location && search) response.headers.set("Location", withQuery(location, search));
+  return response;
+}
+
+function withQuery(location: string, search: string): string {
+  const hash = location.indexOf("#");
+  const end = hash === -1 ? location.length : hash;
+  const path = location.slice(0, end);
+  const query = path.includes("?") ? `&${search.slice(1)}` : search;
+  return path + query + location.slice(end);
+}
+
 async function respond(options: LiveServerOptions, pathname: string): Promise<Response> {
   try {
-    return (await options.page(pathname)) ?? (await serveAsset(options.root, pathname));
+    const page = await options.page(pathname);
+    if (!page) return await serveAsset(options.root, pathname);
+    // Redirects are copied because Response.redirect() headers are immutable per the Fetch spec.
+    return page.headers.has("Location") ? new Response(page.body, page) : page;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return new Response(`Could not render the page: ${message}`, { status: 500 });
