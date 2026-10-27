@@ -102,8 +102,8 @@ function Install() {
       <Tab value="Standalone binary">
         <Commands lines={binaryInstall} />
         <p className="mt-3 text-sm text-fd-muted-foreground">
-          On another platform? Swap in <code>darwin-x64</code>, <code>linux-x64</code>, <code>linux-arm64</code>{" "}
-          or <code>windows-x64.exe</code>.{" "}
+          On another platform? Swap in <code>darwin-x64</code>, <code>linux-x64</code>,{" "}
+          <code>linux-arm64</code> or <code>windows-x64.exe</code>.{" "}
           <Link href={`${docsRoute}#download-a-binary`} className="text-fd-primary hover:underline">
             Full instructions
           </Link>
