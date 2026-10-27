@@ -1,4 +1,5 @@
 import banner from "@docs/assets/btk-banner.png";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -31,9 +32,16 @@ const highlights: Highlight[] = [
   },
 ];
 
-const install = [
+const brewInstall = [
   "brew tap davidpn11/bun-toolkit https://github.com/davidpn11/bun-toolkit",
   "brew install davidpn11/bun-toolkit/bun-toolkit",
+];
+
+const binaryInstall = [
+  `curl -fsSLO ${repoUrl}/releases/latest/download/btk-darwin-arm64`,
+  `curl -fsSLO ${repoUrl}/releases/latest/download/SHA256SUMS`,
+  "grep btk-darwin-arm64 SHA256SUMS | shasum -a 256 -c",
+  "chmod +x btk-darwin-arm64 && sudo mv btk-darwin-arm64 /usr/local/bin/btk",
 ];
 
 const chip = "rounded-full border px-3 py-1 text-sm text-fd-muted-foreground hover:border-fd-primary";
@@ -72,16 +80,36 @@ function Hero() {
   );
 }
 
-function Install() {
+function Commands({ lines }: { lines: string[] }) {
   return (
-    <pre className="w-full max-w-2xl overflow-x-auto rounded-xl border bg-fd-card p-4 text-sm">
-      {install.map((line) => (
+    <pre className="overflow-x-auto rounded-xl border bg-fd-card p-4 text-sm">
+      {lines.map((line) => (
         <div key={line}>
           <span className="text-fd-primary select-none">$ </span>
           {line}
         </div>
       ))}
     </pre>
+  );
+}
+
+function Install() {
+  return (
+    <Tabs items={["Homebrew", "Standalone binary"]} className="w-full max-w-2xl">
+      <Tab value="Homebrew">
+        <Commands lines={brewInstall} />
+      </Tab>
+      <Tab value="Standalone binary">
+        <Commands lines={binaryInstall} />
+        <p className="mt-3 text-sm text-fd-muted-foreground">
+          On another platform? Swap in <code>darwin-x64</code>, <code>linux-x64</code>,{" "}
+          <code>linux-arm64</code> or <code>windows-x64.exe</code>.{" "}
+          <Link href={`${docsRoute}#download-a-binary`} className="text-fd-primary hover:underline">
+            Full instructions
+          </Link>
+        </p>
+      </Tab>
+    </Tabs>
   );
 }
 
