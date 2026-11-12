@@ -1,6 +1,6 @@
 # Getting started
 
-`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary built on **Bun 1.4.3**, so it needs neither Bun nor Node on the machine that runs it.
+`btk` puts the APIs built into Bun, such as `Bun.Image`, `Bun.CryptoHasher`, `Bun.YAML`, `Bun.password`, `Bun.markdown` and `Bun.serve`, behind one command. It ships as a single binary built on **Bun 1.4.4**, so it needs neither Bun nor Node on the machine that runs it.
 
 ## Install
 
@@ -52,7 +52,7 @@ On Windows, paste this into PowerShell, then open a new terminal so `btk` is on 
 
 ### From source
 
-Requires [Bun](https://bun.sh) 1.4.3, the version btk is built on.
+Requires [Bun](https://bun.sh) 1.4.4, the version btk is built on.
 
 ```bash
 git clone https://github.com/davidpn11/bun-toolkit && cd bun-toolkit
@@ -74,7 +74,7 @@ Tab completes tools, actions, flags, choices such as `--to` formats, and `btk md
 
 ## Bun version
 
-btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.3**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the website and `btk info` show it, and every changelog entry names it.
+btk is built on Bun and moves with it. Every release is built and tested on one exact Bun version, currently **Bun 1.4.4**. It is pinned once, as `packageManager` in `package.json`: CI installs that version, the website and `btk info` show it, and every changelog entry names it.
 
 When Bun ships a new version, btk follows. We move to it, update these docs, adjust the commands whose behavior changed, and add commands for the APIs it brings. The binary carries its own Bun runtime, so upgrading btk is all you need to get there.
 
